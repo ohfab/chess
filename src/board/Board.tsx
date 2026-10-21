@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Color } from '../game/rules'
+import { drawn } from './arrows'
 import '@lichess-org/chessground/assets/chessground.base.css'
 import '@lichess-org/chessground/assets/chessground.cburnett.css'
 import './board.css'
@@ -31,6 +32,11 @@ export function Board(props: BoardProps) {
   const api = useRef<Api | null>(null)
   const onMove = useRef(props.onMove)
   onMove.current = props.onMove
+  // arrows and circles the player draws with a right-drag, and the one being drawn right now
+  const [userShapes, setUserShapes] = useState<DrawShape[]>([])
+  const [preview, setPreview] = useState<DrawShape | null>(null)
+  // a hidden board has no size; shapes are placed only once it has one
+  const [width, setWidth] = useState(0)
 
   const config = (): Config => ({
     fen: props.fen,
@@ -46,7 +52,6 @@ export function Board(props: BoardProps) {
       showDests: true,
     },
     premovable: { enabled: props.premove, showDests: true, castle: true },
-    drawable: { autoShapes: props.shapes },
   })
 
   useEffect(() => {
@@ -61,29 +66,35 @@ export function Board(props: BoardProps) {
         ...config().movable,
         events: { after: (orig, dest, meta) => onMove.current(orig, dest, meta.premove) },
       },
-      drawable: {
-        enabled: true,
-        visible: true,
-        autoShapes: props.shapes,
-        brushes: {
-          green: { key: 'g', color: '#3f9b4a', opacity: 0.9, lineWidth: 10 },
-          red: { key: 'r', color: '#c0453b', opacity: 0.9, lineWidth: 10 },
-          blue: { key: 'b', color: '#3a6fd1', opacity: 0.9, lineWidth: 10 },
-          yellow: { key: 'y', color: '#e3a92b', opacity: 0.9, lineWidth: 10 },
-          engine: { key: 'e', color: '#4f8fe6', opacity: 0.8, lineWidth: 12 },
-          engine2: { key: 'e2', color: '#4f8fe6', opacity: 0.4, lineWidth: 8 },
-          hint: { key: 'h', color: '#f0a33a', opacity: 0.9, lineWidth: 12 },
-          best: { key: 'bm', color: '#81b64c', opacity: 0.9, lineWidth: 12 },
-        },
-      },
+      // chessground still handles drawing; its own rendering is hidden (board.css) and
+      // every shape is drawn by arrows.ts instead
+      drawable: { enabled: true, visible: true, onChange: (shapes) => setUserShapes(shapes) },
     })
     // chessground caches the board's screen position and only refreshes it on scroll or resize;
     // panels above the board can change height and move it, so measure again on every press
     const wrap = el.current!
     const remeasure = () => api.current?.state.dom.bounds.clear()
     for (const ev of ['mousedown', 'touchstart']) wrap.addEventListener(ev, remeasure, { capture: true, passive: true })
+
+    // follow the shape being drawn so it shows while the button is held
+    let last = ''
+    const track = () => {
+      const cur = api.current?.state.drawable.current
+      const key = cur ? `${cur.orig}${cur.mouseSq ?? ''}${cur.brush}` : ''
+      if (key === last) return
+      last = key
+      setPreview(cur ? { orig: cur.orig, dest: cur.mouseSq, brush: cur.brush } : null)
+    }
+    const settle = () => requestAnimationFrame(track)
+    const sized = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)))
+    sized.observe(wrap)
+    document.addEventListener('mousemove', track, { passive: true })
+    document.addEventListener('mouseup', settle)
     return () => {
       for (const ev of ['mousedown', 'touchstart']) wrap.removeEventListener(ev, remeasure, { capture: true })
+      document.removeEventListener('mousemove', track)
+      document.removeEventListener('mouseup', settle)
+      sized.disconnect()
       api.current?.destroy()
     }
     // chessground is created once; later prop changes go through api.set below
@@ -104,9 +115,13 @@ export function Board(props: BoardProps) {
     api.current?.redrawAll()
   }, [props.coordinates])
 
+  const { shapes, orientation } = props
   useEffect(() => {
-    api.current?.setAutoShapes(props.shapes)
-  }, [props.shapes])
+    if (!width) return api.current?.setAutoShapes([])
+    const all = [...shapes, ...userShapes].map((s) => drawn(s, orientation))
+    if (preview) all.push(drawn(preview, orientation, true))
+    api.current?.setAutoShapes(all)
+  }, [shapes, orientation, userShapes, preview, width])
 
   return <div ref={el} className="board" />
 }

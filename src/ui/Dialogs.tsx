@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Shuffle } from 'lucide-react'
 import { LEVELS, levelOf } from '../engine/levels'
-import type { Mode, Settings } from '../game/store'
+import type { Mode } from '../game/store'
 import { loadPgn, validateFen, type Color, type Outcome, type Ply } from '../game/rules'
 import { Modal } from './Modal'
 import { Piece } from '../board/Piece'
@@ -135,34 +135,6 @@ export function Toggle({ label, hint, value, onChange }: { label: string; hint?:
       <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
       <i />
     </label>
-  )
-}
-
-export function SettingsDialog({ settings, onChange, onClose }: { settings: Settings; onChange: (p: Partial<Settings>) => void; onClose: () => void }) {
-  return (
-    <Modal title="Einstellungen" onClose={onClose}>
-      <Toggle label="Sound" value={settings.sound} onChange={(sound) => onChange({ sound })} />
-      <Toggle label="Koordinaten" value={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
-      <Toggle label="Immer Dame bei Umwandlung" value={settings.autoQueen} onChange={(autoQueen) => onChange({ autoQueen })} />
-      <Toggle
-        label="Bewertung beim Spielen"
-        hint="Zeigt Bewertungsbalken und Engine-Linien auch gegen Stockfish"
-        value={settings.evalInPlay}
-        onChange={(evalInPlay) => onChange({ evalInPlay })}
-      />
-      <div className="field-label">
-        Engine-Linien <b>{settings.multiPv}</b>
-      </div>
-      <input
-        className="slider"
-        type="range"
-        min={1}
-        max={5}
-        value={settings.multiPv}
-        onChange={(e) => onChange({ multiPv: Number(e.target.value) })}
-        aria-label="Engine-Linien"
-      />
-    </Modal>
   )
 }
 

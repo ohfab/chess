@@ -11,12 +11,12 @@ import {
   Lightbulb,
   ListTree,
   Microscope,
-  Plus,
   RotateCcw,
   Settings as SettingsIcon,
   Share2,
   Star,
   Swords,
+  Target,
   Undo2,
   Upload,
 } from 'lucide-react'
@@ -43,7 +43,8 @@ import {
   type Color,
   type Ply,
 } from './game/rules'
-import { playSound, soundFor } from './game/sound'
+import { playSound, setSoundSet, soundFor } from './game/sound'
+import { applyBoard, applyPieces } from './theme/theme'
 import { fenAt, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
@@ -52,8 +53,17 @@ import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type 
 import { OpeningBrowser } from './trainer/OpeningBrowser'
 import { OpeningSetup, type TrainingSetup } from './trainer/OpeningSetup'
 import { useTrainer } from './trainer/useTrainer'
+import { TodayPage } from './coach/TodayPage'
+import type { Insights } from './coach/insights'
+import type { PlanTask } from './coach/plan'
+import { packReview, unpackReview, type SavedGame } from './history/archive'
+import { pliesOf } from './history/reviews'
+import { DrillPlayer, type DrillItem, type DrillResult } from './puzzles/DrillPlayer'
+import { pickPuzzles, rate } from './puzzles/puzzles'
+import { themeName } from './puzzles/themes'
 import { Coach } from './ui/Coach'
-import { ImportDialog, NewGameDialog, ResultDialog, SettingsDialog, ShareDialog } from './ui/Dialogs'
+import { ImportDialog, NewGameDialog, ResultDialog, ShareDialog } from './ui/Dialogs'
+import { SettingsDialog } from './ui/SettingsDialog'
 import { EngineLines } from './ui/EngineLines'
 import { EvalBar } from './ui/EvalBar'
 import { EvalGraph } from './ui/EvalGraph'
@@ -75,7 +85,7 @@ interface Retry {
   note?: string
 }
 
-type View = 'board' | 'openings' | 'setup'
+type View = 'today' | 'board' | 'openings' | 'setup' | 'drill'
 
 /** Feedback on the player's last move in an opening drill. */
 interface TrainerNote {
@@ -108,7 +118,8 @@ export default function App() {
   const [share, setShare] = useState<{ pgn: string; fen: string } | null>(null)
   const [newMode, setNewMode] = useState<Mode>('play')
   // a fresh start opens the opening menu; a game in progress stays on the board
-  const [view, setView] = useState<View>(() => (useGame.getState().plies.length || useGame.getState().mode === 'training' ? 'board' : 'openings'))
+  const [view, setView] = useState<View>(() => (useGame.getState().plies.length && !useGame.getState().outcome ? 'board' : 'today'))
+  const [drill, setDrill] = useState<{ title: string; items: DrillItem[]; taskId?: string } | null>(null)
   const [setupId, setSetupId] = useState<string | null>(null)
   const [note, setNote] = useState<TrainerNote | null>(null)
   const [trainerHint, setTrainerHint] = useState<string | null>(null)
@@ -148,10 +159,16 @@ export default function App() {
 
   // ---------------------------------------------------------------- live engine
 
-  const showEval = !retry && progress === null && (mode === 'analysis' ? settings.analysisEngine : settings.evalInPlay)
+  // the bar can be shown everywhere; engine lines and arrows only on the analysis board
+  const showBar = !retry && progress === null && (mode === 'analysis' ? settings.analysisEngine : settings.evalInPlay)
+  const showLines = showBar && mode === 'analysis'
   const hintOn = hintFen === fen && !retry
   const final = useMemo(() => isFinal(fen), [fen])
-  const analysis = useAnalysis(fen, (showEval || hintOn) && !final, showEval ? settings.multiPv : 1)
+  const analysis = useAnalysis(fen, (showBar || hintOn) && !final, showLines ? settings.multiPv : 1)
+
+  useEffect(() => applyBoard(settings.board), [settings.board])
+  useEffect(() => void applyPieces(settings.pieces), [settings.pieces])
+  useEffect(() => setSoundSet(settings.soundSet), [settings.soundSet])
 
   const bar = useMemo(() => {
     const top = analysis?.lines[0]
@@ -187,6 +204,9 @@ export default function App() {
     const was = prevOutcome.current
     prevOutcome.current = outcome
     if (!outcome || was || mode === 'analysis') return
+    const s = useGame.getState()
+    s.archive()
+    if (mode === 'play') s.advanceTask(`game:${s.level}`)
     // let the final move land before the result appears
     const t = setTimeout(() => setDialog('result'), 700)
     return () => clearTimeout(t)
@@ -314,9 +334,56 @@ export default function App() {
       if (run !== reviewRun.current) return
       setProgress(null)
       if (!result) return flash('Auswertung abgebrochen')
-      useGame.getState().setReview(result)
-      useGame.getState().goTo(0)
+      const st = useGame.getState()
+      st.setReview(result)
+      st.goTo(0)
+      // the archived copy gets the review too, so the coach can learn from it
+      if (st.history.some((x) => x.key === st.gameKey)) st.attachReview(st.gameKey, packReview(result))
     })
+  }
+
+  // ---------------------------------------------------------------- daily training
+
+  const startTask = async (task: PlanTask, insights: Insights) => {
+    const s = useGame.getState()
+    const left = Math.max(1, task.target - task.done)
+    if (task.kind === 'mistakes') {
+      const solved = new Set(s.solvedMistakes)
+      const items: DrillItem[] = insights.mistakes
+        .filter((m) => !solved.has(`${m.gameKey}:${m.ply}`))
+        .slice(0, left)
+        .map((m) => ({ kind: 'mistake', key: `${m.gameKey}:${m.ply}`, fen: m.fen, best: m.best, playedSan: m.san, winBefore: m.winBefore, date: m.date }))
+      if (!items.length) return flash('Alle Fehler sind schon gelöst')
+      setDrill({ title: 'Deine Fehler', items, taskId: task.id })
+      setView('drill')
+    } else if (task.kind === 'puzzles') {
+      const puzzles = await pickPuzzles({ theme: task.theme, rating: s.puzzleRating, count: left, skip: new Set(s.seenPuzzles) })
+      if (!puzzles.length) return flash('Keine neuen Aufgaben zu diesem Thema')
+      setDrill({ title: task.theme ? themeName(task.theme) : 'Taktik-Mix', items: puzzles.map((puzzle) => ({ kind: 'puzzle', puzzle })), taskId: task.id })
+      setView('drill')
+    } else if (task.kind === 'opening' && task.openingId) {
+      startTraining({ openingId: task.openingId, choice: task.variation ?? 0, side: task.side ?? 'white', level, strict: true })
+    } else if (task.kind === 'game') {
+      startGame({ mode: 'play', playerColor: Math.random() < 0.5 ? 'white' : 'black', level: task.level ?? level })
+    }
+  }
+
+  const drillResult = (taskId: string | undefined, { item, solved }: DrillResult) => {
+    const s = useGame.getState()
+    if (item.kind === 'puzzle') {
+      const { puzzle } = item
+      s.recordPuzzle(puzzle.id, puzzle.rating, puzzle.themes, solved, rate(s.puzzleRating, puzzle.rating, solved))
+    } else s.recordMistake(item.key, solved)
+    if (taskId) s.advanceTask(taskId)
+  }
+
+  const openArchived = (game: SavedGame) => {
+    loadGame(game.startFen, pliesOf(game))
+    const review = unpackReview(game)
+    if (review) {
+      useGame.getState().setReview(review)
+      useGame.getState().goTo(0)
+    }
   }
 
   const commit = (uci: string) => {
@@ -448,7 +515,7 @@ export default function App() {
       const best = review.evals[cursor - 1].best
       if (best && best !== ply.uci && moveReview.judgement !== 'book') arrow(best, 'best')
       out.push({ orig: squares(ply.uci)[1], customSvg: { html: boardBadge(moveReview.judgement) } })
-    } else if (mode === 'analysis' && showEval && analysis) {
+    } else if (showLines && analysis) {
       analysis.lines.slice(0, 2).forEach((l, i) => l.pv[0] && arrow(l.pv[0], i === 0 ? 'engine' : 'engine2'))
     }
     if (hintOn && analysis?.lines[0]?.pv[0]) arrow(analysis.lines[0].pv[0], 'hint')
@@ -460,7 +527,7 @@ export default function App() {
       if (uci) arrow(uci, 'hint')
     }
     return out
-  }, [retry, moveReview, review, plies, cursor, mode, showEval, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
+  }, [retry, moveReview, review, plies, cursor, showLines, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
 
   // ---------------------------------------------------------------- coach
 
@@ -688,6 +755,10 @@ export default function App() {
     setDialog('share')
   }
 
+  const evalTool = (
+    <Tool label="Bewertung" icon={<Activity size={20} />} onClick={() => g.updateSettings({ evalInPlay: !settings.evalInPlay })} on={settings.evalInPlay} />
+  )
+
   let tools: ReactNode
   if (mode === 'play' && !outcome) {
     tools = (
@@ -699,9 +770,9 @@ export default function App() {
           disabled={turn !== playerColor || !atEnd}
           on={hintOn}
         />
-        <Tool label="Zurücknehmen" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
+        {evalTool}
+        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
         <Tool label={confirmResign ? 'Sicher?' : 'Aufgeben'} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
-        <Tool label="Neu" icon={<Plus size={20} />} onClick={() => openNew('play')} />
       </>
     )
   } else if (mode === 'training' && training && !outcome) {
@@ -714,7 +785,8 @@ export default function App() {
           disabled={turnOf(liveFen) !== playerColor || !atEnd}
           on={trainerHint === liveFen || hintOn}
         />
-        <Tool label="Zurücknehmen" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
+ {evalTool}
+        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
         <Tool label="Neustart" icon={<RotateCcw size={20} />} onClick={restartTraining} />
         <Tool label="Varianten" icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
       </>
@@ -759,8 +831,9 @@ export default function App() {
     )
   }
 
-  const tab = view !== 'board' || mode === 'training' ? 'openings' : mode
-  const goPlay = () => (mode === 'play' ? setView('board') : openNew('play'))
+  const tab = view === 'today' || view === 'drill' ? 'today' : view !== 'board' || mode === 'training' ? 'openings' : mode
+  // the play tab opens the board; on the board itself it starts a new game
+  const goPlay = () => (mode === 'play' && view !== 'board' ? setView('board') : openNew('play'))
   const goAnalysis = () => {
     if (mode !== 'analysis') g.analyse()
     setView('board')
@@ -775,6 +848,10 @@ export default function App() {
           <span className="brand-name">Knightly</span>
         </div>
         <nav className="tabs">
+          <button className={`tab ${tab === 'today' ? 'on' : ''}`} onClick={() => setView('today')}>
+            <Target size={18} />
+            <span>Heute</span>
+          </button>
           <button className={`tab ${tab === 'play' ? 'on' : ''}`} onClick={goPlay}>
             <Swords size={18} />
             <span>Spielen</span>
@@ -798,6 +875,22 @@ export default function App() {
         </div>
       </header>
 
+      {view === 'today' && (
+        <main className="page">
+          <TodayPage onStart={(t, ins) => void startTask(t, ins)} onOpenGame={openArchived} />
+        </main>
+      )}
+      {view === 'drill' && drill && (
+        <DrillPlayer
+          key={drill.title + drill.items.length}
+          title={drill.title}
+          items={drill.items}
+          coordinates={settings.coordinates}
+          sound={settings.sound}
+          onResult={(r) => drillResult(drill.taskId, r)}
+          onExit={() => setView('today')}
+        />
+      )}
       {view === 'openings' && (
         <main className="page">
           <OpeningBrowser
@@ -827,7 +920,7 @@ export default function App() {
         <section className="stage">
           {strip(topColor)}
           <div className="board-row">
-            {(showEval || reviewing) && <EvalBar share={bar?.share ?? null} label={bar?.label} orientation={orientation} />}
+            {(showBar || reviewing) && <EvalBar share={bar?.share ?? null} label={bar?.label} orientation={orientation} />}
             <div className="board-wrap">
               <Board
                 fen={boardFen}
@@ -855,7 +948,7 @@ export default function App() {
           {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} />}
           {reviewing && progress === null && <EvalGraph review={review} cursor={Math.min(cursor, reviewed)} onJump={nav} />}
 
-          {showEval && (
+          {showLines && (
             <EngineLines fen={fen} analysis={analysis} final={final} onPlay={mode === 'analysis' ? (uci) => commit(uci) : undefined} />
           )}
 

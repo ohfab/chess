@@ -73,13 +73,14 @@ export async function runReview(
   plies: Ply[],
   onProgress: (done: number, total: number) => void,
   alive: () => boolean,
+  go = REVIEW_GO,
 ): Promise<Review | null> {
   await loadOpenings()
   const fens = [startFen, ...plies.map((p) => p.fen)]
   const evals: PositionEval[] = []
   for (const fen of fens) {
     if (!alive()) return null
-    const e = await evaluate(fen)
+    const e = await evaluate(fen, go)
     if (!e || !alive()) return null
     evals.push(e)
     onProgress(evals.length, fens.length)
