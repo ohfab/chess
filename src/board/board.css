@@ -1,0 +1,79 @@
+/* Board theme: green and cream squares with yellow move highlights. */
+
+.board {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* rounding the squares layer keeps review badges free to overhang the edge */
+.board cg-board {
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--sq-light);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23739552' d='M1 0h1v1H1zM3 0h1v1H3zM5 0h1v1H5zM7 0h1v1H7zM0 1h1v1H0zM2 1h1v1H2zM4 1h1v1H4zM6 1h1v1H6zM1 2h1v1H1zM3 2h1v1H3zM5 2h1v1H5zM7 2h1v1H7zM0 3h1v1H0zM2 3h1v1H2zM4 3h1v1H4zM6 3h1v1H6zM1 4h1v1H1zM3 4h1v1H3zM5 4h1v1H5zM7 4h1v1H7zM0 5h1v1H0zM2 5h1v1H2zM4 5h1v1H4zM6 5h1v1H6zM1 6h1v1H1zM3 6h1v1H3zM5 6h1v1H5zM7 6h1v1H7zM0 7h1v1H0zM2 7h1v1H2zM4 7h1v1H4zM6 7h1v1H6z'/%3E%3C/svg%3E");
+}
+
+.board cg-board square.last-move {
+  background-color: rgb(255 255 51 / 0.5);
+}
+.board cg-board square.selected {
+  background-color: rgb(255 255 51 / 0.5);
+}
+.board cg-board square.move-dest {
+  background: radial-gradient(rgb(0 0 0 / 0.14) 22%, transparent 0);
+}
+.board cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0 79%, rgb(0 0 0 / 0.14) 80%);
+}
+.board cg-board square.move-dest:hover,
+.board cg-board square.move-dest.hover {
+  background: rgb(255 255 255 / 0.28);
+}
+.board cg-board square.premove-dest {
+  background: radial-gradient(rgb(70 110 200 / 0.45) 20%, transparent 0);
+}
+.board cg-board square.oc.premove-dest {
+  background: radial-gradient(transparent 0 78%, rgb(70 110 200 / 0.4) 78%);
+}
+.board cg-board square.current-premove {
+  background-color: rgb(70 110 200 / 0.45);
+}
+.board cg-board square.check {
+  background: radial-gradient(ellipse at center, rgb(230 40 40) 0%, rgb(220 30 30 / 0.9) 25%, rgb(170 0 0 / 0) 89%);
+}
+
+/* lift the piece a little while it is in the hand */
+.board piece.dragging {
+  transform-origin: center;
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.35));
+}
+
+.board coords {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: clamp(8px, 1.6vmin, 12px);
+}
+.board coords.ranks {
+  left: 3px;
+  top: 2px;
+}
+.board coords.files {
+  bottom: 1px;
+  left: -3px;
+  text-transform: lowercase;
+  text-align: right;
+}
+.board coords.files coord {
+  padding-right: 4px;
+}
+.board coords.ranks coord {
+  transform: none;
+}
+.orientation-white coords :nth-child(odd),
+.orientation-black coords :nth-child(even) {
+  color: var(--sq-light);
+}
+.orientation-white coords :nth-child(even),
+.orientation-black coords :nth-child(odd) {
+  color: var(--sq-dark);
+}
