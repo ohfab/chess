@@ -191,5 +191,9 @@
   "Eigene Variante": "La tua variante",
   "Die Partie bleibt gespeichert, du kannst jederzeit zurück.": "La partita resta com’era, puoi tornarci in qualsiasi momento.",
   "Folgezüge": "Seguito",
-  "Zur Partie": "Alla partita"
+  "Zur Partie": "Alla partita",
+  "Eine neue Version von Rookly ist bereit.": "Una nuova versione di Rookly è pronta.",
+  "Neu laden": "Ricarica",
+  "Feinschliff {n} %": "Rifinitura {n} %",
+  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish riesamina ogni posizione più a fondo; le valutazioni possono ancora cambiare leggermente"
 }

@@ -67,6 +67,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - PGN oder FEN laden, PGN und FEN kopieren
 
 **Partie-Auswertung**
+- Erst ein schneller Durchgang (die Auswertung steht nach wenigen Sekunden), dann rechnet Stockfish jede Stellung in voller Tiefe nach und schärft die Auswertung, während man sie schon liest („Feinschliff“)
 - Stockfish prüft jeden Zug und bewertet ihn wie chess.com: Brillant (gutes Opfer), Stark (der einzige gute Zug), Bester Zug, Exzellent, Gut, Buchzug, Ungenauigkeit, Fehler, Verpasst (Fehler des Gegners nicht genutzt, Matt übersehen), Patzer
 - Der Coach erklärt den Zug: was danach verloren geht („Danach gewinnt Schwarz mit ♝xf3 eine Figur“), welches Matt droht oder was möglich gewesen wäre, dazu die Bewertung nach dem Zug
 - Genauigkeit in Prozent für beide Seiten (Lichess-Formel), Übersicht wie auf chess.com, mit Schlüsselmomenten: bester und teuerster Zug jeder Seite zum Anspringen
@@ -88,7 +89,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Pfeile und Kreise mit Rechtsklick zeichnen
 - Tastatur: ← → durch die Partie, ↑ ↓ Anfang/Ende, `f` dreht das Brett
 - Partie und Einstellungen bleiben lokal im Browser gespeichert
-- Installierbar als App auf dem Handy (PWA-Manifest)
+- Installierbar als App auf dem Handy (PWA-Manifest); neue Versionen laden beim Öffnen von selbst, bei länger offener Seite erscheint ein Hinweis zum Neuladen
 
 ## Entwickeln
 

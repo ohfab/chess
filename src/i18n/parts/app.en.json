@@ -191,5 +191,9 @@
   "Eigene Variante": "Your own line",
   "Die Partie bleibt gespeichert, du kannst jederzeit zurück.": "The game stays as it was; you can go back to it any time.",
   "Folgezüge": "Follow-up",
-  "Zur Partie": "To game"
+  "Zur Partie": "To game",
+  "Eine neue Version von Rookly ist bereit.": "A new version of Rookly is ready.",
+  "Neu laden": "Reload",
+  "Feinschliff {n} %": "Refining {n} %",
+  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish is searching every position again more deeply; the grades may still change slightly"
 }

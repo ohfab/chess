@@ -34,6 +34,8 @@ export interface Review {
 }
 
 const REVIEW_GO = 'depth 16 movetime 2500'
+// the first look at a game: shallow, so the review is there within seconds even on a phone
+const QUICK_GO = 'depth 11 movetime 400'
 const PV_KEEP = 8
 
 // Expected-points thresholds as chess.com describes them.
@@ -163,9 +165,48 @@ function classify(fens: string[], plies: Ply[], evals: PositionEval[], i: number
   return { judgement: judge(loss), loss }
 }
 
+/** Grades every move from the evaluations of all positions. */
+function grade(startFen: string, plies: Ply[], fens: string[], evals: PositionEval[]): Review {
+  let book = true
+  const moves = plies.map((ply, i): MoveReview => {
+    book = book && isBook(ply.fen)
+    if (book) return { judgement: 'book', loss: lossOf(evals[i].win, evals[i + 1].win, turnOf(fens[i])) }
+    return classify(fens, plies, evals, i)
+  })
+  const accuracy = gameAccuracy(evals, turnOf(startFen) === 'white')
+  return { ucis: plies.map((p) => p.uci), evals: [...evals], moves, accuracy }
+}
+
+/**
+ * Searches every position, spread over the engines. It goes from the end of the game
+ * backwards, so each search finds the positions that follow in the engine's hash table.
+ * False when cancelled through `alive` or when an engine fails.
+ */
+async function searchAll(fens: string[], go: string, engines: Engine[], alive: () => boolean, found: (i: number, e: PositionEval) => void) {
+  let next = fens.length - 1
+  let failed = false
+  await Promise.all(
+    engines.map(async (engine) => {
+      while (!failed && alive()) {
+        const i = next--
+        if (i < 0) return
+        const e = await evaluate(fens[i], go, 2, engine)
+        if (!e) {
+          failed = true
+          return
+        }
+        found(i, e)
+      }
+    }),
+  )
+  return !failed && alive()
+}
+
 /**
  * Runs Stockfish over every position of the game and grades each move.
- * Returns null when cancelled through `alive`.
+ * With `preview`, a quick pass comes first and is shown at once; then every position is
+ * searched again at full depth and the review sharpens while the player already reads it.
+ * `onProgress` reports the first pass. Returns null when cancelled through `alive`.
  */
 export async function runReview(
   startFen: string,
@@ -174,41 +215,33 @@ export async function runReview(
   alive: () => boolean,
   go = REVIEW_GO,
   engines: Engine[] = getReviewPool(),
+  preview?: (review: Review, refined: number) => void,
 ): Promise<Review | null> {
   await loadOpenings()
   const fens = [startFen, ...plies.map((p) => p.fen)]
-  // every engine takes the next position nobody has started yet
-  const found: (PositionEval | undefined)[] = new Array(fens.length)
-  let next = 0
+  const evals: PositionEval[] = new Array(fens.length)
   let done = 0
-  let failed = false
-  await Promise.all(
-    engines.map(async (engine) => {
-      while (!failed && alive()) {
-        const i = next++
-        if (i >= fens.length) return
-        const e = await evaluate(fens[i], go, 2, engine)
-        if (!e) {
-          failed = true
-          return
-        }
-        found[i] = e
-        onProgress(++done, fens.length)
-      }
-    }),
-  )
-  if (failed || !alive()) return null
-  const evals = found as PositionEval[]
-
-  let book = true
-  const moves = plies.map((ply, i): MoveReview => {
-    book = book && isBook(ply.fen)
-    if (book) return { judgement: 'book', loss: lossOf(evals[i].win, evals[i + 1].win, turnOf(fens[i])) }
-    return classify(fens, plies, evals, i)
+  const first = await searchAll(fens, preview ? QUICK_GO : go, engines, alive, (i, e) => {
+    evals[i] = e
+    onProgress(++done, fens.length)
   })
+  if (!first) return null
+  if (!preview) return grade(startFen, plies, fens, evals)
 
-  const accuracy = gameAccuracy(evals, turnOf(startFen) === 'white')
-  return { ucis: plies.map((p) => p.uci), evals, moves, accuracy }
+  preview(grade(startFen, plies, fens, evals), 0)
+  let refined = 0
+  let shown = performance.now()
+  await searchAll(fens, go, engines, alive, (i, e) => {
+    evals[i] = e
+    refined++
+    // grade again about once a second: often enough to see it move, calm enough to read
+    if (performance.now() - shown > 1000) {
+      shown = performance.now()
+      preview(grade(startFen, plies, fens, evals), refined / fens.length)
+    }
+  })
+  // an engine that fails while sharpening leaves the quick values for the rest
+  return alive() ? grade(startFen, plies, fens, evals) : null
 }
 
 /** How many plies at the start of the game the review still describes (the line may have changed since). */

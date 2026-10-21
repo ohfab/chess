@@ -11,7 +11,7 @@ export default defineConfig({
     VitePWA({
       disable: !!process.env.NO_PWA,
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: false, // src/pwa.ts registers it and handles updates
       manifest: false, // public/manifest.webmanifest
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,mp3,webmanifest}'],
@@ -20,6 +20,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/legal\//],
+        // a new version takes over at once; src/pwa.ts then reloads into it
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],

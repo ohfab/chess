@@ -30,6 +30,14 @@ export function getReviewPool() {
   return pool
 }
 
+/** Stops a running game review on every engine of the pool. */
+export function cancelReviews() {
+  for (const engine of pool) engine.cancel()
+}
+
+/** Boots the review engines ahead of time, where a review is likely to follow. */
+export const warmReview = () => void getReviewPool()
+
 /** Starts the engines the board needs right away, so the first move or analysis does not wait. */
 export function warmUp() {
   getAnalyst()

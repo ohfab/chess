@@ -24,7 +24,7 @@ import {
 import { Board } from './board/Board'
 import { Promotion } from './board/Promotion'
 import { IDEAL, levelOf } from './engine/levels'
-import { formatScore, getOpponent, getReviewer, opponentMove, useAnalysis, whiteScore, whiteShare } from './engine/useEngine'
+import { cancelReviews, formatScore, getAnalyst, getOpponent, opponentMove, useAnalysis, warmReview, whiteScore, whiteShare } from './engine/useEngine'
 import { useOpening } from './game/openings'
 import {
   figurine,
@@ -129,6 +129,8 @@ export default function App() {
   const [resync, setResync] = useState(0)
   const [hintFen, setHintFen] = useState<string | null>(null)
   const [progress, setProgress] = useState<number | null>(null)
+  // after the quick first pass: how much of the game is searched again at full depth
+  const [refining, setRefining] = useState<number | null>(null)
   const [retry, setRetry] = useState<Retry | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [confirmResign, setConfirmResign] = useState(false)
@@ -162,7 +164,8 @@ export default function App() {
   const [endgame, setEndgame] = useState<Endgame | null>(null)
   const [guard, setGuard] = useState<{ fen: string; status: 'checking' | 'warn' | 'ok'; text?: string; san?: string } | null>(null)
   // archived games get reviewed in the background, except while a live game needs the CPU
-  useBackgroundReviews(view === 'board' && (mode === 'play' || mode === 'training') && !outcome)
+  // and while the player's own review runs, which wants every core
+  useBackgroundReviews((view === 'board' && (mode === 'play' || mode === 'training') && !outcome) || progress !== null || refining !== null)
 
   const reviewed = review ? reviewedPrefix(review, plies) : 0
   // the game itself, also while the board shows a side line
@@ -280,11 +283,18 @@ export default function App() {
     if (mode === 'play' && endgame) s.recordEndgame(endgame.id, outcome.kind === 'checkmate' && outcome.winner === s.playerColor)
     else if (mode === 'play') s.advanceTask(`game:${s.level}`)
     // let the final move land before the result appears
+    // a review often follows a finished game: have its engines ready
+    warmReview()
     const timer = setTimeout(() => setDialog('result'), 700)
     return () => clearTimeout(timer)
     // endgame is the trainer's position, set before the game started
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, mode])
+
+  // the analysis page leads to reviews: boot their engines while the player looks around
+  useEffect(() => {
+    if (view === 'analyse' || (view === 'board' && mode === 'analysis')) warmReview()
+  }, [view, mode])
 
   // ---------------------------------------------------------------- actions
 
@@ -309,7 +319,8 @@ export default function App() {
   const stopReview = () => {
     reviewRun.current++
     setProgress(null)
-    getReviewer().cancel()
+    setRefining(null)
+    cancelReviews()
   }
 
   const resetBoardState = () => {
@@ -424,18 +435,36 @@ export default function App() {
     setHintFen(null)
     s.analyse()
     setProgress(0)
+    setRefining(null)
+    // the review belongs to this game: opening another one ends it
+    const key = s.gameKey
+    const alive = () => run === reviewRun.current && useGame.getState().gameKey === key
     void runReview(
       s.startFen,
       s.plies,
-      (done, total) => run === reviewRun.current && setProgress(done / total),
-      () => run === reviewRun.current,
+      (done, total) => alive() && setProgress(done / total),
+      alive,
+      undefined,
+      undefined,
+      // the quick pass opens the review; the full-depth pass then sharpens it in place
+      (preview, refined) => {
+        if (!alive()) return
+        const st = useGame.getState()
+        st.setReview(preview)
+        if (refined === 0) {
+          setProgress(null)
+          st.goTo(0)
+        }
+        setRefining(refined)
+      },
     ).then((result) => {
       if (run !== reviewRun.current) return
       setProgress(null)
+      setRefining(null)
+      if (useGame.getState().gameKey !== key) return
       if (!result) return flash(t('Auswertung abgebrochen'))
       const st = useGame.getState()
       st.setReview(result)
-      st.goTo(0)
       // the archived copy gets the review too, so the coach can learn from it
       const archived = st.history.find((x) => x.key === st.gameKey)
       if (archived && archived.ucis.join() === result.ucis.join()) st.attachReview(st.gameKey, packReview(result))
@@ -548,7 +577,7 @@ export default function App() {
     if (ply.uci === plies[r.ply].uci) return setRetry({ ...r, shown, status: 'wrong', note: t('Das war der Partiezug. Such einen besseren!') })
     setRetry({ ...r, shown, status: 'checking' })
     const before = review.evals[r.ply].win
-    void evaluate(ply.fen).then((e) =>
+    void evaluate(ply.fen, undefined, 1, getAnalyst()).then((e) =>
       setRetry((cur) => {
         if (!cur || cur.ply !== r.ply || cur.shown?.fen !== ply.fen) return cur
         if (e && lossOf(before, e.win, turnOf(r.fen)) < 0.02) return { ...cur, status: 'right', note: t('{san} ist auch stark.', { san: figurine(ply.san) }) }
@@ -1331,7 +1360,15 @@ export default function App() {
               <ArrowUpDown size={18} />
             </button>
           </div>
-          <div className="coach-slot">{coach}</div>
+          <div className="coach-slot">
+            {coach}
+            {refining !== null && reviewing && (
+              <div className="refining" title={t('Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern')}>
+                <span className="refining-bar" style={{ width: `${Math.round(refining * 100)}%` }} />
+                <span>{t('Feinschliff {n} %', { n: Math.round(refining * 100) })}</span>
+              </div>
+            )}
+          </div>
 
           {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={gameReviewed} startFen={startFen} moves={gameLine} onJump={nav} />}
           {reviewing && progress === null && <EvalGraph review={review} cursor={Math.min(cursor, reviewed)} onJump={nav} />}
