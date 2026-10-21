@@ -15,10 +15,10 @@ const ITEMS: { id: Tab; label: string; icon: LucideIcon }[] = [
 export function Nav({ tab, onNavigate, onSettings }: { tab: Tab; onNavigate: (tab: Tab) => void; onSettings: () => void }) {
   return (
     <nav className="nav" aria-label="Hauptmenü">
-      <div className="nav-brand">
+      <button className="nav-brand" onClick={() => onNavigate('today')} aria-label="Knightly, zur Startseite">
         <Piece role="knight" color="white" className="brand-mark" />
         <span className="brand-name">Knightly</span>
-      </div>
+      </button>
       <div className="nav-items">
         {ITEMS.map(({ id, label, icon: Icon }) => (
           <button key={id} className={`nav-item ${tab === id ? 'on' : ''}`} onClick={() => onNavigate(id)} aria-current={tab === id ? 'page' : undefined}>

@@ -8,10 +8,12 @@ import {
   ChevronRight,
   Flag,
   Lightbulb,
+  LayoutGrid,
   ListTree,
   RotateCcw,
   Settings as SettingsIcon,
   Share2,
+  ShieldCheck,
   Star,
   Undo2,
   Upload,
@@ -33,6 +35,7 @@ import {
   play,
   pvToSan,
   sanToUci,
+  START_FEN,
   toPgn,
   toUci,
   turnOf,
@@ -53,13 +56,17 @@ import { useTrainer } from './trainer/useTrainer'
 import { TodayPage } from './coach/TodayPage'
 import type { Insights } from './coach/insights'
 import type { PlanTask } from './coach/plan'
-import { packReview, unpackReview, type SavedGame } from './history/archive'
-import { pliesOf } from './history/reviews'
+import { packReview, type SavedGame } from './history/archive'
 import { DrillPlayer, type DrillItem, type DrillResult } from './puzzles/DrillPlayer'
-import { pickPuzzles, rate } from './puzzles/puzzles'
+import { pickPuzzles, puzzlesById, rate, woodpeckerSet, type Puzzle } from './puzzles/puzzles'
+import type { Endgame } from './puzzles/endgames'
 import { themeName } from './puzzles/themes'
 import { Coach } from './ui/Coach'
 import { ImportDialog, ResultDialog, ShareDialog } from './ui/Dialogs'
+import { AnalysePage } from './import/AnalysePage'
+import { remoteKey, type RemoteGame } from './import/remote'
+import { BoardEditor } from './editor/BoardEditor'
+import { useBackgroundReviews } from './history/reviews'
 import { Nav, type Tab } from './ui/Nav'
 import { PlayPage } from './play/PlayPage'
 import { TacticsPage } from './puzzles/TacticsPage'
@@ -85,7 +92,7 @@ interface Retry {
   note?: string
 }
 
-type View = 'today' | 'play' | 'tactics' | 'board' | 'openings' | 'setup' | 'drill'
+type View = 'today' | 'play' | 'tactics' | 'analyse' | 'editor' | 'board' | 'openings' | 'setup' | 'drill'
 
 /** Feedback on the player's last move in an opening drill. */
 interface TrainerNote {
@@ -124,8 +131,15 @@ export default function App() {
   const [trainerHint, setTrainerHint] = useState<string | null>(null)
   const reviewRun = useRef(0)
   const trainer = useTrainer()
+  // a game from the endgame trainer, and the blunder guard's verdict on the player's last move
+  const [endgame, setEndgame] = useState<Endgame | null>(null)
+  const [guard, setGuard] = useState<{ fen: string; status: 'checking' | 'warn' | 'ok'; text?: string; san?: string } | null>(null)
+  // archived games get reviewed in the background, except while a live game needs the CPU
+  useBackgroundReviews(view === 'board' && (mode === 'play' || mode === 'training') && !outcome)
 
   const reviewed = review ? reviewedPrefix(review, plies) : 0
+  // a game from chess.com or Lichess on the board: its players' names and ratings
+  const imported = mode === 'analysis' ? g.history.find((x) => x.key === g.gameKey && x.mode === 'import')?.source : undefined
   const reviewing = mode === 'analysis' && review !== null && reviewed > 0
   const moveReview = reviewing && cursor > 0 && cursor <= reviewed ? review.moves[cursor - 1] : null
   const named = useOpening(startFen, plies, cursor)
@@ -138,8 +152,35 @@ export default function App() {
   // in a drill the opponent plays theory while there is some, then Stockfish at the chosen strength
   const bookStep = trainer.step
   const bookLoading = trainer.loading
+
+  // blunder guard: before Stockfish answers, check the player's move and warn if it throws the game
+  const guardOn = settings.blunderGuard && mode === 'play' && vsEngine && plies.length > 0
+  const guardWait = guardOn && thinking && (guard?.fen !== liveFen || guard.status !== 'ok')
   useEffect(() => {
-    if (!thinking || bookLoading) return
+    if (!guardOn || !thinking) return
+    if (guard?.fen === liveFen) return
+    const s = useGame.getState()
+    const before = fenAt(s, s.plies.length - 1)
+    const ply = s.plies[s.plies.length - 1]
+    let live = true
+    setGuard({ fen: liveFen, status: 'checking' })
+    void (async () => {
+      const a = await evaluate(before, 'depth 12 movetime 400')
+      const b = a && live ? await evaluate(liveFen, 'depth 12 movetime 400') : null
+      if (!live) return
+      if (!a || !b || lossOf(a.win, b.win, s.playerColor) < 0.15) return setGuard({ fen: liveFen, status: 'ok' })
+      const why = explain('blunder', before, liveFen, ply.uci, a, b)?.replace(/\s*Besser war.*$/, '')
+      setGuard({ fen: liveFen, status: 'warn', san: ply.san, text: why || 'Damit verschenkst du viel.' })
+    })()
+    return () => {
+      live = false
+    }
+    // runs once per position; the guard state it writes is not a reason to run again
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [guardOn, thinking, liveFen])
+
+  useEffect(() => {
+    if (!thinking || bookLoading || guardWait) return
     const id = useGame.getState().gameId
     let live = true
     const san = bookStep ? pickBookMove(bookStep, level === IDEAL) : null
@@ -154,7 +195,7 @@ export default function App() {
       live = false
       getOpponent().cancel()
     }
-  }, [thinking, liveFen, level, g.gameId, bookStep, bookLoading])
+  }, [thinking, liveFen, level, g.gameId, bookStep, bookLoading, guardWait])
 
   // ---------------------------------------------------------------- live engine
 
@@ -205,10 +246,13 @@ export default function App() {
     if (!outcome || was || mode === 'analysis') return
     const s = useGame.getState()
     s.archive()
-    if (mode === 'play') s.advanceTask(`game:${s.level}`)
+    if (mode === 'play' && endgame) s.recordEndgame(endgame.id, outcome.kind === 'checkmate' && outcome.winner === s.playerColor)
+    else if (mode === 'play') s.advanceTask(`game:${s.level}`)
     // let the final move land before the result appears
     const t = setTimeout(() => setDialog('result'), 700)
     return () => clearTimeout(t)
+    // endgame is the trainer's position, set before the game started
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, mode])
 
   // ---------------------------------------------------------------- actions
@@ -241,10 +285,17 @@ export default function App() {
     setView('board')
   }
 
-  const startGame = (opts: { mode: Mode; playerColor: Color; level: number }) => {
+  const startGame = (opts: { mode: Mode; playerColor: Color; level: number; startFen?: string }) => {
     resetBoardState()
     getOpponent().newGame()
+    setEndgame(null)
+    setGuard(null)
     g.newGame(opts)
+  }
+
+  const startEndgame = (e: Endgame) => {
+    startGame({ mode: 'play', playerColor: e.color, level: IDEAL, startFen: e.fen })
+    setEndgame(e)
   }
 
   const loadGame = (start: string, list: Ply[]) => {
@@ -338,7 +389,8 @@ export default function App() {
       st.setReview(result)
       st.goTo(0)
       // the archived copy gets the review too, so the coach can learn from it
-      if (st.history.some((x) => x.key === st.gameKey)) st.attachReview(st.gameKey, packReview(result))
+      const archived = st.history.find((x) => x.key === st.gameKey)
+      if (archived && archived.ucis.join() === result.ucis.join()) st.attachReview(st.gameKey, packReview(result))
     })
   }
 
@@ -374,22 +426,60 @@ export default function App() {
     }
   }
 
-  const drillResult = (taskId: string | undefined, { item, solved }: DrillResult) => {
+  const startWoodpecker = async (fresh: boolean) => {
     const s = useGame.getState()
+    if (fresh || !s.woodpecker) s.startWoodpecker((await woodpeckerSet(s.puzzleRating)).map((p) => p.id))
+    const w = useGame.getState().woodpecker!
+    const items: DrillItem[] = (await puzzlesById(w.ids.slice(w.index))).map((puzzle) => ({ kind: 'puzzle', puzzle }))
+    if (!items.length) return flash('Das Set ist leer')
+    setDrill({ title: `Woodpecker · Runde ${w.cycle}`, items, taskId: 'woodpecker', from: 'tactics' })
+    setView('drill')
+  }
+
+  const startDailyPuzzle = (puzzle: Puzzle) => {
+    setDrill({ title: 'Tagesaufgabe', items: [{ kind: 'puzzle', puzzle }], taskId: 'daily-puzzle', from: 'today' })
+    setView('drill')
+  }
+
+  const drillResult = (taskId: string | undefined, { item, solved, ms }: DrillResult) => {
+    const s = useGame.getState()
+    // a Woodpecker set comes back again and again: counting it would inflate the rating
+    if (taskId === 'woodpecker') return s.woodpeckerResult(solved, ms)
+    if (taskId === 'daily-puzzle') s.setDailyPuzzle(solved)
     if (item.kind === 'puzzle') {
       const { puzzle } = item
       s.recordPuzzle(puzzle.id, puzzle.rating, puzzle.themes, solved, rate(s.puzzleRating, puzzle.rating, solved))
     } else s.recordMistake(item.key, solved)
-    if (taskId) s.advanceTask(taskId)
+    if (taskId && taskId !== 'daily-puzzle') s.advanceTask(taskId)
   }
 
   const openArchived = (game: SavedGame) => {
-    loadGame(game.startFen, pliesOf(game))
-    const review = unpackReview(game)
-    if (review) {
-      useGame.getState().setReview(review)
-      useGame.getState().goTo(0)
-    }
+    resetBoardState()
+    g.openSaved(game)
+  }
+
+  // ---------------------------------------------------------------- imported games
+
+  const analyseRemote = (remote: RemoteGame) => {
+    const saved = useGame.getState().importGame(remote)
+    if (!saved) return flash('Diese Partie lässt sich nicht laden')
+    openArchived(saved)
+    if (!saved.review) startReview()
+  }
+
+  /** Files games in the archive without opening them; the background reviewer takes them from there. */
+  const queueRemote = (games: RemoteGame[]) => {
+    const s = useGame.getState()
+    const known = new Set(s.history.map((x) => x.key))
+    let added = 0
+    for (const remote of games) if (!known.has(remoteKey(remote)) && s.importGame(remote)) added++
+    return added
+  }
+
+  const [editorFen, setEditorFen] = useState(START_FEN)
+  const openEditor = (fen: string) => {
+    setEditorFen(fen)
+    setView('editor')
   }
 
   const commit = (uci: string) => {
@@ -624,6 +714,25 @@ export default function App() {
     )
   } else if (trainer.active && training && trainer.drill && trainer.variation) {
     coach = trainingCoach()
+  } else if (mode === 'play' && guard && guard.fen === liveFen && guard.status === 'warn' && !outcome) {
+    coach = (
+      <Coach
+        judgement="blunder"
+        title="Vorsicht!"
+        actions={
+          <>
+            <button className="btn-primary small" onClick={() => (g.takeback(), setGuard(null))}>
+              <Undo2 size={15} /> Zurücknehmen
+            </button>
+            <button className="btn-secondary small" onClick={() => setGuard({ ...guard, status: 'ok' })}>
+              Trotzdem spielen
+            </button>
+          </>
+        }
+      >
+        {guard.san && <b className="coach-san">{figurine(guard.san)}</b>} {guard.text}
+      </Coach>
+    )
   } else if (mode === 'play') {
     const title = outcome
       ? outcome.kind === 'draw'
@@ -632,11 +741,25 @@ export default function App() {
           ? 'Du hast gewonnen!'
           : 'Stockfish gewinnt'
       : thinking
-        ? 'Stockfish denkt …'
+        ? guardWait
+          ? 'Patzer-Schutz prüft deinen Zug …'
+          : 'Stockfish denkt …'
         : turn === playerColor
           ? 'Du bist am Zug'
           : 'Stockfish ist am Zug'
-    coach = <Coach title={title}>{named ? `${named.eco} · ${named.name}` : `${levelOf(level).label} · ${levelOf(level).name}`}</Coach>
+    coach = (
+      <Coach title={title}>
+        {endgame ? (
+          <>
+            <b>{endgame.goal}</b> {plies.length < 4 && endgame.tip}
+          </>
+        ) : named ? (
+          `${named.eco} · ${named.name}`
+        ) : (
+          `${levelOf(level).label} · ${levelOf(level).name}`
+        )}
+      </Coach>
+    )
   } else {
     coach = <Coach title="Analysebrett">{named ? `${named.eco} · ${named.name}` : 'Zieh frei für beide Seiten. Stockfish rechnet mit.'}</Coach>
   }
@@ -729,6 +852,23 @@ export default function App() {
   const topColor = opposite(orientation)
   const strip = (color: Color) => {
     const engine = vsEngine && color !== playerColor
+    if (imported) {
+      const name = color === 'white' ? imported.white : imported.black
+      const elo = color === 'white' ? imported.whiteElo : imported.blackElo
+      return (
+        <PlayerStrip
+          color={color}
+          bot={false}
+          name={name}
+          detail={elo ? String(elo) : undefined}
+          startFen={startFen}
+          fen={boardFen}
+          thinking={false}
+          active={!outcome && turnOf(boardFen) === color}
+          accuracy={reviewing && progress === null ? review.accuracy[color] : undefined}
+        />
+      )
+    }
     return (
       <PlayerStrip
         color={color}
@@ -778,7 +918,8 @@ export default function App() {
           on={hintOn}
         />
         {evalTool}
-        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
+        <Tool label="Schutz" icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
+        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
         <Tool label={confirmResign ? 'Sicher?' : 'Aufgeben'} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
       </>
     )
@@ -833,6 +974,7 @@ export default function App() {
         <Tool label="Engine" icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
         <Tool label="Auswerten" icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
         <Tool label="Laden" icon={<Upload size={20} />} onClick={() => setDialog('import')} />
+        <Tool label="Stellung" icon={<LayoutGrid size={20} />} onClick={() => openEditor(fen)} />
         <Tool label="Teilen" icon={<Share2 size={20} />} onClick={openShare} />
       </>
     )
@@ -849,22 +991,45 @@ export default function App() {
           : mode
         : view === 'setup'
           ? 'openings'
-          : (view as Tab)
+          : view === 'analyse' || view === 'editor'
+            ? 'analysis'
+            : (view as Tab)
   const goAnalysis = () => {
     if (mode !== 'analysis') g.analyse()
     setView('board')
   }
-  const navigate = (t: Tab) => {
-    if (t === 'analysis') goAnalysis()
-    else setView(t)
-  }
+  const navigate = (t: Tab) => setView(t === 'analysis' ? 'analyse' : t)
   const setupOpening = setupId ? openingById(setupId) : undefined
   const running = mode === 'play' && plies.length > 0 && !outcome
   const boardTitle =
-    mode === 'play' ? `Gegen Stockfish ${levelOf(level).label}` : mode === 'training' ? (trainer.drill?.name ?? 'Eröffnungstraining') : reviewing ? 'Partie-Auswertung' : 'Analyse'
+    mode === 'play'
+      ? endgame
+        ? `Endspiel: ${endgame.name}`
+        : `Gegen Stockfish ${levelOf(level).label}`
+      : mode === 'training'
+        ? (trainer.drill?.name ?? 'Eröffnungstraining')
+        : imported
+          ? `${imported.white} – ${imported.black}`
+          : reviewing
+            ? 'Partie-Auswertung'
+            : 'Analyse'
   // phones: the board views get a back button instead of the tab bar
-  const back = view === 'board' ? (mode === 'training' ? 'openings' : mode === 'play' ? 'play' : 'today') : view === 'drill' ? (drill?.from ?? 'today') : view === 'setup' ? 'openings' : null
-  const headTitle = view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : null
+  const back: View | null =
+    view === 'board'
+      ? mode === 'training'
+        ? 'openings'
+        : mode === 'play'
+          ? 'play'
+          : 'analyse'
+      : view === 'drill'
+        ? (drill?.from ?? 'today')
+        : view === 'setup'
+          ? 'openings'
+          : view === 'editor'
+            ? 'analyse'
+            : null
+  const headTitle =
+    view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : view === 'editor' ? 'Brett-Editor' : null
 
   return (
     <div className={`app view-${view}`}>
@@ -876,10 +1041,10 @@ export default function App() {
             <ChevronLeft size={24} />
           </button>
         ) : (
-          <div className="brand">
+          <button className="brand" onClick={() => setView('today')} aria-label="Knightly, zur Startseite">
             <Piece role="knight" color="white" className="brand-mark" />
             <span className="brand-name">Knightly</span>
-          </div>
+          </button>
         )}
         {headTitle && <b className="mobile-title">{headTitle}</b>}
         <div className="topbar-actions">
@@ -905,14 +1070,39 @@ export default function App() {
           />
         </main>
       )}
+      {view === 'analyse' && (
+        <main className="page">
+          <AnalysePage
+            onAnalyse={analyseRemote}
+            onQueue={queueRemote}
+            onBoard={() => (mode === 'analysis' ? setView('board') : loadGame(START_FEN, []))}
+            onEditor={() => openEditor(mode === 'analysis' ? fen : START_FEN)}
+            onPaste={() => setDialog('import')}
+          />
+        </main>
+      )}
+      {view === 'editor' && (
+        <BoardEditor
+          key={editorFen}
+          fen={editorFen}
+          coordinates={settings.coordinates}
+          onAnalyse={(f) => loadGame(f, [])}
+          onPlay={(f, color) => startGame({ mode: 'play', playerColor: color, level, startFen: f })}
+        />
+      )}
       {view === 'tactics' && (
         <main className="page">
-          <TacticsPage onPuzzles={(theme) => void startPuzzles(theme, 5, 'tactics')} onMistakes={(ins) => startMistakes(ins, 5, 'tactics')} />
+          <TacticsPage
+            onPuzzles={(theme) => void startPuzzles(theme, 5, 'tactics')}
+            onMistakes={(ins) => startMistakes(ins, 5, 'tactics')}
+            onWoodpecker={(fresh) => void startWoodpecker(fresh)}
+            onEndgame={startEndgame}
+          />
         </main>
       )}
       {view === 'today' && (
         <main className="page">
-          <TodayPage onStart={(t, ins) => void startTask(t, ins)} onOpenGame={openArchived} />
+          <TodayPage onStart={(t, ins) => void startTask(t, ins)} onOpenGame={openArchived} onDailyPuzzle={startDailyPuzzle} />
         </main>
       )}
       {view === 'drill' && drill && (
@@ -986,7 +1176,7 @@ export default function App() {
           </div>
           <div className="coach-slot">{coach}</div>
 
-          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} />}
+          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} sans={plies.map((p) => p.san)} onJump={nav} />}
           {reviewing && progress === null && <EvalGraph review={review} cursor={Math.min(cursor, reviewed)} onJump={nav} />}
 
           {showLines && (
@@ -1013,8 +1203,10 @@ export default function App() {
           opponentLevel={vsEngine && mode === 'play' ? level : undefined}
           onReview={startReview}
           onNew={openNew}
-          rematchLabel={mode === 'training' ? 'Nochmal' : 'Revanche'}
-          onRematch={() => (mode === 'training' ? restartTraining() : startGame({ mode: 'play', playerColor: opposite(playerColor), level }))}
+          rematchLabel={mode === 'training' || endgame ? 'Nochmal' : 'Revanche'}
+          onRematch={() =>
+            mode === 'training' ? restartTraining() : endgame ? startEndgame(endgame) : startGame({ mode: 'play', playerColor: opposite(playerColor), level })
+          }
           onClose={() => setDialog(null)}
         />
       )}
@@ -1033,13 +1225,36 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
 }
 
 /** Accuracy and move-quality counts per side, as on chess.com's review summary. */
-function Summary({ review, plies, startFen }: { review: Review; plies: number; startFen: string }) {
+function Summary({
+  review,
+  plies,
+  startFen,
+  sans,
+  onJump,
+}: {
+  review: Review
+  plies: number
+  startFen: string
+  sans: string[]
+  onJump: (ply: number) => void
+}) {
   const firstWhite = turnOf(startFen) === 'white'
+  const sideOf = (i: number): Color => ((i % 2 === 0) === firstWhite ? 'white' : 'black')
   const counts: Record<Color, Record<string, number>> = { white: {}, black: {} }
   review.moves.slice(0, plies).forEach((m, i) => {
-    const c = counts[(i % 2 === 0) === firstWhite ? 'white' : 'black']
+    const c = counts[sideOf(i)]
     c[m.judgement] = (c[m.judgement] ?? 0) + 1
   })
+  // key moments, as chessigma shows them: each side's finest move and its costliest one
+  const moments = (['white', 'black'] as const).map((color) => {
+    const own = review.moves.slice(0, plies).map((m, i) => ({ m, i })).filter(({ i }) => sideOf(i) === color)
+    const rank = (j: string) => ['brilliant', 'great'].indexOf(j)
+    const best = own.filter(({ m }) => rank(m.judgement) >= 0).sort((a, b) => rank(a.m.judgement) - rank(b.m.judgement))[0]
+    const worst = own.filter(({ m }) => isError(m.judgement)).sort((a, b) => b.m.loss - a.m.loss)[0]
+    return { color, best, worst }
+  })
+  const moveLabel = (i: number) => `${Math.floor((i + (firstWhite ? 0 : 1)) / 2) + 1}${sideOf(i) === 'white' ? '.' : '…'} ${figurine(sans[i] ?? '')}`
+  const hasMoments = moments.some((x) => x.best || x.worst)
   return (
     <div className="summary">
       <div className="summary-row head">
@@ -1062,6 +1277,27 @@ function Summary({ review, plies, startFen }: { review: Review; plies: number; s
           <b style={{ color: JUDGEMENT[j].color }}>{counts.black[j] ?? 0}</b>
         </div>
       ))}
+      {hasMoments && (
+        <div className="moments">
+          <span className="moments-title">Schlüsselmomente</span>
+          {moments.map(({ color, best, worst }) => (
+            <div key={color} className="moments-row">
+              <span className="muted">{color === 'white' ? 'Weiß' : 'Schwarz'}</span>
+              {best && (
+                <button className="moment" onClick={() => onJump(best.i + 1)}>
+                  <Badge judgement={best.m.judgement} size={16} /> {moveLabel(best.i)}
+                </button>
+              )}
+              {worst && (
+                <button className="moment" onClick={() => onJump(worst.i + 1)}>
+                  <Badge judgement={worst.m.judgement} size={16} /> {moveLabel(worst.i)}
+                </button>
+              )}
+              {!best && !worst && <span className="muted small">ohne große Fehler</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

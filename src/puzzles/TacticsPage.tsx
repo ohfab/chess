@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowRightLeft,
+  Check,
   Castle,
   Crown,
   Crosshair,
@@ -12,6 +13,7 @@ import {
   Magnet,
   Moon,
   Puzzle,
+  Repeat,
   RotateCcw,
   Shield,
   Shuffle,
@@ -28,6 +30,8 @@ import { useInsights } from '../coach/useInsights'
 import { useGame } from '../game/store'
 import { loadPuzzles } from './puzzles'
 import { THEME_NAMES } from './themes'
+import { ENDGAMES, type Endgame } from './endgames'
+import { MiniBoard } from '../trainer/MiniBoard'
 
 const THEME_ICON: Record<string, LucideIcon> = {
   hangingPiece: Hand,
@@ -55,12 +59,21 @@ const THEME_ICON: Record<string, LucideIcon> = {
 interface Props {
   onPuzzles: (theme?: string) => void
   onMistakes: (insights: Insights) => void
+  /** fresh: throw the current set away and draw a new one */
+  onWoodpecker: (fresh: boolean) => void
+  onEndgame: (endgame: Endgame) => void
+}
+
+const time = (ms: number) => {
+  const s = Math.round(ms / 1000)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 /** Tactics hub: a mix at the player's rating, their own mistakes, or one motif at a time. */
-export function TacticsPage({ onPuzzles, onMistakes }: Props) {
+export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: Props) {
   const insights = useInsights()
-  const { puzzleRating, themeStats, seenPuzzles, solvedMistakes } = useGame()
+  const { puzzleRating, themeStats, seenPuzzles, solvedMistakes, woodpecker, endgames } = useGame()
+  const lastCycle = woodpecker?.cycles[woodpecker.cycles.length - 1]
   const [counts, setCounts] = useState<Record<string, number>>({})
   useEffect(() => {
     void loadPuzzles().then((all) => {
@@ -111,6 +124,64 @@ export function TacticsPage({ onPuzzles, onMistakes }: Props) {
             {open ? `${open} offen` : insights.reviewed ? 'Alles gelöst' : 'Spiel eine Partie, dann erscheinen sie hier'}
           </span>
         </button>
+        <div className="hero-card woodpecker">
+          <button className="hero-main" onClick={() => onWoodpecker(!woodpecker)}>
+            <span className="hero-icon">
+              <Repeat size={26} />
+            </span>
+            <span className="hero-text">
+              <b>Woodpecker</b>
+              <span>Dieselben 20 Aufgaben immer wieder, bis die Muster sitzen</span>
+            </span>
+          </button>
+          <span className="hero-meta">
+            {woodpecker
+              ? `Runde ${woodpecker.cycle} · ${woodpecker.index} von ${woodpecker.ids.length}${lastCycle ? ` · zuletzt ${lastCycle.solved}/${lastCycle.total} in ${time(lastCycle.ms)}` : ''}`
+              : 'Neues Set starten'}
+            {woodpecker && (
+              <button className="hero-link" onClick={() => onWoodpecker(true)}>
+                Neues Set
+              </button>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {woodpecker && woodpecker.cycles.length > 0 && (
+        <div className="cycles" aria-label="Woodpecker-Runden">
+          {woodpecker.cycles.map((c) => (
+            <span key={c.cycle} className="cycle">
+              <b>Runde {c.cycle}</b>
+              <span>
+                {c.solved}/{c.total}
+              </span>
+              <span className="muted">{time(c.ms)}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="section-head">
+        <h3>Endspiele</h3>
+        <span className="muted">gegen Stockfish in voller Stärke</span>
+      </div>
+      <div className="endgames">
+        {ENDGAMES.map((e) => {
+          const st = endgames[e.id]
+          return (
+            <button key={e.id} className={`endgame-card ${st?.wins ? 'won' : ''}`} onClick={() => onEndgame(e)}>
+              <span className="endgame-board">
+                <MiniBoard fen={e.fen} orientation={e.color} />
+              </span>
+              <span className="theme-text">
+                <b>
+                  {e.name} {st?.wins ? <Check size={15} className="inline" /> : null}
+                </b>
+                <span className="muted">{st?.tries ? `${st.wins} von ${st.tries} gewonnen` : e.goal}</span>
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       <div className="section-head">

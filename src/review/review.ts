@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js'
-import type { Score } from '../engine/engine'
+import type { Engine, Score } from '../engine/engine'
 import { getReviewer, whiteScore, whiteShare } from '../engine/useEngine'
 import { isBook, loadOpenings } from '../game/openings'
 import { turnOf, type Color, type Ply } from '../game/rules'
@@ -56,12 +56,12 @@ const moveAccuracy = (loss: number) => Math.min(100, Math.max(0, 103.1668 * Math
  * Evaluates one position from White's view, without the engine when the game is over there.
  * With `lines` 2 it also reports how good the second-best move is.
  */
-export async function evaluate(fen: string, go = REVIEW_GO, lines = 1): Promise<PositionEval | null> {
+export async function evaluate(fen: string, go = REVIEW_GO, lines = 1, engine: Engine = getReviewer()): Promise<PositionEval | null> {
   const chess = new Chess(fen)
   if (chess.isCheckmate()) return { win: turnOf(fen) === 'white' ? 0 : 1, score: null, best: null }
   if (chess.isDraw()) return { win: 0.5, score: null, best: null }
   const last: { lines?: { score: Score; pv: string[] }[] } = {}
-  const best = await getReviewer().search({
+  const best = await engine.search({
     fen,
     go,
     options: { MultiPV: lines },
@@ -173,13 +173,14 @@ export async function runReview(
   onProgress: (done: number, total: number) => void,
   alive: () => boolean,
   go = REVIEW_GO,
+  engine: Engine = getReviewer(),
 ): Promise<Review | null> {
   await loadOpenings()
   const fens = [startFen, ...plies.map((p) => p.fen)]
   const evals: PositionEval[] = []
   for (const fen of fens) {
     if (!alive()) return null
-    const e = await evaluate(fen, go, 2)
+    const e = await evaluate(fen, go, 2, engine)
     if (!e || !alive()) return null
     evals.push(e)
     onProgress(evals.length, fens.length)

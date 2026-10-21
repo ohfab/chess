@@ -6,12 +6,15 @@ import { turnOf } from '../game/rules'
 let opponent: Engine | null = null
 let analyst: Engine | null = null
 let reviewer: Engine | null = null
+let background: Engine | null = null
 
 // Separate workers, created on first use: the opponent's weakened settings never
 // leak into analysis, and a running game review never fights the live eval.
 export const getOpponent = () => (opponent ??= new Engine())
 export const getAnalyst = () => (analyst ??= new Engine())
 export const getReviewer = () => (reviewer ??= new Engine())
+// archived games are reviewed on their own worker, so a review the player started never waits
+export const getBackground = () => (background ??= new Engine())
 
 /** Score from White's point of view. */
 export function whiteScore(score: Score, fen: string): Score {

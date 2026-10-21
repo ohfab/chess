@@ -19,6 +19,8 @@ export interface DrillResult {
   item: DrillItem
   /** found without a wrong move or the solution */
   solved: boolean
+  /** time from the first chance to move until done */
+  ms: number
 }
 
 interface Props {
@@ -51,6 +53,10 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
   const [resync, setResync] = useState(0)
   const [note, setNote] = useState<string | null>(null)
   const turnFen = useRef(start)
+  const startedAt = useRef(0)
+  useEffect(() => {
+    if (status === 'turn' && !startedAt.current) startedAt.current = performance.now()
+  }, [status])
 
   const expected = item.kind === 'puzzle' ? item.puzzle.moves[step] : item.best
 
@@ -72,6 +78,7 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
     setStep(0)
     setFailed(false)
     setNote(null)
+    startedAt.current = 0
     if (item.kind === 'mistake') {
       setStatus('turn')
       return
@@ -88,7 +95,7 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
   }, [index])
 
   const finish = (solved: boolean) => {
-    const result = { item, solved }
+    const result = { item, solved, ms: startedAt.current ? Math.round(performance.now() - startedAt.current) : 0 }
     setResults((r) => [...r, result])
     onResult(result)
   }

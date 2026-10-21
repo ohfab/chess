@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { opposite, outcomeOf, play, START_FEN, turnOf, type Color, type Outcome, type Ply } from './rules'
+import { loadPgn, opposite, outcomeOf, play, START_FEN, turnOf, type Color, type Outcome, type Ply } from './rules'
 import type { Review } from '../review/review'
-import { MAX_GAMES, scoreFor, type SavedGame, type SavedReview } from '../history/archive'
+import { MAX_GAMES, pliesOf, scoreFor, unpackReview, type SavedGame, type SavedReview } from '../history/archive'
+import { remoteKey, type RemoteGame, type Site } from '../import/remote'
 import { today, type DailyPlan } from '../coach/plan'
 
 export type Mode = 'play' | 'analysis' | 'training'
@@ -43,6 +44,19 @@ export interface Settings {
   board: string
   pieces: string
   soundSet: string
+  /** in games against Stockfish: stop and warn before a move that throws the game away */
+  blunderGuard: boolean
+}
+
+/** Woodpecker method: the same set of puzzles, solved again and again, faster each cycle. */
+export interface Woodpecker {
+  ids: string[]
+  cycle: number
+  /** position in the current cycle */
+  index: number
+  solved: number
+  ms: number
+  cycles: { cycle: number; solved: number; total: number; ms: number }[]
 }
 
 interface GameState {
@@ -77,6 +91,12 @@ interface GameState {
   seenPuzzles: string[]
   solvedMistakes: string[]
   themeStats: Record<string, { tries: number; solved: number }>
+  /** chess.com and Lichess accounts searched before, latest first */
+  accounts: { site: Site; name: string }[]
+  dailyPuzzle: { date: string; solved: boolean } | null
+  woodpecker: Woodpecker | null
+  /** endgame trainer: attempts and wins per position */
+  endgames: Record<string, { tries: number; wins: number }>
 
   newGame: (opts: { mode: Mode; playerColor: Color; level: number; startFen?: string }) => void
   load: (startFen: string, plies: Ply[]) => void
@@ -101,6 +121,16 @@ interface GameState {
   advanceTask: (id: string, by?: number) => void
   recordPuzzle: (id: string, rating: number, themes: string[], solved: boolean, newRating: number) => void
   recordMistake: (key: string, solved: boolean) => void
+  rememberAccount: (site: Site, name: string) => void
+  forgetAccount: (site: Site, name: string) => void
+  /** files a game from chess.com or Lichess in the archive; null if its PGN does not load */
+  importGame: (game: RemoteGame) => SavedGame | null
+  /** puts an archived game on the analysis board, with its review if it has one */
+  openSaved: (game: SavedGame) => void
+  setDailyPuzzle: (solved: boolean) => void
+  startWoodpecker: (ids: string[]) => void
+  woodpeckerResult: (solved: boolean, ms: number) => void
+  recordEndgame: (id: string, won: boolean) => void
 }
 
 const yesterday = () => {
@@ -114,6 +144,8 @@ const newKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 /** The history with the current game filed, when it is a game worth keeping. */
 function filed(s: GameState): SavedGame[] {
   if (s.mode === 'analysis') return s.history
+  // positions from the editor or the endgame trainer are exercises, not games to learn from
+  if (s.startFen !== START_FEN) return s.history
   const own = s.plies.filter((_, i) => turnOf(i === 0 ? s.startFen : s.plies[i - 1].fen) === s.playerColor).length
   if (own < (s.outcome ? 1 : 4)) return s.history
   const previous = s.history.find((g) => g.key === s.gameKey)
@@ -190,6 +222,7 @@ export const useGame = create<GameState>()(
         board: 'green',
         pieces: 'cburnett',
         soundSet: 'standard',
+        blunderGuard: false,
       },
       review: null,
       training: null,
@@ -202,6 +235,10 @@ export const useGame = create<GameState>()(
       seenPuzzles: [],
       solvedMistakes: [],
       themeStats: {},
+      accounts: [],
+      dailyPuzzle: null,
+      woodpecker: null,
+      endgames: {},
 
       newGame: ({ mode, playerColor, level, startFen = START_FEN }) =>
         set((s) => ({
@@ -335,6 +372,91 @@ export const useGame = create<GameState>()(
       recordMistake: (key, solved) =>
         set((s) => (solved && !s.solvedMistakes.includes(key) ? { solvedMistakes: [key, ...s.solvedMistakes].slice(0, 500) } : {})),
 
+      rememberAccount: (site, name) =>
+        set((s) => ({
+          accounts: [{ site, name }, ...s.accounts.filter((a) => !(a.site === site && a.name.toLowerCase() === name.toLowerCase()))].slice(0, 8),
+        })),
+
+      forgetAccount: (site, name) => set((s) => ({ accounts: s.accounts.filter((a) => !(a.site === site && a.name === name)) })),
+
+      importGame: (g) => {
+        const parsed = loadPgn(g.pgn)
+        if (!parsed || !parsed.plies.length) return null
+        const key = remoteKey(g)
+        const s = get()
+        const previous = s.history.find((x) => x.key === key)
+        const ucis = parsed.plies.map((p) => p.uci)
+        const game: SavedGame = {
+          key,
+          date: g.date,
+          mode: 'import',
+          playerColor: g.color,
+          level: 0,
+          startFen: parsed.startFen,
+          sans: parsed.plies.map((p) => p.san),
+          ucis,
+          score: g.score,
+          review: previous?.review && previous.ucis.join() === ucis.join() ? previous.review : undefined,
+          source: {
+            site: g.site,
+            url: g.url,
+            white: g.white.name,
+            black: g.black.name,
+            whiteElo: g.white.rating,
+            blackElo: g.black.rating,
+            speed: g.speed,
+            clock: g.clock,
+            opening: g.opening,
+          },
+        }
+        // newest first, as the rest of the archive
+        const history = [game, ...s.history.filter((x) => x.key !== key)].sort((a, b) => b.date - a.date).slice(0, MAX_GAMES)
+        set({ history })
+        return game
+      },
+
+      openSaved: (game) =>
+        set((s) => {
+          const plies = pliesOf(game)
+          return {
+            history: filed(s),
+            gameKey: game.key,
+            gameId: s.gameId + 1,
+            mode: 'analysis',
+            vsEngine: game.mode !== 'import',
+            playerColor: game.playerColor,
+            level: game.mode === 'import' ? s.level : game.level,
+            startFen: game.startFen,
+            plies,
+            cursor: 0,
+            outcome: outcomeOf(game.startFen, plies),
+            orientation: game.playerColor,
+            review: unpackReview(game),
+            training: null,
+          }
+        }),
+
+      setDailyPuzzle: (solved) => set({ dailyPuzzle: { date: today(), solved } }),
+
+      startWoodpecker: (ids) => set({ woodpecker: { ids, cycle: 1, index: 0, solved: 0, ms: 0, cycles: [] } }),
+
+      woodpeckerResult: (solved, ms) =>
+        set((s) => {
+          const w = s.woodpecker
+          if (!w) return {}
+          const next = { ...w, index: w.index + 1, solved: w.solved + (solved ? 1 : 0), ms: w.ms + ms }
+          // a cycle is done: note its score and time, then start over from the first puzzle
+          if (next.index < w.ids.length) return { woodpecker: next }
+          const cycles = [...w.cycles, { cycle: w.cycle, solved: next.solved, total: w.ids.length, ms: next.ms }]
+          return { woodpecker: { ...w, cycle: w.cycle + 1, index: 0, solved: 0, ms: 0, cycles } }
+        }),
+
+      recordEndgame: (id, won) =>
+        set((s) => {
+          const e = s.endgames[id] ?? { tries: 0, wins: 0 }
+          return { endgames: { ...s.endgames, [id]: { tries: e.tries + 1, wins: e.wins + (won ? 1 : 0) } } }
+        }),
+
       recordProgress: (key, clean) => {
         set((s) => {
           const p = s.progress[key] ?? { runs: 0, clean: 0 }
@@ -377,7 +499,15 @@ export const useGame = create<GameState>()(
         seenPuzzles,
         solvedMistakes,
         themeStats,
+        accounts,
+        dailyPuzzle,
+        woodpecker,
+        endgames,
       }) => ({
+        accounts,
+        dailyPuzzle,
+        woodpecker,
+        endgames,
         gameKey,
         history,
         daily,

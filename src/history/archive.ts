@@ -1,6 +1,6 @@
 import type { Score } from '../engine/engine'
 import { whiteShare } from '../engine/useEngine'
-import type { Color, Outcome } from '../game/rules'
+import { play, type Color, type Outcome, type Ply } from '../game/rules'
 import type { Judgement, Review } from '../review/review'
 
 /** A finished (or abandoned) game against Stockfish or from an opening drill. */
@@ -8,7 +8,8 @@ export interface SavedGame {
   /** stable across takebacks: one entry per game */
   key: string
   date: number
-  mode: 'play' | 'training'
+  /** import: a game from chess.com or Lichess, `playerColor` is the account's side */
+  mode: 'play' | 'training' | 'import'
   playerColor: Color
   level: number
   startFen: string
@@ -19,6 +20,17 @@ export interface SavedGame {
   openingId?: string
   variation?: number
   review?: SavedReview
+  source?: {
+    site: 'chesscom' | 'lichess'
+    url: string
+    white: string
+    black: string
+    whiteElo?: number
+    blackElo?: number
+    speed: string
+    clock: string
+    opening?: string
+  }
 }
 
 /** A review in compact form: evals are centipawns from White's view, or "M3" / "M-2". */
@@ -86,4 +98,17 @@ function terminalWin(game: SavedGame, i: number) {
   // the side that gave mate moved last
   const whiteMoved = (game.sans.length % 2 === 1) === (game.startFen.split(' ')[1] === 'w')
   return whiteMoved ? 1 : 0
+}
+
+/** The archived game's moves as plies again. */
+export function pliesOf(game: SavedGame): Ply[] {
+  const out: Ply[] = []
+  let fen = game.startFen
+  for (const uci of game.ucis) {
+    const ply = play(fen, uci)
+    if (!ply) break
+    out.push(ply)
+    fen = ply.fen
+  }
+  return out
 }

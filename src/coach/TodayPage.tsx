@@ -2,8 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { BookOpen, Check, Flame, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords } from 'lucide-react'
 import { levelOf } from '../engine/levels'
 import { useGame } from '../game/store'
-import { isStale, type SavedGame } from '../history/archive'
-import { reviewSaved } from '../history/reviews'
+import type { SavedGame } from '../history/archive'
+import { useReviewQueue } from '../history/reviews'
+import { opposite, play, turnOf } from '../game/rules'
+import { dailyPuzzle, type Puzzle } from '../puzzles/puzzles'
+import { themeName } from '../puzzles/themes'
+import { MiniBoard } from '../trainer/MiniBoard'
+import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
 import { aiError, aiPlan, getSample } from './ai'
 import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
@@ -13,11 +18,12 @@ import { candidates, localPlan, today, type DailyPlan, type PlanTask } from './p
 interface Props {
   onStart: (task: PlanTask, insights: Insights) => void
   onOpenGame: (game: SavedGame) => void
+  onDailyPuzzle: (puzzle: Puzzle) => void
 }
 
 const KIND_ICON = { mistakes: RotateCcw, puzzles: PuzzleIcon, opening: BookOpen, game: Swords }
 
-export function TodayPage({ onStart, onOpenGame }: Props) {
+export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
   const g = useGame()
   const { history, daily, streak, puzzleRating, progress, solvedMistakes, level, playerColor, setDaily } = g
 
@@ -42,23 +48,7 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
     setDaily(next)
   }, [daily, insights, tasks, setDaily])
 
-  // ---------------------------------------------------------------- background reviews
-  const pending = history.filter((x) => isStale(x.review) && x.ucis.length >= 4)
-  const [reviewing, setReviewing] = useState<{ key: string; share: number } | null>(null)
-  const nextKey = pending[0]?.key
-  useEffect(() => {
-    const game = useGame.getState().history.find((x) => x.key === nextKey)
-    if (!game) return
-    let live = true
-    void reviewSaved(game, (share) => live && setReviewing({ key: game.key, share }), () => live).then((review) => {
-      if (!live) return
-      setReviewing(null)
-      if (review) useGame.getState().attachReview(game.key, review)
-    })
-    return () => {
-      live = false
-    }
-  }, [nextKey])
+  const { pending, share: reviewShare } = useReviewQueue()
 
   // ---------------------------------------------------------------- AI coach
   const [hasAI, setHasAI] = useState<boolean | null>(null)
@@ -186,11 +176,13 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
         </div>
       </section>
 
-      {reviewing && (
+      {reviewShare !== null && pending > 0 && (
         <p className="reviewing">
-          Stockfish wertet deine Partien aus: noch {pending.length} … {Math.round(reviewing.share * 100)} %
+          Stockfish wertet deine Partien aus: noch {pending} … {Math.round(reviewShare * 100)} %
         </p>
       )}
+
+      <DailyPuzzle onStart={onDailyPuzzle} />
 
       <Stats insights={insights} puzzleRating={puzzleRating} />
 
@@ -206,9 +198,7 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
                   {game.score === 1 ? 'S' : game.score === 0 ? 'N' : game.score === 0.5 ? 'R' : '–'}
                 </span>
                 <span className="archive-text">
-                  <b>
-                    {game.mode === 'training' ? 'Eröffnungstraining' : 'Gegen Stockfish'} · {levelOf(game.level).label}
-                  </b>
+                  <b>{archiveTitle(game)}</b>
                   <span className="muted">
                     {new Date(game.date).toLocaleDateString('de-DE')} · {Math.ceil(game.sans.length / 2)} {Math.ceil(game.sans.length / 2) === 1 ? 'Zug' : 'Züge'} · mit{' '}
                     {game.playerColor === 'white' ? 'Weiß' : 'Schwarz'}
@@ -238,6 +228,49 @@ function Ring({ share }: { share: number }) {
       </text>
     </svg>
   )
+}
+
+/** One puzzle a day, the same for everyone, like chess.com's and chessigma's daily puzzle. */
+function DailyPuzzle({ onStart }: { onStart: (puzzle: Puzzle) => void }) {
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
+  const done = useGame((s) => (s.dailyPuzzle?.date === today() ? s.dailyPuzzle : null))
+  useEffect(() => void dailyPuzzle(today()).then(setPuzzle), [])
+  if (!puzzle) return null
+  // the board as the solver sees it: after the opponent's first move
+  const after = play(puzzle.fen, puzzle.moves[0])
+  const side = opposite(turnOf(puzzle.fen))
+  return (
+    <section className="daily-puzzle">
+      <span className="daily-board">
+        <MiniBoard fen={after?.fen ?? puzzle.fen} orientation={side} last={after ? [after.uci.slice(0, 2), after.uci.slice(2, 4)] : undefined} />
+      </span>
+      <div className="daily-text">
+        <span className="stat-label">Tagesaufgabe</span>
+        <b>{side === 'white' ? 'Weiß' : 'Schwarz'} am Zug</b>
+        <span className="muted">
+          {[...new Set(puzzle.themes.map(themeName))].slice(0, 2).join(' · ')} · Wertung {puzzle.rating}
+        </span>
+        {done ? (
+          <span className={`daily-done ${done.solved ? 'ok' : ''}`}>
+            <Check size={15} /> {done.solved ? 'Heute gelöst' : 'Heute mit Hilfe gelöst'}
+          </span>
+        ) : null}
+        <button className={done ? 'btn-secondary small' : 'btn-primary small'} onClick={() => onStart(puzzle)}>
+          {done ? 'Nochmal ansehen' : 'Lösen'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function archiveTitle(game: SavedGame) {
+  if (game.mode === 'import' && game.source) {
+    const s = game.source
+    const opp = game.playerColor === 'white' ? s.black : s.white
+    const elo = game.playerColor === 'white' ? s.blackElo : s.whiteElo
+    return `${SITE_NAME[s.site]} · gegen ${opp}${elo ? ` (${elo})` : ''}`
+  }
+  return `${game.mode === 'training' ? 'Eröffnungstraining' : 'Gegen Stockfish'} · ${levelOf(game.level).label}`
 }
 
 function yesterdayKey() {
