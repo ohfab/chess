@@ -195,5 +195,17 @@
   "Eine neue Version von Rookly ist bereit.": "A new version of Rookly is ready.",
   "Neu laden": "Reload",
   "Feinschliff {n} %": "Refining {n} %",
-  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish is searching every position again more deeply; the grades may still change slightly"
+  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish is searching every position again more deeply; the grades may still change slightly",
+  "Gast": "Guest",
+  "Taktik-Wertung {n}": "Puzzle rating {n}",
+  "Zeit für Schach": "Time for chess",
+  "deiner Partien": "of your games",
+  "gegen Stockfish": "against Stockfish",
+  "jeden Tag": "every day",
+  "Tanne": "Fir",
+  "meistern": "mastered",
+  "Lädt …": "Loading …",
+  "Erscheinungsbild": "Appearance",
+  "Hell": "Light",
+  "Dunkel": "Dark"
 }

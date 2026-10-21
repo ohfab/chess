@@ -48,6 +48,8 @@ export interface Settings {
   /** in games against Stockfish: stop and warn before a move that throws the game away */
   blunderGuard: boolean
   lang: Lang
+  /** light (fir green and coral) or the dark chess.com-like palette */
+  theme: 'light' | 'dark'
   /** the player's own chess.com or Lichess account: the analysis page loads its games */
   myAccount: { site: Site; name: string } | null
 }
@@ -249,11 +251,12 @@ export const useGame = create<GameState>()(
         evalInPlay: false,
         analysisEngine: true,
         multiPv: 3,
-        board: 'green',
+        board: 'fir',
         pieces: 'cburnett',
         soundSet: 'felt',
         blunderGuard: false,
         lang: detectLang(),
+        theme: 'light',
         myAccount: null,
       },
       review: null,
@@ -541,7 +544,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'rookly',
-      version: 3,
+      version: 4,
       storage: safeStorage,
       // 3: "Filz" is the default sound (the recorded set is gone)
       migrate: (persisted, version) => {
@@ -549,6 +552,8 @@ export const useGame = create<GameState>()(
         if (version < 3 && p.settings) p.settings = { ...p.settings, soundSet: 'felt' }
         // people who used the app before there was a choice keep German
         if (version < 3 && p.settings && !p.settings.lang) p.settings = { ...p.settings, lang: 'de' }
+        // 4: the light fir-green design; whoever kept the default board gets the matching one
+        if (version < 4 && p.settings) p.settings = { ...p.settings, theme: 'light', board: p.settings.board === 'green' || !p.settings.board ? 'fir' : p.settings.board }
         return p as GameState
       },
       partialize: ({

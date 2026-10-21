@@ -4,6 +4,7 @@ import type { Score } from '../engine/engine'
 import { formatScore } from '../engine/useEngine'
 import { Badge } from '../review/Badge'
 import type { Judgement } from '../review/review'
+import { Loader } from './Loader'
 
 interface Props {
   judgement?: Judgement
@@ -23,6 +24,7 @@ export function Coach({ judgement, title, children, progress, actions, score }: 
       <div className="coach-bubble">
         {(judgement || title) && (
           <div className="coach-title">
+            {progress !== undefined && <Loader size={30} />}
             {judgement && <Badge judgement={judgement} size={28} />}
             {title}
             {score && (

@@ -194,6 +194,18 @@
   "Zur Partie": "À la partie",
   "Eine neue Version von Rookly ist bereit.": "Une nouvelle version de Rookly est prête.",
   "Neu laden": "Recharger",
-  "Feinschliff {n} %": "Affinage {n}\u00a0%",
-  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish analyse à nouveau chaque position plus en profondeur ; les évaluations peuvent encore changer légèrement"
+  "Feinschliff {n} %": "Affinage {n} %",
+  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish analyse à nouveau chaque position plus en profondeur ; les évaluations peuvent encore changer légèrement",
+  "Gast": "Invité",
+  "Taktik-Wertung {n}": "Classement tactique {n}",
+  "Zeit für Schach": "L’heure des échecs",
+  "deiner Partien": "de tes parties",
+  "gegen Stockfish": "contre Stockfish",
+  "jeden Tag": "chaque jour",
+  "Tanne": "Sapin",
+  "meistern": "à maîtriser",
+  "Lädt …": "Chargement …",
+  "Erscheinungsbild": "Apparence",
+  "Hell": "Clair",
+  "Dunkel": "Sombre"
 }

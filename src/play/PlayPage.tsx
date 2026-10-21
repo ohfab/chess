@@ -5,6 +5,7 @@ import { LEVELS, levelOf } from '../engine/levels'
 import { START_FEN, type Color } from '../game/rules'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { t } from '../i18n/i18n'
+import { Display } from '../ui/Display'
 
 type Role = 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen' | 'king'
 
@@ -65,7 +66,7 @@ export function PlayPage({ level: initialLevel, running, onStart, onAnalysis, on
 
       <div className="play-panel">
         <div className="page-head">
-          <h2>{t('Spielen')}</h2>
+          <Display first={t('Spielen')} second={t('gegen Stockfish')} />
           <p className="muted">{t('Gegen Stockfish, von ~800 bis zur vollen Stärke')}</p>
         </div>
 

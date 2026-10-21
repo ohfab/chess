@@ -5,6 +5,7 @@ import { APP_NAME, APP_URL } from '../brand'
 import { useGame } from '../game/store'
 import { locale, t, tk, tn } from '../i18n/i18n'
 import { ImportError, SITE_NAME, fetchGames, fetchProfile, remoteKey, type RemoteGame, type RemoteProfile, type Site } from './remote'
+import { Display } from '../ui/Display'
 
 interface Props {
   onAnalyse: (game: RemoteGame) => void
@@ -123,7 +124,7 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
   return (
     <div className="analyse-page">
       <div className="page-head">
-        <h2>{t('Analyse')}</h2>
+        <Display first={t('Analyse')} second={t('deiner Partien')} />
         <p className="muted">{t('Deine Partien von chess.com und Lichess auswerten, Stellungen aufbauen oder frei ausprobieren')}</p>
       </div>
 

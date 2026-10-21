@@ -8,17 +8,35 @@
     <meta property="og:title" content="Rookly – Schach trainieren" />
     <meta property="og:description" content="Spielen, auswerten, Eröffnungen und Taktik üben, mit Stockfish direkt im Browser." />
     <meta property="og:image" content="./icon-512.png" />
-    <meta name="theme-color" content="#21201d" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Rookly" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
+    <script>
+      // the dark palette from the first frame on, for those who chose it
+      try {
+        if (JSON.parse(localStorage.getItem('rookly') || '{}').state.settings.theme === 'dark') document.documentElement.dataset.theme = 'dark'
+      } catch {}
+    </script>
+    <style>
+      .splash { position: fixed; inset: 0; display: grid; place-items: center; background: #fff; }
+      [data-theme='dark'] .splash { background: #312e2b; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash" aria-hidden="true">
+        <svg class="loader" width="64" height="64" viewBox="0 0 60 60">
+          <g transform="translate(0 8)"><g class="loader-tile" style="animation-delay: 0.28s"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
+          <g transform="translate(0 20)"><g class="loader-tile light" style="animation-delay: 0.14s"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
+          <g transform="translate(0 32)"><g class="loader-tile"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -15,6 +15,7 @@ export interface BoardTheme {
 }
 
 export const BOARDS: BoardTheme[] = ([
+  { id: 'fir', name: 'Tanne', light: '#e9efe9', dark: '#7c9d8b', highlight: 'rgb(248 164 152 / 0.7)' },
   { id: 'green', name: 'Grün', light: '#ebecd0', dark: '#739552', highlight: 'rgb(255 255 51 / 0.5)' },
   { id: 'brown', name: 'Braun', light: '#f0d9b5', dark: '#b58863', highlight: 'rgb(155 199 0 / 0.42)' },
   { id: 'walnut', name: 'Walnuss', light: '#e8cfa6', dark: '#a0703f', highlight: 'rgb(255 230 70 / 0.48)' },

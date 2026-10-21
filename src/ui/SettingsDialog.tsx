@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Lock, UserRound, Volume2 } from 'lucide-react'
+import { Check, Lock, Moon, Sun, UserRound, Volume2 } from 'lucide-react'
 import { openAccount, requirePro, useAccount, useIsPro } from '../account/account'
 import { LegalLinks } from '../account/AccountDialogs'
 import { FREE_THEMES } from '../account/plans'
@@ -61,6 +61,15 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
 
       {tab === 'design' ? (
         <>
+          <div className="field-label">{t('Erscheinungsbild')}</div>
+          <div className="segmented theme-pick">
+            <button className={settings.theme !== 'dark' ? 'on' : ''} onClick={() => onChange({ theme: 'light' })}>
+              <Sun size={15} /> {t('Hell')}
+            </button>
+            <button className={settings.theme === 'dark' ? 'on' : ''} onClick={() => onChange({ theme: 'dark' })}>
+              <Moon size={15} /> {t('Dunkel')}
+            </button>
+          </div>
           <div className="field-label">{t('Brett')}</div>
           <div className="swatches">
             {BOARDS.map((b, i) => (

@@ -6,6 +6,7 @@ import { progressKey, type Progress } from '../game/store'
 import { fenAfter, rootOf } from './book'
 import { CATALOG, type OpeningDef } from './catalog'
 import { MiniBoard } from './MiniBoard'
+import { Display } from '../ui/Display'
 
 const GROUPS: { title: string; match: (o: OpeningDef) => boolean }[] = [
   { title: tk('Mit Weiß · 1.e4'), match: (o) => o.side === 'white' && o.group === 'e4' },
@@ -43,7 +44,7 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
     <div className="openings">
       <div className="openings-head">
         <div>
-          <h2>{t('Eröffnungen')}</h2>
+          <Display first={t('Eröffnungen')} second={t('meistern')} />
           <p className="muted">
             {t('{n} Eröffnungen, Theorie aus {games} Turnierpartien', { n: CATALOG.length, games: new Intl.NumberFormat(locale()).format(200000) })}
           </p>

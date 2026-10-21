@@ -7,6 +7,7 @@ import { initAccount } from './account/account'
 import { warmUp } from './engine/useEngine'
 import { setLang, t } from './i18n/i18n'
 import { startUpdates, useUpdate } from './pwa'
+import '@fontsource-variable/inter-tight'
 import './index.css'
 
 // paint the saved board and pieces before the first frame
@@ -19,13 +20,22 @@ const idle = (window as { requestIdleCallback?: (fn: () => void) => void }).requ
 idle(warmUp)
 
 setLang(settings.lang)
+applyTheme(settings.theme)
 startUpdates()
+
+/** Light or dark palette (see the top of index.css), and the browser bar to match. */
+function applyTheme(theme: 'light' | 'dark') {
+  document.documentElement.dataset.theme = theme
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#21201d' : '#ffffff')
+}
 
 /** The whole app renders again when the language changes; t() then reads the new one. */
 function Root() {
   const lang = useGame((s) => s.settings.lang)
+  const theme = useGame((s) => s.settings.theme)
   const update = useUpdate((s) => s.ready)
   setLang(lang)
+  applyTheme(theme)
   return (
     <>
       <App />

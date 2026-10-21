@@ -10,6 +10,7 @@ import { themeName } from '../puzzles/themes'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
+import { Display } from '../ui/Display'
 import { getLang, locale, t, tn } from '../i18n/i18n'
 import { aiError, aiPlan, coachAvailable } from './ai'
 import { openAccount, requirePro, useAccount } from '../account/account'
@@ -55,6 +56,7 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
   }, [daily, insights, tasks, setDaily])
 
   const { pending, share: reviewShare } = useReviewQueue()
+  const email = useAccount((a) => a.email)
 
   // ---------------------------------------------------------------- AI coach
   const [hasAI, setHasAI] = useState<boolean | null>(null)
@@ -83,19 +85,21 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
   const plan: DailyPlan | null = daily?.date === today() ? daily : null
   const doneCount = plan?.tasks.filter((t) => t.done >= t.target).length ?? 0
   const [now] = useState(() => new Date())
-  const dateLabel = now.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
+  const weekday = now.toLocaleDateString(locale(), { weekday: 'long' })
   const hour = now.getHours()
   const greeting = hour < 5 ? t('Gute Nacht') : hour < 11 ? t('Guten Morgen') : hour < 18 ? t('Guten Tag') : t('Guten Abend')
   const share = plan?.tasks.length ? doneCount / plan.tasks.length : 0
+  // the player's name: their chess.com or Lichess account, else the start of the e-mail address
+  const name = g.settings.myAccount?.name ?? email?.split('@')[0] ?? null
 
   return (
     <div className="today">
-      <div className="today-head">
-        <div className="today-title">
-          <Ring share={share} />
+      <div className="today-top">
+        <div className="who">
+          <span className="who-avatar">{name ? name.slice(0, 1).toUpperCase() : <Piece role="knight" color="white" className="who-piece" />}</span>
           <div>
-            <h2>{greeting}</h2>
-            <p className="muted">{dateLabel}</p>
+            <b>{name ?? t('Gast')}</b>
+            <span className="muted">{t('Taktik-Wertung {n}', { n: puzzleRating })}</span>
           </div>
         </div>
         <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title={t('Tage in Folge mit erledigtem Plan')}>
@@ -103,6 +107,10 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
           <b>{streak.last >= yesterdayKey() ? streak.count : 0}</b>
           <span>{t('Tage')}</span>
         </div>
+      </div>
+      <div className="today-head">
+        <Display first={`${greeting},`} second={name ?? t('Zeit für Schach')} note={weekday} />
+        <Ring share={share} />
       </div>
 
       <section className="coach-card">

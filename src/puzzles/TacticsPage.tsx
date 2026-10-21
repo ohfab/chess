@@ -33,6 +33,7 @@ import { THEME_NAMES } from './themes'
 import { ENDGAMES, type Endgame } from './endgames'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { locale, t, tn } from '../i18n/i18n'
+import { Display } from '../ui/Display'
 
 const THEME_ICON: Record<string, LucideIcon> = {
   hangingPiece: Hand,
@@ -93,7 +94,7 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
     <div className="tactics">
       <div className="page-head row">
         <div>
-          <h2>{t('Taktik')}</h2>
+          <Display first={t('Taktik')} second={t('jeden Tag')} />
           <p className="muted">{t('{n} Aufgaben aus echten Partien, passend zu deiner Wertung', { n: (2131).toLocaleString(locale()) })}</p>
         </div>
         <div className="rating-chip" title={t('Deine Taktik-Wertung')}>

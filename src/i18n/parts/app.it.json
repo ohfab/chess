@@ -195,5 +195,17 @@
   "Eine neue Version von Rookly ist bereit.": "Una nuova versione di Rookly è pronta.",
   "Neu laden": "Ricarica",
   "Feinschliff {n} %": "Rifinitura {n} %",
-  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish riesamina ogni posizione più a fondo; le valutazioni possono ancora cambiare leggermente"
+  "Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern": "Stockfish riesamina ogni posizione più a fondo; le valutazioni possono ancora cambiare leggermente",
+  "Gast": "Ospite",
+  "Taktik-Wertung {n}": "Punteggio tattico {n}",
+  "Zeit für Schach": "È ora di scacchi",
+  "deiner Partien": "delle tue partite",
+  "gegen Stockfish": "contro Stockfish",
+  "jeden Tag": "ogni giorno",
+  "Tanne": "Abete",
+  "meistern": "da padroneggiare",
+  "Lädt …": "Caricamento …",
+  "Erscheinungsbild": "Aspetto",
+  "Hell": "Chiaro",
+  "Dunkel": "Scuro"
 }

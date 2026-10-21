@@ -26,22 +26,35 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
       </button>
       <div className="nav-items">
         {ITEMS.map(({ id, label, icon: Icon }) => (
-          <button key={id} className={`nav-item ${tab === id ? 'on' : ''}`} onClick={() => onNavigate(id)} aria-current={tab === id ? 'page' : undefined}>
-            <Icon size={22} strokeWidth={tab === id ? 2.4 : 2} />
-            <span>{t(label)}</span>
+          <button
+            key={id}
+            className={`nav-item ${tab === id ? 'on' : ''}`}
+            onClick={() => onNavigate(id)}
+            aria-current={tab === id ? 'page' : undefined}
+            aria-label={t(label)}
+            title={t(label)}
+          >
+            <span className="nav-icon">
+              <Icon size={21} strokeWidth={2} />
+            </span>
+            <span className="nav-label">{t(label)}</span>
           </button>
         ))}
       </div>
       <div className="nav-foot">
         {account.status !== 'local' && (
           <button className="nav-item nav-account" onClick={onAccount}>
-            {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={22} />}
-            <span>{account.status === 'signed-in' ? (pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
+            <span className="nav-icon">
+              {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={21} />}
+            </span>
+            <span className="nav-label">{account.status === 'signed-in' ? (pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
           </button>
         )}
         <button className="nav-item nav-settings" onClick={onSettings}>
-          <SettingsIcon size={22} />
-          <span>{t('Einstellungen')}</span>
+          <span className="nav-icon">
+            <SettingsIcon size={21} />
+          </span>
+          <span className="nav-label">{t('Einstellungen')}</span>
         </button>
       </div>
     </nav>
