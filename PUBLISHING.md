@@ -82,7 +82,7 @@ Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung
 
 - `public/legal/impressum.html`, `datenschutz.html` und `agb.html` sind Vorlagen. Alles in Gelb ersetzen (Name, Adresse, E-Mail, Gerichtsstand, MWST) und am besten kurz von einer Fachperson prüfen lassen.
 - Ab CHF 100'000 Umsatz pro Jahr wirst du in der Schweiz mehrwertsteuerpflichtig. Stripe Tax kann die Steuern für Kundschaft im Ausland berechnen.
-- **Sounds:** Die aufgenommenen Zug- und Schlag-Sounds (`src/assets/sounds`) stammen von chess.com. Sie bleiben aus dem Repo und dürfen nicht in eine veröffentlichte App. Die Webseite nutzt automatisch die eigenen, synthetischen Sounds. Für eigene Aufnahmen gibt es freie Sounds zum Beispiel bei Lichess (AGPL) oder auf freesound.org (CC0).
+- **Sounds:** Alle Sounds werden in der App selbst erzeugt (Web Audio), es gibt keine fremden Aufnahmen. Standard ist „Filz“.
 - **Open Source:** Rookly steht wegen Stockfish und chessground unter der GPL-3.0. Verkaufen ist erlaubt. Der Quelltext muss für alle, die die App bekommen, verfügbar bleiben; das öffentliche Repo erfüllt das.
 
 ## 7. App-Stores (später)

@@ -3318,3 +3318,34 @@ button:disabled {
     font-size: 15px;
   }
 }
+
+/* review summary: strength estimate and the report per phase */
+.elo-row b {
+  font-variant-numeric: tabular-nums;
+}
+.aspects {
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+  padding-top: 8px;
+}
+.aspect-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ language */
+.lang-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.lang-row .chip {
+  padding: 6px 12px;
+}
+.welcome-lang {
+  justify-content: center;
+  margin-bottom: 18px;
+}

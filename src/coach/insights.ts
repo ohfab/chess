@@ -3,6 +3,7 @@ import { whiteShare } from '../engine/useEngine'
 import type { SavedGame } from '../history/archive'
 import { opposite, turnOf, type Color } from '../game/rules'
 import { isError, type Judgement } from '../review/review'
+import { phaseOf } from '../review/stats'
 import { CATALOG } from '../trainer/catalog'
 
 // What the player's reviewed games say about them: where they lose points, which
@@ -54,14 +55,6 @@ export interface Insights {
 }
 
 const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
-
-function phaseOf(fen: string, ply: number): Phase {
-  if (ply < 20) return 'opening'
-  const board = fen.split(' ')[0]
-  let material = 0
-  for (const ch of board) material += VALUE[ch.toLowerCase()] && ch.toLowerCase() !== 'p' ? VALUE[ch.toLowerCase()] : 0
-  return material <= 22 ? 'endgame' : 'middlegame'
-}
 
 const playerWin = (white: number, player: Color) => (player === 'white' ? white : 1 - white)
 

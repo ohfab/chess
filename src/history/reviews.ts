@@ -11,7 +11,7 @@ export { pliesOf }
 const BACKGROUND_GO = 'depth 13 movetime 1200'
 
 export async function reviewSaved(game: SavedGame, onProgress: (share: number) => void, alive: () => boolean) {
-  const review = await runReview(game.startFen, pliesOf(game), (done, total) => onProgress(done / total), alive, BACKGROUND_GO, getBackground())
+  const review = await runReview(game.startFen, pliesOf(game), (done, total) => onProgress(done / total), alive, BACKGROUND_GO, [getBackground()])
   return review ? packReview(review) : null
 }
 

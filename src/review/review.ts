@@ -1,7 +1,8 @@
 import { Chess } from 'chess.js'
 import type { Engine, Score } from '../engine/engine'
-import { getReviewer, whiteScore, whiteShare } from '../engine/useEngine'
+import { getReviewer, getReviewPool, whiteScore, whiteShare } from '../engine/useEngine'
 import { isBook, loadOpenings } from '../game/openings'
+import { gameAccuracy } from './accuracy'
 import { turnOf, type Color, type Ply } from '../game/rules'
 
 export type Judgement = 'book' | 'brilliant' | 'great' | 'best' | 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'miss' | 'blunder'
@@ -49,8 +50,6 @@ export function lossOf(before: number, after: number, mover: Color) {
   return Math.max(0, delta)
 }
 
-/** Per-move accuracy from the win-percentage drop (lichess formula). */
-const moveAccuracy = (loss: number) => Math.min(100, Math.max(0, 103.1668 * Math.exp(-0.04354 * loss * 100) - 3.1669))
 
 /**
  * Evaluates one position from White's view, without the engine when the game is over there.
@@ -173,18 +172,32 @@ export async function runReview(
   onProgress: (done: number, total: number) => void,
   alive: () => boolean,
   go = REVIEW_GO,
-  engine: Engine = getReviewer(),
+  engines: Engine[] = getReviewPool(),
 ): Promise<Review | null> {
   await loadOpenings()
   const fens = [startFen, ...plies.map((p) => p.fen)]
-  const evals: PositionEval[] = []
-  for (const fen of fens) {
-    if (!alive()) return null
-    const e = await evaluate(fen, go, 2, engine)
-    if (!e || !alive()) return null
-    evals.push(e)
-    onProgress(evals.length, fens.length)
-  }
+  // every engine takes the next position nobody has started yet
+  const found: (PositionEval | undefined)[] = new Array(fens.length)
+  let next = 0
+  let done = 0
+  let failed = false
+  await Promise.all(
+    engines.map(async (engine) => {
+      while (!failed && alive()) {
+        const i = next++
+        if (i >= fens.length) return
+        const e = await evaluate(fens[i], go, 2, engine)
+        if (!e) {
+          failed = true
+          return
+        }
+        found[i] = e
+        onProgress(++done, fens.length)
+      }
+    }),
+  )
+  if (failed || !alive()) return null
+  const evals = found as PositionEval[]
 
   let book = true
   const moves = plies.map((ply, i): MoveReview => {
@@ -193,11 +206,7 @@ export async function runReview(
     return classify(fens, plies, evals, i)
   })
 
-  const accuracy = { white: 0, black: 0 }
-  for (const color of ['white', 'black'] as const) {
-    const own = moves.filter((_, i) => turnOf(fens[i]) === color)
-    accuracy[color] = own.length ? own.reduce((sum, m) => sum + moveAccuracy(m.loss), 0) / own.length : 100
-  }
+  const accuracy = gameAccuracy(evals, turnOf(startFen) === 'white')
   return { ucis: plies.map((p) => p.uci), evals, moves, accuracy }
 }
 

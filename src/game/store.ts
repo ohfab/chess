@@ -5,6 +5,7 @@ import type { Review } from '../review/review'
 import { MAX_GAMES, pliesOf, scoreFor, unpackReview, type SavedGame, type SavedReview } from '../history/archive'
 import { remoteKey, type RemoteGame, type Site } from '../import/remote'
 import { today, type DailyPlan } from '../coach/plan'
+import { detectLang, type Lang } from '../i18n/i18n'
 
 export type Mode = 'play' | 'analysis' | 'training'
 
@@ -46,6 +47,7 @@ export interface Settings {
   soundSet: string
   /** in games against Stockfish: stop and warn before a move that throws the game away */
   blunderGuard: boolean
+  lang: Lang
 }
 
 /** Woodpecker method: the same set of puzzles, solved again and again, faster each cycle. */
@@ -230,8 +232,9 @@ export const useGame = create<GameState>()(
         multiPv: 3,
         board: 'green',
         pieces: 'cburnett',
-        soundSet: 'standard',
+        soundSet: 'felt',
         blunderGuard: false,
+        lang: detectLang(),
       },
       review: null,
       training: null,
@@ -488,12 +491,14 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'rookly',
-      version: 2,
+      version: 3,
       storage: safeStorage,
-      // 2: the recorded "Standard" sounds replace the synthesised default
+      // 3: "Filz" is the default sound (the recorded set is gone)
       migrate: (persisted, version) => {
         const p = persisted as Partial<GameState>
-        if (version < 2 && p.settings) p.settings = { ...p.settings, soundSet: 'standard' }
+        if (version < 3 && p.settings) p.settings = { ...p.settings, soundSet: 'felt' }
+        // people who used the app before there was a choice keep German
+        if (version < 3 && p.settings && !p.settings.lang) p.settings = { ...p.settings, lang: 'de' }
         return p as GameState
       },
       partialize: ({

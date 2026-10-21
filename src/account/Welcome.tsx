@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { APP_NAME, APP_TAGLINE } from '../brand'
 import { useGame } from '../game/store'
+import { LANGS } from '../i18n/i18n'
 import { Logo } from '../ui/Logo'
 
 // First start: one question about the player's strength sets the bots and the puzzles,
@@ -15,6 +16,8 @@ const LEVELS = [
 
 export function Welcome({ onDone }: { onDone: (next: 'today' | 'play' | 'analyse') => void }) {
   const finish = useGame((s) => s.finishOnboarding)
+  const lang = useGame((s) => s.settings.lang)
+  const updateSettings = useGame((s) => s.updateSettings)
   const [pick, setPick] = useState<(typeof LEVELS)[number]['id']>('casual')
   const chosen = LEVELS.find((l) => l.id === pick)!
 
@@ -26,6 +29,13 @@ export function Welcome({ onDone }: { onDone: (next: 'today' | 'play' | 'analyse
   return (
     <div className="welcome-backdrop">
       <div className="welcome" role="dialog" aria-label={`Willkommen bei ${APP_NAME}`}>
+        <div className="lang-row welcome-lang" role="radiogroup" aria-label="Sprache">
+          {LANGS.map((l) => (
+            <button key={l.id} role="radio" aria-checked={lang === l.id} className={`chip ${lang === l.id ? 'on' : ''}`} onClick={() => updateSettings({ lang: l.id })} lang={l.id}>
+              {l.name}
+            </button>
+          ))}
+        </div>
         <Logo className="welcome-logo" />
         <h1>Willkommen bei {APP_NAME}</h1>
         <p className="muted">{APP_TAGLINE}. Stockfish läuft direkt auf deinem Gerät, ohne Anmeldung.</p>

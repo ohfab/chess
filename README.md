@@ -76,7 +76,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Design**
 - Menü als Seitenleiste (Desktop) oder Tab-Leiste unten (Handy): Heute, Spielen, Taktik, Eröffnungen, Analyse; das Logo führt zurück zur Startseite
-- 10 Brettfarben, 10 freie Figurensätze von Lichess, Sound-Sets: „Standard“ mit aufgenommenen Zug- und Schlag-Sounds (siehe unten) sowie Holz, Klick, Filz, Marimba und Retro, synthetisiert
+- 10 Brettfarben, 10 freie Figurensätze von Lichess, 5 Sound-Sets, alle in der App erzeugt: Filz (Standard), Holz, Klick, Marimba, Retro
 - Pfeile im chess.com-Stil: eine saubere Form, Springerzüge als L, Engine-Pfeile wachsen beim Erscheinen aus dem Startfeld; eigene Pfeile und Kreise per Rechtsklick
 - Bewertungsbalken per Schalter auch beim Spielen und im Eröffnungstraining
 
@@ -127,8 +127,6 @@ Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem 
 | `src/ui/` | Menü, Spielerleisten, Coach, Zugliste, Graph, Dialoge |
 
 Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Rookly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
-
-Sounds: das Set „Standard“ lädt `src/assets/sounds/move.mp3` und `capture.mp3`. Die Dateien liegen nicht im Repository (siehe `.gitignore`), weil sie nicht unter einer freien Lizenz stehen. Ohne sie fehlt „Standard“ in der Auswahl und Holz ist voreingestellt.
 
 ## Lizenzen und Danke
 

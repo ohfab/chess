@@ -18,5 +18,3 @@ dist-ssr
 # downloaded opening sources (scripts/build-openings.mjs)
 scripts/.cache
 
-# sampled move sounds: supplied locally, not redistributable with the GPL code
-src/assets/sounds/*.mp3

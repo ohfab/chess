@@ -1,15 +1,8 @@
-// Move sounds in several sets. "Standard" plays two recorded samples (move, capture) when
-// they are present in src/assets/sounds; every other set is synthesised with Web Audio from
-// noise bursts, thumps and tones, so nothing has to be downloaded for them.
+// Move sounds synthesised with Web Audio, in several sets. Nothing is downloaded:
+// each set is a recipe of noise bursts, thumps and tones. "Filz" is the default.
 
 let ctx: AudioContext | null = null
 let noise: AudioBuffer | null = null
-
-// the samples are not part of the repository; without them "Standard" is not offered
-const SAMPLE_URLS = import.meta.glob<string>('../assets/sounds/*.mp3', { eager: true, query: '?url', import: 'default' })
-const samples = new Map<string, AudioBuffer>()
-const sampleName = (path: string) => path.split('/').pop()!.replace('.mp3', '')
-export const hasSamples = Object.keys(SAMPLE_URLS).length > 0
 
 function audio() {
   if (!ctx) {
@@ -17,35 +10,9 @@ function audio() {
     noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate)
     const data = noise.getChannelData(0)
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-    const ac = ctx
-    for (const [path, url] of Object.entries(SAMPLE_URLS))
-      void fetch(url)
-        .then((r) => r.arrayBuffer())
-        .then((bytes) => ac.decodeAudioData(bytes))
-        .then((buffer) => samples.set(sampleName(path), buffer))
-        .catch(() => {})
   }
   if (ctx.state === 'suspended') void ctx.resume()
   return ctx
-}
-
-// decode the samples on the first touch, before the first move needs them
-if (hasSamples && typeof window !== 'undefined')
-  for (const type of ['pointerdown', 'keydown'])
-    window.addEventListener(type, () => void audio(), { once: true, capture: true, passive: true })
-
-/** Plays a decoded sample; false if it is not (yet) available. */
-function sample(name: string, at = 0, gain = 1) {
-  const ac = audio()
-  const buffer = samples.get(name)
-  if (!buffer) return false
-  const src = ac.createBufferSource()
-  src.buffer = buffer
-  const g = ac.createGain()
-  g.gain.value = gain
-  src.connect(g).connect(ac.destination)
-  src.start(ac.currentTime + at)
-  return true
 }
 
 function envelope(ac: AudioContext, t: number, peak: number, attack: number, decay: number) {
@@ -111,23 +78,18 @@ const WOOD: Recipe = {
 }
 
 export const SOUND_SETS: { id: string; name: string; recipe: Recipe }[] = [
-  ...(hasSamples
-    ? [
-        {
-          id: 'standard',
-          name: 'Standard',
-          // the wood recipe stands in until the samples are decoded
-          recipe: {
-            move: () => sample('move') || WOOD.move(),
-            capture: () => sample('capture') || WOOD.capture(),
-            castle: () => (sample('move') && sample('move', 0.085, 0.8)) || WOOD.castle(),
-            check: () => (sample('move') ? tone(0.015, { freq: 1046.5, gain: 0.045, decay: 0.45, attack: 0.01 }) : WOOD.check()),
-            end: () => chime([523.25, 659.25, 783.99], 0.07),
-            wrong: () => tone(0, { freq: 220, to: 150, gain: 0.12, decay: 0.2, type: 'triangle' }),
-          },
-        },
-      ]
-    : []),
+  {
+    id: 'felt',
+    name: 'Filz',
+    recipe: {
+      move: () => (burst(0, { freq: 700, type: 'lowpass', q: 0.7, gain: 0.55, decay: 0.08 }), tone(0, { freq: 95, to: 70, gain: 0.25, decay: 0.08 })),
+      capture: () => (burst(0, { freq: 900, type: 'lowpass', q: 0.7, gain: 0.75, decay: 0.1 }), tone(0, { freq: 80, to: 55, gain: 0.35, decay: 0.12 })),
+      castle: () => (burst(0, { freq: 700, type: 'lowpass', gain: 0.5, decay: 0.07 }), burst(0.1, { freq: 700, type: 'lowpass', gain: 0.45, decay: 0.07 })),
+      check: () => (burst(0, { freq: 800, type: 'lowpass', gain: 0.6, decay: 0.08 }), tone(0.02, { freq: 523.25, gain: 0.05, decay: 0.5 })),
+      end: () => chime([392, 493.88, 587.33], 0.07),
+      wrong: () => tone(0, { freq: 140, to: 90, gain: 0.3, decay: 0.18 }),
+    },
+  },
   {
     id: 'wood',
     name: 'Holz',
@@ -143,18 +105,6 @@ export const SOUND_SETS: { id: string; name: string; recipe: Recipe }[] = [
       check: () => (burst(0, { freq: 3400, q: 3, gain: 0.55, decay: 0.03 }), tone(0.01, { freq: 1320, gain: 0.06, decay: 0.25 })),
       end: () => chime([659.25, 987.77, 1318.5], 0.06),
       wrong: () => burst(0, { freq: 900, q: 2, gain: 0.5, decay: 0.08 }),
-    },
-  },
-  {
-    id: 'felt',
-    name: 'Filz',
-    recipe: {
-      move: () => (burst(0, { freq: 700, type: 'lowpass', q: 0.7, gain: 0.55, decay: 0.08 }), tone(0, { freq: 95, to: 70, gain: 0.25, decay: 0.08 })),
-      capture: () => (burst(0, { freq: 900, type: 'lowpass', q: 0.7, gain: 0.75, decay: 0.1 }), tone(0, { freq: 80, to: 55, gain: 0.35, decay: 0.12 })),
-      castle: () => (burst(0, { freq: 700, type: 'lowpass', gain: 0.5, decay: 0.07 }), burst(0.1, { freq: 700, type: 'lowpass', gain: 0.45, decay: 0.07 })),
-      check: () => (burst(0, { freq: 800, type: 'lowpass', gain: 0.6, decay: 0.08 }), tone(0.02, { freq: 523.25, gain: 0.05, decay: 0.5 })),
-      end: () => chime([392, 493.88, 587.33], 0.07),
-      wrong: () => tone(0, { freq: 140, to: 90, gain: 0.3, decay: 0.18 }),
     },
   },
   {

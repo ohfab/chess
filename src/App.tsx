@@ -48,6 +48,7 @@ import { fenAt, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
 import { explain } from './review/explain'
+import { ASPECT_ORDER, reviewReport, type Aspect } from './review/stats'
 import { evaluate, isError, JUDGEMENT, JUDGEMENT_ORDER, lossOf, reviewedPrefix, runReview, type Review } from './review/review'
 import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type Verdict } from './trainer/book'
 import { OpeningBrowser } from './trainer/OpeningBrowser'
@@ -1209,7 +1210,7 @@ export default function App() {
           </div>
           <div className="coach-slot">{coach}</div>
 
-          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} sans={plies.map((p) => p.san)} onJump={nav} />}
+          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} moves={plies} onJump={nav} />}
           {reviewing && progress === null && <EvalGraph review={review} cursor={Math.min(cursor, reviewed)} onJump={nav} />}
 
           {showLines && (
@@ -1260,20 +1261,30 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
   )
 }
 
+const ASPECT_NAME: Record<Aspect, string> = {
+  opening: 'Eröffnung',
+  middlegame: 'Mittelspiel',
+  endgame: 'Endspiel',
+  tactics: 'Taktik',
+  strategy: 'Strategie',
+}
+
 /** Accuracy and move-quality counts per side, as on chess.com's review summary. */
 function Summary({
   review,
   plies,
   startFen,
-  sans,
+  moves,
   onJump,
 }: {
   review: Review
   plies: number
   startFen: string
-  sans: string[]
+  moves: Ply[]
   onJump: (ply: number) => void
 }) {
+  const sans = moves.map((p) => p.san)
+  const report = useMemo(() => reviewReport(review, startFen, moves, plies), [review, startFen, moves, plies])
   const firstWhite = turnOf(startFen) === 'white'
   const sideOf = (i: number): Color => ((i % 2 === 0) === firstWhite ? 'white' : 'black')
   const counts: Record<Color, Record<string, number>> = { white: {}, black: {} }
@@ -1305,6 +1316,12 @@ function Summary({
         <span />
         <b className="acc black">{review.accuracy.black.toFixed(1)}</b>
       </div>
+      <div className="summary-row elo-row" title="Geschätzt aus der Genauigkeit dieser einen Partie">
+        <span>Spielstärke</span>
+        <b>{report.white.elo ? `≈ ${report.white.elo}` : '–'}</b>
+        <span />
+        <b>{report.black.elo ? `≈ ${report.black.elo}` : '–'}</b>
+      </div>
       {JUDGEMENT_ORDER.map((j) => (
         <div className="summary-row" key={j}>
           <span>{JUDGEMENT[j].label}</span>
@@ -1313,6 +1330,31 @@ function Summary({
           <b style={{ color: JUDGEMENT[j].color }}>{counts.black[j] ?? 0}</b>
         </div>
       ))}
+      <div className="aspects">
+        <span className="moments-title">Partie nach Phasen</span>
+        {ASPECT_ORDER.map((a) => {
+          const w = report.white.aspects[a]
+          const b = report.black.aspects[a]
+          if (!w && !b) return null
+          const cell = (x: typeof w) =>
+            x ? (
+              <span className="aspect-cell" title={`${x.moves} ${x.moves === 1 ? 'Zug' : 'Züge'}`}>
+                <Badge judgement={x.judgement} size={18} />
+                <b>{Math.round(x.accuracy)}</b>
+              </span>
+            ) : (
+              <span className="aspect-cell muted">–</span>
+            )
+          return (
+            <div className="summary-row aspect-row" key={a}>
+              <span>{ASPECT_NAME[a]}</span>
+              {cell(w)}
+              <span />
+              {cell(b)}
+            </div>
+          )
+        })}
+      </div>
       {hasMoments && (
         <div className="moments">
           <span className="moments-title">Schlüsselmomente</span>

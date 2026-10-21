@@ -39,13 +39,39 @@ interface Job {
  */
 // The WebAssembly build first (it reads its .wasm location from the hash of its own url).
 // Some hosts refuse to compile WebAssembly; the asm.js build is slower but runs anywhere.
-const BUILDS = [
-  () => new Worker(`${engineJs}#${encodeURIComponent(new URL(engineWasm, location.href).href)}`),
-  () => new Worker(engineAsm),
-]
+const wasmBuild = () => new Worker(`${engineJs}#${encodeURIComponent(new URL(engineWasm, location.href).href)}`)
+const asmBuild = () => new Worker(engineAsm)
+
+/**
+ * Whether this page may compile WebAssembly in a worker, asked once per page load.
+ * A blocked engine worker never reports an error, so without the probe every engine
+ * would wait for the handshake timeout before falling back to asm.js.
+ */
+let wasmAllowed: Promise<boolean> | null = null
+function canUseWasm() {
+  wasmAllowed ??= new Promise<boolean>((resolve) => {
+    if (typeof WebAssembly !== 'object') return resolve(false)
+    let probe: Worker
+    try {
+      probe = new Worker(new URL('./wasm-probe.ts', import.meta.url), { type: 'module' })
+    } catch {
+      return resolve(true)
+    }
+    const done = (ok: boolean) => {
+      clearTimeout(timer)
+      probe.terminate()
+      resolve(ok)
+    }
+    // a probe that cannot even start says nothing about WebAssembly: try the fast build
+    const timer = setTimeout(() => done(true), 3000)
+    probe.onmessage = (e) => done(e.data === true)
+    probe.onerror = () => done(true)
+  })
+  return wasmAllowed
+}
 
 /** Starts a build and waits for its UCI greeting; false if it fails to load. */
-function handshake(worker: Worker): Promise<boolean> {
+function handshake(worker: Worker, timeout: number): Promise<boolean> {
   return new Promise((resolve) => {
     const done = (ok: boolean) => {
       clearTimeout(timer)
@@ -53,7 +79,7 @@ function handshake(worker: Worker): Promise<boolean> {
       worker.onmessage = null
       resolve(ok)
     }
-    const timer = setTimeout(() => done(false), 30000)
+    const timer = setTimeout(() => done(false), timeout)
     worker.onerror = () => done(false)
     worker.onmessage = (e) => typeof e.data === 'string' && e.data.includes('uciok') && done(true)
     worker.postMessage('uci')
@@ -74,14 +100,16 @@ export class Engine {
   }
 
   private async boot() {
-    for (const build of BUILDS) {
+    const builds = (await canUseWasm()) ? [wasmBuild, asmBuild] : [asmBuild]
+    for (const build of builds) {
       let worker: Worker
       try {
         worker = build()
       } catch {
         continue
       }
-      if (!(await handshake(worker))) {
+      // slow phones need a few seconds to compile the engine; a hang means it never will
+      if (!(await handshake(worker, 15000))) {
         worker.terminate()
         continue
       }

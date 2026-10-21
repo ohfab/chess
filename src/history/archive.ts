@@ -2,6 +2,7 @@ import type { Score } from '../engine/engine'
 import { whiteShare } from '../engine/useEngine'
 import { play, type Color, type Outcome, type Ply } from '../game/rules'
 import type { Judgement, Review } from '../review/review'
+import { gameAccuracy } from '../review/accuracy'
 
 /** A finished (or abandoned) game against Stockfish or from an opening drill. */
 export interface SavedGame {
@@ -48,8 +49,8 @@ export interface SavedReview {
 
 export const MAX_GAMES = 100
 
-/** 2: brilliant, great and miss, as on chess.com */
-export const REVIEW_VERSION = 2
+/** 2: brilliant, great and miss, as on chess.com; 3: lichess game accuracy */
+export const REVIEW_VERSION = 3
 export const isStale = (r: SavedReview | undefined) => !r || (r.v ?? 1) < REVIEW_VERSION
 
 export function scoreFor(outcome: Outcome | null, player: Color) {
@@ -78,16 +79,18 @@ export function packReview(r: Review): SavedReview {
 export function unpackReview(game: SavedGame): Review | null {
   const r = game.review
   if (!r) return null
+  const evals = r.evals.map((v, i) => {
+    const score = unpackScore(v)
+    // finished positions have no score; the next move's loss tells who won
+    const win = score ? whiteShare(score) : terminalWin(game, i)
+    return { score, best: r.best[i] ?? null, pv: r.pv?.[i]?.split(' '), win }
+  })
   return {
     ucis: game.ucis,
-    accuracy: r.accuracy,
+    // computed again from the evaluations, so reviews from older versions use today's formula
+    accuracy: gameAccuracy(evals, game.startFen.split(' ')[1] !== 'b'),
     moves: r.judgements.map((judgement, i) => ({ judgement, loss: r.losses[i] ?? 0 })),
-    evals: r.evals.map((v, i) => {
-      const score = unpackScore(v)
-      // finished positions have no score; the next move's loss tells who won
-      const win = score ? whiteShare(score) : terminalWin(game, i)
-      return { score, best: r.best[i] ?? null, pv: r.pv?.[i]?.split(' '), win }
-    }),
+    evals,
   }
 }
 

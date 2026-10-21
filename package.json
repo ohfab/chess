@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "openings": "node scripts/build-openings.mjs",
     "repertoire": "node --max-old-space-size=6000 scripts/build-repertoire.ts",
-    "artifact": "NO_PWA=1 npm run build && node scripts/artifact-page.mjs"
+    "artifact": "NO_PWA=1 npm run build && node scripts/artifact-page.mjs",
+    "i18n": "node scripts/i18n-check.mjs"
   },
   "dependencies": {
     "@lichess-org/chessground": "~10.4.2",

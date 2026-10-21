@@ -5,6 +5,7 @@ import { LegalLinks } from '../account/AccountDialogs'
 import { FREE_THEMES } from '../account/plans'
 import { playSound, SOUND_SETS } from '../game/sound'
 import type { Settings } from '../game/store'
+import { LANGS } from '../i18n/i18n'
 import { BOARDS, loadPreviews, PIECE_SETS } from '../theme/theme'
 import { Toggle } from './Dialogs'
 import { Modal } from './Modal'
@@ -42,6 +43,13 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
 
   return (
     <Modal title="Einstellungen" onClose={onClose}>
+      <div className="lang-row" role="radiogroup" aria-label="Sprache">
+        {LANGS.map((l) => (
+          <button key={l.id} role="radio" aria-checked={settings.lang === l.id} className={`chip ${settings.lang === l.id ? 'on' : ''}`} onClick={() => onChange({ lang: l.id })} lang={l.id}>
+            {l.name}
+          </button>
+        ))}
+      </div>
       <div className="segmented">
         <button className={tab === 'design' ? 'on' : ''} onClick={() => setTab('design')}>
           Design
