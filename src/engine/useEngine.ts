@@ -69,11 +69,7 @@ export function useAnalysis(fen: string, enabled: boolean, multiPv: number) {
 export async function opponentMove(fen: string, level: number): Promise<string | null> {
   const l = levelOf(level)
   const started = performance.now()
-  const move = await getOpponent().search({
-    fen,
-    go: `depth ${l.depth} movetime ${l.movetime}`,
-    options: { 'Skill Level': l.skill, MultiPV: 1 },
-  })
+  const move = await getOpponent().search({ fen, go: l.go, options: { ...l.options, MultiPV: 1 } })
   // a reply that lands instantly feels mechanical; give it a short beat
   const wait = 350 - (performance.now() - started)
   if (move && wait > 0) await new Promise((r) => setTimeout(r, wait))

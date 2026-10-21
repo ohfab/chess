@@ -54,7 +54,7 @@ export function NewGameDialog({
           </div>
 
           <div className="field-label">
-            Stärke <b>Stufe {level}</b> · {levelOf(level).label}
+            Stärke <b>{levelOf(level).label}</b> · {levelOf(level).name}
           </div>
           <input
             className="slider"
@@ -90,6 +90,7 @@ export function ResultDialog({
   onReview,
   onNew,
   onRematch,
+  rematchLabel,
   onClose,
 }: {
   outcome: Outcome
@@ -97,10 +98,11 @@ export function ResultDialog({
   onReview: () => void
   onNew: () => void
   onRematch: () => void
+  rematchLabel: string
   onClose: () => void
 }) {
   const won = outcome.kind !== 'draw' && outcome.winner === playerColor
-  const title = outcome.kind === 'draw' ? 'Remis' : won ? 'Du hast gewonnen!' : 'Stockfish gewinnt'
+  const title = outcome.kind === 'draw' ? 'Remis' : won ? 'Du hast gewonnen!' : 'Der Gegner gewinnt'
   const reason = REASONS[outcome.kind === 'draw' ? outcome.reason : outcome.kind]
   return (
     <Modal title={title} onClose={onClose}>
@@ -113,7 +115,7 @@ export function ResultDialog({
       </button>
       <div className="btn-row">
         <button className="btn-secondary" onClick={onRematch}>
-          Revanche
+          {rematchLabel}
         </button>
         <button className="btn-secondary" onClick={onNew}>
           Neue Partie
@@ -123,7 +125,7 @@ export function ResultDialog({
   )
 }
 
-function Toggle({ label, hint, value, onChange }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void }) {
+export function Toggle({ label, hint, value, onChange }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="toggle">
       <span>

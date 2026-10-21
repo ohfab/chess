@@ -66,6 +66,15 @@ export function play(fen: string, uci: string): Ply | null {
   }
 }
 
+/** UCI for a SAN move in the position, or null if it is not legal there. */
+export function sanToUci(fen: string, san: string) {
+  try {
+    return new Chess(fen).move(san).lan
+  } catch {
+    return null
+  }
+}
+
 export function inCheck(fen: string) {
   return new Chess(fen).inCheck()
 }
@@ -106,6 +115,18 @@ const FIGURINE: Record<string, string> = { K: '♚', Q: '♛', R: '♜', B: '♝
 
 /** SAN with piece symbols instead of English letters ("Nf6" → "♞f6"), as chess.com shows it. */
 export const figurine = (san: string) => san.replace(/[KQRBN]/g, (p) => FIGURINE[p])
+
+/** Moves with numbers, as written in a book: "3.e5 ♝f5 4.h4". `fromPly` counts plies before the first one. */
+export function numbered(sans: string[], fromPly = 0) {
+  return sans
+    .map((san, i) => {
+      const ply = fromPly + i
+      const n = Math.floor(ply / 2) + 1
+      const label = ply % 2 === 0 ? `${n}.` : i === 0 ? `${n}…` : ''
+      return label + figurine(san)
+    })
+    .join(' ')
+}
 
 /** Full move number and side for the position before a move. */
 export function moveNumber(fen: string) {

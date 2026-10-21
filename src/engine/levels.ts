@@ -1,22 +1,31 @@
 export interface Level {
   level: number
+  /** rough playing strength, as a player would describe an opponent */
   label: string
-  skill: number
-  depth: number
-  movetime: number
+  name: string
+  go: string
+  options: Record<string, number | boolean>
 }
 
-// Skill Level weakens Stockfish by sometimes picking a worse candidate;
-// shallow depth and short think time make the low levels miss tactics too.
+// The low levels weaken Stockfish through Skill Level and a shallow search, so they also
+// miss tactics. From ~1400 on, Stockfish's own UCI_Elo limiter takes over. The numbers are
+// approximate: the browser build uses a smaller network than the one UCI_Elo was tuned on.
+const skill = (s: number) => ({ UCI_LimitStrength: false, 'Skill Level': s })
+const elo = (e: number) => ({ UCI_LimitStrength: true, UCI_Elo: e, 'Skill Level': 20 })
+
 export const LEVELS: Level[] = [
-  { level: 1, label: 'Einsteiger', skill: 0, depth: 1, movetime: 50 },
-  { level: 2, label: 'Anfänger', skill: 3, depth: 2, movetime: 100 },
-  { level: 3, label: 'Gelegenheitsspieler', skill: 6, depth: 4, movetime: 150 },
-  { level: 4, label: 'Vereinsspieler', skill: 9, depth: 6, movetime: 250 },
-  { level: 5, label: 'Starker Vereinsspieler', skill: 12, depth: 9, movetime: 400 },
-  { level: 6, label: 'Experte', skill: 15, depth: 12, movetime: 600 },
-  { level: 7, label: 'Meister', skill: 18, depth: 16, movetime: 900 },
-  { level: 8, label: 'Volle Stärke', skill: 20, depth: 24, movetime: 1500 },
+  { level: 1, label: '~800', name: 'Einsteiger', go: 'depth 1 movetime 50', options: skill(0) },
+  { level: 2, label: '~1000', name: 'Anfänger', go: 'depth 2 movetime 100', options: skill(3) },
+  { level: 3, label: '~1200', name: 'Gelegenheitsspieler', go: 'depth 4 movetime 200', options: skill(6) },
+  { level: 4, label: '~1400', name: 'Vereinsspieler', go: 'movetime 300', options: elo(1400) },
+  { level: 5, label: '~1600', name: 'Starker Vereinsspieler', go: 'movetime 400', options: elo(1600) },
+  { level: 6, label: '~1800', name: 'Turnierspieler', go: 'movetime 500', options: elo(1800) },
+  { level: 7, label: '~2000', name: 'Experte', go: 'movetime 600', options: elo(2000) },
+  { level: 8, label: '~2200', name: 'Meister', go: 'movetime 800', options: elo(2200) },
+  { level: 9, label: '~2500', name: 'Großmeister', go: 'movetime 1000', options: elo(2500) },
+  { level: 10, label: 'Ideal', name: 'Immer der beste Zug', go: 'depth 22 movetime 2000', options: skill(20) },
 ]
+
+export const IDEAL = LEVELS.length
 
 export const levelOf = (n: number) => LEVELS[Math.min(Math.max(n, 1), LEVELS.length) - 1]

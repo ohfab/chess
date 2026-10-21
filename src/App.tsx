@@ -4,30 +4,54 @@ import type { Key } from '@lichess-org/chessground/types'
 import {
   Activity,
   ArrowUpDown,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Flag,
   Lightbulb,
+  ListTree,
+  Microscope,
   Plus,
   RotateCcw,
   Settings as SettingsIcon,
   Share2,
   Star,
+  Swords,
   Undo2,
   Upload,
 } from 'lucide-react'
 import { Board } from './board/Board'
 import { Piece } from './board/Piece'
 import { Promotion } from './board/Promotion'
-import { levelOf } from './engine/levels'
+import { IDEAL, levelOf } from './engine/levels'
 import { formatScore, getOpponent, getReviewer, opponentMove, useAnalysis, whiteScore, whiteShare } from './engine/useEngine'
 import { useOpening } from './game/openings'
-import { figurine, inCheck, isFinal, isPromotion, legalDests, opposite, play, pvToSan, toPgn, toUci, turnOf, type Color, type Ply } from './game/rules'
+import {
+  figurine,
+  inCheck,
+  isFinal,
+  isPromotion,
+  legalDests,
+  numbered,
+  opposite,
+  play,
+  pvToSan,
+  sanToUci,
+  toPgn,
+  toUci,
+  turnOf,
+  type Color,
+  type Ply,
+} from './game/rules'
 import { playSound, soundFor } from './game/sound'
 import { fenAt, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
 import { evaluate, JUDGEMENT, JUDGEMENT_ORDER, lossOf, reviewedPrefix, runReview, type Review } from './review/review'
+import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type Verdict } from './trainer/book'
+import { OpeningBrowser } from './trainer/OpeningBrowser'
+import { OpeningSetup, type TrainingSetup } from './trainer/OpeningSetup'
+import { useTrainer } from './trainer/useTrainer'
 import { Coach } from './ui/Coach'
 import { ImportDialog, NewGameDialog, ResultDialog, SettingsDialog, ShareDialog } from './ui/Dialogs'
 import { EngineLines } from './ui/EngineLines'
@@ -51,11 +75,24 @@ interface Retry {
   note?: string
 }
 
+type View = 'board' | 'openings' | 'setup'
+
+/** Feedback on the player's last move in an opening drill. */
+interface TrainerNote {
+  verdict: Verdict
+  san: string
+  /** number of plies on the board when the move was tried */
+  ply: number
+  /** attempts at this position, for wrong moves */
+  tries: number
+}
+
 const squares = (uci: string): [Key, Key] => [uci.slice(0, 2) as Key, uci.slice(2, 4) as Key]
+const isWrong = (v: Verdict) => v.kind === 'off' || v.kind === 'other-line'
 
 export default function App() {
   const g = useGame()
-  const { mode, plies, cursor, startFen, outcome, settings, review, playerColor, level, orientation, vsEngine } = g
+  const { mode, plies, cursor, startFen, outcome, settings, review, playerColor, level, orientation, vsEngine, training } = g
   const fen = fenAt(g, cursor)
   const turn = turnOf(fen)
   const atEnd = cursor === plies.length
@@ -69,23 +106,37 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [confirmResign, setConfirmResign] = useState(false)
   const [share, setShare] = useState<{ pgn: string; fen: string } | null>(null)
+  const [newMode, setNewMode] = useState<Mode>('play')
+  // a fresh start opens the opening menu; a game in progress stays on the board
+  const [view, setView] = useState<View>(() => (useGame.getState().plies.length || useGame.getState().mode === 'training' ? 'board' : 'openings'))
+  const [setupId, setSetupId] = useState<string | null>(null)
+  const [note, setNote] = useState<TrainerNote | null>(null)
+  const [trainerHint, setTrainerHint] = useState<string | null>(null)
   const reviewRun = useRef(0)
+  const trainer = useTrainer()
 
   const reviewed = review ? reviewedPrefix(review, plies) : 0
   const reviewing = mode === 'analysis' && review !== null && reviewed > 0
   const moveReview = reviewing && cursor > 0 && cursor <= reviewed ? review.moves[cursor - 1] : null
-  const opening = useOpening(startFen, plies, cursor)
+  const named = useOpening(startFen, plies, cursor)
 
   // ---------------------------------------------------------------- opponent
 
   // Stockfish answers the latest position, even while the player looks back through the game
   const liveFen = fenAt(g, plies.length)
-  const thinking = mode === 'play' && !outcome && turnOf(liveFen) !== playerColor
+  const thinking = (mode === 'play' || mode === 'training') && !outcome && turnOf(liveFen) !== playerColor
+  // in a drill the opponent plays theory while there is some, then Stockfish at the chosen strength
+  const bookStep = trainer.step
+  const bookLoading = trainer.loading
   useEffect(() => {
-    if (!thinking) return
+    if (!thinking || bookLoading) return
     const id = useGame.getState().gameId
     let live = true
-    void opponentMove(liveFen, level).then((uci) => {
+    const san = bookStep ? pickBookMove(bookStep, level === IDEAL) : null
+    const reply = san
+      ? new Promise<string | null>((resolve) => setTimeout(() => resolve(sanToUci(liveFen, san)), 550))
+      : opponentMove(liveFen, level)
+    void reply.then((uci) => {
       const s = useGame.getState()
       if (live && uci && s.gameId === id && fenAt(s, s.plies.length) === liveFen) s.append(uci)
     })
@@ -93,7 +144,7 @@ export default function App() {
       live = false
       getOpponent().cancel()
     }
-  }, [thinking, liveFen, level, g.gameId])
+  }, [thinking, liveFen, level, g.gameId, bookStep, bookLoading])
 
   // ---------------------------------------------------------------- live engine
 
@@ -135,7 +186,7 @@ export default function App() {
   useEffect(() => {
     const was = prevOutcome.current
     prevOutcome.current = outcome
-    if (!outcome || was || mode !== 'play') return
+    if (!outcome || was || mode === 'analysis') return
     // let the final move land before the result appears
     const t = setTimeout(() => setDialog('result'), 700)
     return () => clearTimeout(t)
@@ -160,21 +211,89 @@ export default function App() {
     getReviewer().cancel()
   }
 
-  const startGame = (opts: { mode: Mode; playerColor: Color; level: number }) => {
+  const resetBoardState = () => {
     stopReview()
     setRetry(null)
     setHintFen(null)
     setPromotion(null)
     setDialog(null)
+    setNote(null)
+    setTrainerHint(null)
+    setView('board')
+  }
+
+  const startGame = (opts: { mode: Mode; playerColor: Color; level: number }) => {
+    resetBoardState()
     getOpponent().newGame()
     g.newGame(opts)
   }
 
   const loadGame = (start: string, list: Ply[]) => {
-    stopReview()
-    setRetry(null)
-    setDialog(null)
+    resetBoardState()
     g.load(start, list)
+  }
+
+  const openNew = (m: Mode) => {
+    setNewMode(m)
+    setDialog('new')
+  }
+
+  const openSetup = (id: string) => {
+    void loadBook(id)
+    setSetupId(id)
+    setView('setup')
+  }
+
+  const startTraining = (setup: TrainingSetup) => {
+    const o = openingById(setup.openingId)
+    if (!o) return
+    let variation = setup.choice === 'random' ? Math.floor(Math.random() * o.variations.length) : setup.choice
+    // in random mode, avoid the same variation twice in a row
+    const prev = useGame.getState().training
+    if (setup.choice === 'random' && o.variations.length > 1 && prev?.openingId === o.id && prev.variation === variation)
+      variation = (variation + 1 + Math.floor(Math.random() * (o.variations.length - 1))) % o.variations.length
+    resetBoardState()
+    getOpponent().newGame()
+    g.startTraining(
+      { openingId: o.id, choice: setup.choice, variation, line: lineOf(o, variation), strict: setup.strict, mistakes: 0, hints: 0 },
+      setup.side,
+      setup.level,
+    )
+  }
+
+  const restartTraining = () => {
+    if (!training) return
+    startTraining({ openingId: training.openingId, choice: training.choice, side: playerColor, level, strict: training.strict })
+  }
+
+  /** Checks a drill move against the theory; true when it was handled here. */
+  const trainerMove = (uci: string) => {
+    if (!training || !trainer.step || !atEnd || outcome) return false
+    const ply = play(fen, uci)
+    if (!ply) return false
+    const verdict = judgeMove(trainer.step, ply.san)
+    const here = plies.length
+    setTrainerHint(null)
+    if (isWrong(verdict)) {
+      const again = note !== null && note.ply === here && isWrong(note.verdict)
+      if (!again) g.updateTraining({ mistakes: training.mistakes + 1 })
+      setNote({ verdict, san: ply.san, ply: here, tries: again ? note.tries + 1 : 1 })
+      if (training.strict) {
+        if (settings.sound) playSound('wrong')
+        setResync((r) => r + 1)
+        return true
+      }
+    } else setNote({ verdict, san: ply.san, ply: here, tries: 0 })
+    commit(uci)
+    return true
+  }
+
+  const trainingHint = () => {
+    if (!training) return
+    if (!trainer.step) return setHintFen(hintOn ? null : fen)
+    if (trainerHint === liveFen) return setTrainerHint(null)
+    setTrainerHint(liveFen)
+    g.updateTraining({ hints: training.hints + 1 })
   }
 
   const startReview = () => {
@@ -234,6 +353,8 @@ export default function App() {
   const onMove = (orig: Key, dest: Key, premove: boolean) => {
     if (retry) return tryRetry(retry, orig, dest)
     setHintFen(null)
+    // drill moves are judged before they reach the game; promotions in theory are queens
+    if (mode === 'training' && trainer.step && trainerMove(toUci(fen, orig, dest) + (isPromotion(fen, orig, dest) ? 'q' : ''))) return
     if (isPromotion(fen, orig, dest)) {
       if (premove || settings.autoQueen) commit(toUci(fen, orig, dest) + 'q')
       else setPromotion({ orig, dest })
@@ -267,7 +388,7 @@ export default function App() {
 
   const pgn = () => {
     const result = !outcome ? '*' : outcome.kind === 'draw' ? '1/2-1/2' : outcome.winner === 'white' ? '1-0' : '0-1'
-    const names = (c: Color) => (!vsEngine ? '?' : c === playerColor ? 'Ich' : `Stockfish (Stufe ${level})`)
+    const names = (c: Color) => (!vsEngine ? '?' : c === playerColor ? 'Ich' : `Stockfish (${levelOf(level).label})`)
     return toPgn(startFen, plies, {
       Event: 'Knightly',
       Date: new Date().toISOString().slice(0, 10).replaceAll('-', '.'),
@@ -280,7 +401,7 @@ export default function App() {
   // keyboard: arrows step through the game, f flips the board
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (dialog || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (dialog || view !== 'board' || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const s = useGame.getState()
       const to: Record<string, number> = { ArrowLeft: s.cursor - 1, ArrowRight: s.cursor + 1, ArrowUp: 0, Home: 0, ArrowDown: s.plies.length, End: s.plies.length }
       if (e.key in to) {
@@ -301,7 +422,7 @@ export default function App() {
     ? retry.status === 'try'
       ? turnOf(retry.fen)
       : undefined
-    : mode === 'play'
+    : mode !== 'analysis'
       ? atEnd && !outcome
         ? playerColor
         : undefined
@@ -331,8 +452,15 @@ export default function App() {
       analysis.lines.slice(0, 2).forEach((l, i) => l.pv[0] && arrow(l.pv[0], i === 0 ? 'engine' : 'engine2'))
     }
     if (hintOn && analysis?.lines[0]?.pv[0]) arrow(analysis.lines[0].pv[0], 'hint')
+    // drill hint: asked for, or shown after the second miss at the same spot
+    if (bookStep && atEnd && turnOf(liveFen) === playerColor) {
+      const missed = note && note.ply === plies.length && isWrong(note.verdict) && note.tries >= 2 ? note.verdict : null
+      const san = missed && 'expected' in missed ? missed.expected : trainerHint === liveFen ? hintMove(bookStep) : null
+      const uci = san && sanToUci(liveFen, san)
+      if (uci) arrow(uci, 'hint')
+    }
     return out
-  }, [retry, moveReview, review, plies, cursor, mode, showEval, analysis, hintOn])
+  }, [retry, moveReview, review, plies, cursor, mode, showEval, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
 
   // ---------------------------------------------------------------- coach
 
@@ -411,7 +539,7 @@ export default function App() {
           )
         }
       >
-        {j === 'book' ? opening?.name : bestSan ? `Bester Zug war ${figurine(bestSan)}.` : null}
+        {j === 'book' ? named?.name : bestSan ? `Bester Zug war ${figurine(bestSan)}.` : null}
       </Coach>
     )
   } else if (reviewing && cursor === 0) {
@@ -420,6 +548,8 @@ export default function App() {
         Geh mit <ChevronRight size={14} className="inline" /> Zug für Zug durch die Partie. Bei Fehlern kannst du es nochmal versuchen.
       </Coach>
     )
+  } else if (trainer.active && training && trainer.drill && trainer.variation) {
+    coach = trainingCoach()
   } else if (mode === 'play') {
     const title = outcome
       ? outcome.kind === 'draw'
@@ -432,9 +562,92 @@ export default function App() {
         : turn === playerColor
           ? 'Du bist am Zug'
           : 'Stockfish ist am Zug'
-    coach = <Coach title={title}>{opening ? `${opening.eco} · ${opening.name}` : `Stufe ${level} · ${levelOf(level).label}`}</Coach>
+    coach = <Coach title={title}>{named ? `${named.eco} · ${named.name}` : `${levelOf(level).label} · ${levelOf(level).name}`}</Coach>
   } else {
-    coach = <Coach title="Analysebrett">{opening ? `${opening.eco} · ${opening.name}` : 'Zieh frei für beide Seiten. Stockfish rechnet mit.'}</Coach>
+    coach = <Coach title="Analysebrett">{named ? `${named.eco} · ${named.name}` : 'Zieh frei für beide Seiten. Stockfish rechnet mit.'}</Coach>
+  }
+
+  function trainingCoach(): ReactNode {
+    const t = training!
+    const drill = trainer.drill!
+    const label = levelOf(level).label
+    const last = plies[plies.length - 1]
+    const opponentMoved = !!last && turnOf(liveFen) === playerColor
+    const status = thinking
+      ? 'Der Gegner überlegt …'
+      : opponentMoved
+        ? `Gegner: ${numbered([last.san], plies.length - 1)}. Du bist dran.`
+        : 'Du bist dran.'
+    const fresh = note && note.ply >= plies.length - 2 ? note : null
+    const more = (
+      <>
+        <button className="btn-primary small" onClick={restartTraining}>
+          <RotateCcw size={15} /> Nochmal
+        </button>
+        <button className="btn-secondary small" onClick={() => openSetup(t.openingId)}>
+          Andere Variante
+        </button>
+      </>
+    )
+
+    if (trainer.loading) return <Coach title="Theorie wird geladen …" />
+    if (outcome) {
+      const won = outcome.kind !== 'draw' && outcome.winner === playerColor
+      return (
+        <Coach title={outcome.kind === 'draw' ? 'Remis' : won ? 'Du hast gewonnen!' : 'Der Gegner gewinnt'} actions={more}>
+          Werte die Partie aus, um zu sehen, wo es nach der Eröffnung gekippt ist.
+        </Coach>
+      )
+    }
+    if (trainer.bookOver) {
+      const tally = [t.mistakes && `${t.mistakes} Fehler`, t.hints && `${t.hints} Tipps`].filter(Boolean).join(' · ')
+      return (
+        <Coach judgement={trainer.clean ? 'best' : 'book'} title={trainer.clean ? 'Variante gemeistert!' : 'Ende der Theorie'} actions={more}>
+          {trainer.clean ? 'Alle Züge saßen.' : `${tally || 'Du hast die Variante verlassen'}.`} Ab hier spielt der Gegner frei mit {label} weiter.
+        </Coach>
+      )
+    }
+    if (fresh && isWrong(fresh.verdict) && 'expected' in fresh.verdict) {
+      const off = fresh.verdict.kind === 'off'
+      const answer = fresh.tries >= 2 ? ` Richtig ist ${figurine(fresh.verdict.expected)}, siehe Pfeil.` : ''
+      return (
+        <Coach
+          judgement={off ? 'mistake' : 'inaccuracy'}
+          title={
+            <span>
+              <b className="coach-san">{figurine(fresh.san)}</b> {off ? 'ist keine Theorie' : 'gehört zu einer anderen Variante'}
+            </span>
+          }
+        >
+          {t.strict ? `Versuch's nochmal.${answer}` : `Ab hier spielst du außerhalb der ${trainer.variation!.name}. ${status}`}
+        </Coach>
+      )
+    }
+    if (fresh && !isWrong(fresh.verdict) && 'share' in fresh.verdict) {
+      const { share, main } = fresh.verdict
+      return (
+        <Coach
+          judgement={main ? 'best' : 'book'}
+          title={
+            <span>
+              <b className="coach-san">{figurine(fresh.san)}</b> {main ? 'ist der Hauptzug' : 'ist Theorie'}
+            </span>
+          }
+        >
+          {share > 0 && `${Math.round(share * 100)} % der Meisterpartien. `}
+          {status}
+          {named && <span className="coach-line">{named.name}</span>}
+        </Coach>
+      )
+    }
+    return (
+      <Coach title={`${drill.name} · ${trainer.variation!.name}`}>
+        {plies.length === 0
+          ? `Du spielst ${playerColor === 'white' ? 'Weiß und beginnst' : 'Schwarz, der Gegner beginnt'}. Spiel die Züge der Theorie.`
+          : status}
+        {named && plies.length > 0 && <span className="coach-line">{named.name}</span>}
+      </Coach>
+    )
   }
 
   // ---------------------------------------------------------------- layout
@@ -446,8 +659,8 @@ export default function App() {
       <PlayerStrip
         color={color}
         bot={engine}
-        name={vsEngine ? (engine ? 'Stockfish' : 'Du') : color === 'white' ? 'Weiß' : 'Schwarz'}
-        detail={engine ? `Stufe ${level}` : undefined}
+        name={vsEngine ? (engine ? (mode === 'training' ? 'Gegner' : 'Stockfish') : 'Du') : color === 'white' ? 'Weiß' : 'Schwarz'}
+        detail={engine ? levelOf(level).label : undefined}
         startFen={startFen}
         fen={boardFen}
         thinking={thinking && engine}
@@ -488,13 +701,39 @@ export default function App() {
         />
         <Tool label="Zurücknehmen" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
         <Tool label={confirmResign ? 'Sicher?' : 'Aufgeben'} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
+        <Tool label="Neu" icon={<Plus size={20} />} onClick={() => openNew('play')} />
+      </>
+    )
+  } else if (mode === 'training' && training && !outcome) {
+    tools = (
+      <>
+        <Tool
+          label="Tipp"
+          icon={<Lightbulb size={20} />}
+          onClick={trainingHint}
+          disabled={turnOf(liveFen) !== playerColor || !atEnd}
+          on={trainerHint === liveFen || hintOn}
+        />
+        <Tool label="Zurücknehmen" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
+        <Tool label="Neustart" icon={<RotateCcw size={20} />} onClick={restartTraining} />
+        <Tool label="Varianten" icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
+      </>
+    )
+  } else if (mode === 'training' && training) {
+    tools = (
+      <>
+        <Tool label="Auswertung" icon={<Star size={20} />} onClick={startReview} />
+        <Tool label="Varianten" icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
+        <button className="btn-primary" onClick={restartTraining}>
+          Nochmal
+        </button>
       </>
     )
   } else if (mode === 'play') {
     tools = (
       <>
         <Tool label="Auswertung" icon={<Star size={20} />} onClick={startReview} />
-        <button className="btn-primary" onClick={() => setDialog('new')}>
+        <button className="btn-primary" onClick={() => openNew('play')}>
           Neue Partie
         </button>
       </>
@@ -504,7 +743,7 @@ export default function App() {
       <>
         <Tool label="Engine" icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
         <Tool label="Nochmal" icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
-        <button className="btn-primary" onClick={() => setDialog('new')}>
+        <button className="btn-primary" onClick={() => openNew('play')}>
           Neue Partie
         </button>
       </>
@@ -520,7 +759,13 @@ export default function App() {
     )
   }
 
-  const title = mode === 'play' ? 'Gegen Stockfish' : reviewing || progress !== null ? 'Partie-Auswertung' : 'Analyse'
+  const tab = view !== 'board' || mode === 'training' ? 'openings' : mode
+  const goPlay = () => (mode === 'play' ? setView('board') : openNew('play'))
+  const goAnalysis = () => {
+    if (mode !== 'analysis') g.analyse()
+    setView('board')
+  }
+  const setupOpening = setupId ? openingById(setupId) : undefined
 
   return (
     <div className="app">
@@ -529,11 +774,21 @@ export default function App() {
           <Piece role="knight" color="white" className="brand-mark" />
           <span className="brand-name">Knightly</span>
         </div>
-        <h1 className="topbar-title">{title}</h1>
-        <div className="topbar-actions">
-          <button className="icon-btn" onClick={() => setDialog('new')} aria-label="Neue Partie">
-            <Plus size={22} />
+        <nav className="tabs">
+          <button className={`tab ${tab === 'play' ? 'on' : ''}`} onClick={goPlay}>
+            <Swords size={18} />
+            <span>Spielen</span>
           </button>
+          <button className={`tab ${tab === 'openings' ? 'on' : ''}`} onClick={() => setView('openings')}>
+            <BookOpen size={18} />
+            <span>Eröffnungen</span>
+          </button>
+          <button className={`tab ${tab === 'analysis' ? 'on' : ''}`} onClick={goAnalysis}>
+            <Microscope size={18} />
+            <span>Analyse</span>
+          </button>
+        </nav>
+        <div className="topbar-actions">
           <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen">
             <ArrowUpDown size={20} />
           </button>
@@ -543,7 +798,32 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
+      {view === 'openings' && (
+        <main className="page">
+          <OpeningBrowser
+            progress={g.progress}
+            current={
+              trainer.drill && trainer.variation && !outcome
+                ? { title: `${trainer.drill.name}: ${trainer.variation.name}`, onResume: () => setView('board') }
+                : undefined
+            }
+            onPick={openSetup}
+          />
+        </main>
+      )}
+      {view === 'setup' && setupOpening && (
+        <main className="page">
+          <OpeningSetup
+            key={setupOpening.id}
+            opening={setupOpening}
+            progress={g.progress}
+            level={level}
+            onStart={startTraining}
+            onBack={() => setView('openings')}
+          />
+        </main>
+      )}
+      <main className="layout" hidden={view !== 'board'}>
         <section className="stage">
           {strip(topColor)}
           <div className="board-row">
@@ -589,7 +869,7 @@ export default function App() {
         </aside>
       </main>
 
-      {dialog === 'new' && <NewGameDialog mode={mode} level={level} onStart={startGame} onClose={() => setDialog(null)} />}
+      {dialog === 'new' && <NewGameDialog mode={newMode} level={level} onStart={startGame} onClose={() => setDialog(null)} />}
       {dialog === 'settings' && <SettingsDialog settings={settings} onChange={g.updateSettings} onClose={() => setDialog(null)} />}
       {dialog === 'import' && <ImportDialog onLoad={loadGame} onClose={() => setDialog(null)} />}
       {dialog === 'share' && share && <ShareDialog pgn={share.pgn} fen={share.fen} onCopy={copy} onClose={() => setDialog(null)} />}
@@ -599,7 +879,8 @@ export default function App() {
           playerColor={playerColor}
           onReview={startReview}
           onNew={() => setDialog('new')}
-          onRematch={() => startGame({ mode: 'play', playerColor: opposite(playerColor), level })}
+          rematchLabel={mode === 'training' ? 'Nochmal' : 'Revanche'}
+          onRematch={() => (mode === 'training' ? restartTraining() : startGame({ mode: 'play', playerColor: opposite(playerColor), level }))}
           onClose={() => setDialog(null)}
         />
       )}

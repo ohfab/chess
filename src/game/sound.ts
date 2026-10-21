@@ -63,7 +63,7 @@ function chime(at: number, freqs: number[], gain = 0.08) {
   })
 }
 
-export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'end'
+export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'end' | 'wrong'
 
 export function playSound(kind: SoundKind) {
   try {
@@ -85,6 +85,9 @@ export function playSound(kind: SoundKind) {
         break
       case 'end':
         chime(0.2, [523.25, 659.25, 783.99])
+        break
+      case 'wrong':
+        tap(0, { freq: 600, body: 90, gain: 0.45, decay: 0.12 })
         break
     }
   } catch {

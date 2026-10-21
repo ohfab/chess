@@ -1,6 +1,6 @@
 {
   "name": "knightly",
-  "description": "Knightly: persönliches Schach-Training mit Stockfish.",
+  "description": "Knightly: persönliches Schach-Training mit Stockfish und Eröffnungstrainer.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,7 +9,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "openings": "node scripts/build-openings.mjs"
+    "openings": "node scripts/build-openings.mjs",
+    "repertoire": "node --max-old-space-size=6000 scripts/build-repertoire.ts",
+    "artifact": "npm run build && node scripts/artifact-page.mjs"
   },
   "dependencies": {
     "@lichess-org/chessground": "~10.4.2",

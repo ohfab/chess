@@ -6,7 +6,8 @@
 }
 
 /* rounding the squares layer keeps review badges free to overhang the edge */
-.board cg-board {
+.board cg-board,
+.miniboard {
   border-radius: 4px;
   overflow: hidden;
   background-color: var(--sq-light);

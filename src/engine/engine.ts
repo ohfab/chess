@@ -1,5 +1,6 @@
 import engineJs from 'stockfish/bin/stockfish-19-lite-single.js?url'
 import engineWasm from 'stockfish/bin/stockfish-19-lite-single.wasm?url'
+import engineAsm from 'stockfish/bin/stockfish-19-asm.js?url'
 
 /** Score from the side to move, as Stockfish reports it. */
 export type Score = { cp: number } | { mate: number }
@@ -36,8 +37,31 @@ interface Job {
  * Only one search runs at a time: a new search stops the previous one,
  * and requests that are overtaken while waiting are dropped (resolve null).
  */
+// The WebAssembly build first (it reads its .wasm location from the hash of its own url).
+// Some hosts refuse to compile WebAssembly; the asm.js build is slower but runs anywhere.
+const BUILDS = [
+  () => new Worker(`${engineJs}#${encodeURIComponent(new URL(engineWasm, location.href).href)}`),
+  () => new Worker(engineAsm),
+]
+
+/** Starts a build and waits for its UCI greeting; false if it fails to load. */
+function handshake(worker: Worker): Promise<boolean> {
+  return new Promise((resolve) => {
+    const done = (ok: boolean) => {
+      clearTimeout(timer)
+      worker.onerror = null
+      worker.onmessage = null
+      resolve(ok)
+    }
+    const timer = setTimeout(() => done(false), 30000)
+    worker.onerror = () => done(false)
+    worker.onmessage = (e) => typeof e.data === 'string' && e.data.includes('uciok') && done(true)
+    worker.postMessage('uci')
+  })
+}
+
 export class Engine {
-  private worker: Worker
+  private worker: Worker | null = null
   private ready: Promise<void>
   private job: Job | null = null
   private idleWaiters: (() => void)[] = []
@@ -46,20 +70,34 @@ export class Engine {
   private replies: { token: string; resolve: () => void }[] = []
 
   constructor() {
-    // the engine reads the wasm location from the hash of its own url
-    this.worker = new Worker(`${engineJs}#${encodeURIComponent(new URL(engineWasm, location.href).href)}`)
-    this.worker.onmessage = (e) => {
-      if (typeof e.data !== 'string') return
-      for (const line of e.data.split('\n')) this.receive(line.trim())
-    }
-    this.ready = (async () => {
-      await this.command('uci', 'uciok')
+    this.ready = this.boot()
+  }
+
+  private async boot() {
+    for (const build of BUILDS) {
+      let worker: Worker
+      try {
+        worker = build()
+      } catch {
+        continue
+      }
+      if (!(await handshake(worker))) {
+        worker.terminate()
+        continue
+      }
+      worker.onmessage = (e) => {
+        if (typeof e.data !== 'string') return
+        for (const line of e.data.split('\n')) this.receive(line.trim())
+      }
+      this.worker = worker
       await this.command('isready', 'readyok')
-    })()
+      return
+    }
+    throw new Error('Stockfish konnte nicht gestartet werden')
   }
 
   private send(cmd: string) {
-    this.worker.postMessage(cmd)
+    this.worker?.postMessage(cmd)
   }
 
   private command(cmd: string, token: string) {
@@ -140,7 +178,7 @@ export class Engine {
   }
 
   destroy() {
-    this.worker.terminate()
+    this.worker?.terminate()
   }
 }
 
