@@ -23,7 +23,7 @@ Was du brauchst:
    ```
 3. **Authentication → Providers**: E-Mail ist aktiv (Magic Link). Für Google einen OAuth-Client in der Google Cloud Console anlegen und hier eintragen.
 4. **Authentication → URL Configuration**: Site URL = deine App-Adresse (z. B. `https://rookly.app/` oder `https://ohfab.github.io/chess/`), dieselbe Adresse auch unter Redirect URLs.
-5. **Authentication → Emails**: die Vorlage für den Magic Link auf Deutsch anpassen. Für mehr als ein paar Mails pro Stunde einen eigenen SMTP-Versand einrichten (z. B. Resend, Postmark).
+5. **Authentication → Emails**: die Vorlage für den Magic Link anpassen. Supabase verschickt pro Projekt eine Vorlage für alle; weil Rookly vier Sprachen hat, am besten kurz zweisprachig (Deutsch und Englisch). Für mehr als ein paar Mails pro Stunde einen eigenen SMTP-Versand einrichten (z. B. Resend, Postmark).
 
 ## 3. Stripe einrichten
 
@@ -96,7 +96,7 @@ Rookly ist eine installierbare Web-App (PWA): auf dem Handy „Zum Home-Bildschi
 
 - [ ] Marke geprüft, Domain registriert
 - [ ] Impressum, Datenschutz, AGB ausgefüllt
-- [ ] Supabase: Migration, Auth-URLs, deutsche E-Mail-Vorlagen, SMTP
+- [ ] Supabase: Migration, Auth-URLs, E-Mail-Vorlagen, SMTP
 - [ ] Stripe: Produkt, zwei Preise, Zahlungsmethoden, Kundenportal, Webhook, Test-Kauf im Testmodus
 - [ ] Secrets gesetzt, fünf Funktionen deployt
 - [ ] Repo-Variablen gesetzt, Seite neu gebaut

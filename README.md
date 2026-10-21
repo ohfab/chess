@@ -1,8 +1,8 @@
 # Rookly
 
-Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben nach Motiv, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen wie auf chess.com. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, es gibt keinen Server und kein Konto.
+Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben nach Motiv, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen wie auf chess.com. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, ein Server oder Konto ist nicht nötig.
 
-Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die App Rookly; gespeicherte Daten werden beim ersten Start übernommen.
+Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die App Knightly; gespeicherte Daten werden beim ersten Start übernommen.
 
 ## Features
 
@@ -69,7 +69,8 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 **Partie-Auswertung**
 - Stockfish prüft jeden Zug und bewertet ihn wie chess.com: Brillant (gutes Opfer), Stark (der einzige gute Zug), Bester Zug, Exzellent, Gut, Buchzug, Ungenauigkeit, Fehler, Verpasst (Fehler des Gegners nicht genutzt, Matt übersehen), Patzer
 - Der Coach erklärt den Zug: was danach verloren geht („Danach gewinnt Schwarz mit ♝xf3 eine Figur“), welches Matt droht oder was möglich gewesen wäre, dazu die Bewertung nach dem Zug
-- Genauigkeit in Prozent für beide Seiten, Übersicht wie auf chess.com, mit Schlüsselmomenten: bester und teuerster Zug jeder Seite zum Anspringen
+- Genauigkeit in Prozent für beide Seiten (Lichess-Formel), Übersicht wie auf chess.com, mit Schlüsselmomenten: bester und teuerster Zug jeder Seite zum Anspringen
+- Geschätzte Spielstärke (Elo) pro Seite und eine Note für Eröffnung, Mittelspiel, Endspiel, Taktik und Strategie
 - Bewertungsgraph über die ganze Partie, anklickbar, mit Punkten für Fehler und starke Züge
 - Badge auf dem Brett (als Vektor-Icon, springt kurz auf) und grüner Pfeil für den besseren Zug
 - **Nochmal versuchen:** bei Fehlern zurück in die Stellung und den besseren Zug selbst finden. Stockfish prüft auch Alternativen, die fast genauso gut sind
@@ -81,6 +82,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Bewertungsbalken per Schalter auch beim Spielen und im Eröffnungstraining
 
 **Sonstiges**
+- Sprachen: Deutsch, English, Français, Italiano (in den Einstellungen und auf dem Willkommensbildschirm; beim ersten Start die Sprache des Browsers)
 - Figuren-Notation (♞f6), Koordinaten
 - Pfeile und Kreise mit Rechtsklick zeichnen
 - Tastatur: ← → durch die Partie, ↑ ↓ Anfang/Ende, `f` dreht das Brett
@@ -94,6 +96,7 @@ npm install
 npm run dev       # Entwicklungsserver
 npm run build     # Produktions-Build nach dist/
 npm run lint
+npm run i18n        # listet Texte ohne Übersetzung (en, fr, it)
 npm run openings    # Eröffnungsnamen neu erzeugen (lädt die Lichess-Listen)
 npm run repertoire  # Theorie-Bäume des Trainers neu erzeugen (lädt ~230 MB Turnierpartien)
 node scripts/build-puzzles.mjs  # Taktikaufgaben neu auswählen (lädt ~300 MB Puzzle-Datenbank)
@@ -125,8 +128,9 @@ Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem 
 | `src/import/` | Partien von chess.com und Lichess, Analyse-Seite |
 | `src/editor/` | Brett-Editor |
 | `src/ui/` | Menü, Spielerleisten, Coach, Zugliste, Graph, Dialoge |
+| `src/i18n/` | Übersetzungen: der deutsche Text ist der Schlüssel, Wörterbücher pro Bereich in `parts/` |
 
-Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Rookly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
+Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Rookly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite rechnet wie Lichess: Genauigkeit je Zug aus der verlorenen Gewinnerwartung, gewichtet nach Schärfe der Stellung, und davon der Mittelwert aus gewichtetem und harmonischem Mittel (ein einzelner Patzer zieht so deutlich nach unten). Die Spielstärke ist eine grobe Schätzung aus dieser Genauigkeit; die Noten pro Phase nutzen dieselbe Rechnung nur für die Züge dieser Phase (Taktik: Schlagen, Schach oder eine Stellung mit taktischem bestem Zug; Strategie: alle ruhigen Züge).
 
 ## Lizenzen und Danke
 
