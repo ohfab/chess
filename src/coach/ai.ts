@@ -3,8 +3,10 @@ import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
 import { today, type DailyPlan, type PlanTask } from './plan'
 
 // The AI coach: Claude reads the player's numbers and the candidate tasks and writes
-// the day's plan. It runs through the claude.ai artifact runtime (`sample`), which
-// asks the viewer once and uses their own Claude account; elsewhere it is simply absent.
+// the day's plan. With the Rookly backend it runs on the server for Pro members
+// (supabase/functions/coach); inside a claude.ai artifact it uses the viewer's own
+// Claude account through the runtime's `sample`; elsewhere it is absent.
+import { callFunction, CloudError, cloudEnabled } from '../account/cloud'
 
 interface SampleOptions {
   modelTier?: 'quick' | 'default' | 'complex'
@@ -27,6 +29,9 @@ export function getSample() {
   return sample
 }
 
+/** Whether this copy of the app can ask the AI coach at all. */
+export const coachAvailable = async () => cloudEnabled || !!(await getSample())
+
 interface Answer {
   summary?: unknown
   focus?: unknown
@@ -41,9 +46,6 @@ export async function aiPlan(
   ctx: { level: number; puzzleRating: number; streak: number },
   refresh: boolean,
 ): Promise<DailyPlan> {
-  const s = await getSample()
-  if (!s) throw { code: 'not_granted' }
-
   const phases = (Object.keys(ins.phases) as Phase[]).map((p) => ({
     phase: PHASE_NAMES[p],
     moves: ins.phases[p].moves,
@@ -87,7 +89,13 @@ export async function aiPlan(
     `Einheiten: ${JSON.stringify(options)}`,
   ].join('\n')
 
-  const answer = await s.json<Answer>(prompt, { modelTier: 'default', cache: { gcTime: DAY, refresh } })
+  let answer: Answer
+  if (cloudEnabled) answer = await callFunction<Answer>('coach', { data, options })
+  else {
+    const s = await getSample()
+    if (!s) throw { code: 'not_granted' }
+    answer = await s.json<Answer>(prompt, { modelTier: 'default', cache: { gcTime: DAY, refresh } })
+  }
   const byId = new Map(tasks.map((t) => [t.id, t]))
   const plan = Array.isArray(answer.plan) ? answer.plan : []
   const picked: PlanTask[] = []
@@ -113,15 +121,19 @@ export async function aiPlan(
 
 /** What to tell the player when the coach could not answer. */
 export function aiError(e: unknown) {
-  const code = (e as { code?: string })?.code
+  const code = e instanceof CloudError ? e.code : (e as { code?: string })?.code
   switch (code) {
+    case 'not_signed_in':
+      return 'Melde dich an, um den KI-Coach zu nutzen.'
+    case 'pro_required':
+      return 'Der KI-Coach gehört zu Pro.'
     case 'not_granted':
     case 'sampling_disabled':
     case 'not_declared':
     case 'capability_disabled':
       return 'Der KI-Coach ist hier nicht verfügbar. Der Plan unten kommt aus der eigenen Auswertung.'
     case 'rate_limited':
-      return 'Gerade zu viele Anfragen. Versuch es später nochmal.'
+      return 'Der Coach hat heute schon genug geplant. Morgen gibt es einen neuen Plan.'
     case 'cancelled':
       return null
     default:

@@ -97,6 +97,10 @@ interface GameState {
   woodpecker: Woodpecker | null
   /** endgame trainer: attempts and wins per position */
   endgames: Record<string, { tries: number; wins: number }>
+  /** full game reviews started today, for the free plan's daily allowance */
+  reviewsToday: { date: string; count: number } | null
+  /** the welcome screen was shown */
+  onboarded: boolean
 
   newGame: (opts: { mode: Mode; playerColor: Color; level: number; startFen?: string }) => void
   load: (startFen: string, plies: Ply[]) => void
@@ -131,6 +135,10 @@ interface GameState {
   startWoodpecker: (ids: string[]) => void
   woodpeckerResult: (solved: boolean, ms: number) => void
   recordEndgame: (id: string, won: boolean) => void
+  countReview: () => void
+  /** replaces the synced parts of the state, after a merge with the cloud copy or a restore */
+  replaceSynced: (patch: Partial<GameState>) => void
+  finishOnboarding: (patch: Partial<Pick<GameState, 'level' | 'puzzleRating'>>) => void
 }
 
 const yesterday = () => {
@@ -175,7 +183,8 @@ export const progressKey = (openingId: string, variation: number, side: Color) =
 const safeStorage = createJSONStorage(() => ({
   getItem: (key: string) => {
     try {
-      return localStorage.getItem(key)
+      // the app was called Knightly before; its saved state moves over once
+      return localStorage.getItem(key) ?? (key === 'rookly' ? localStorage.getItem('knightly') : null)
     } catch {
       return null
     }
@@ -239,6 +248,8 @@ export const useGame = create<GameState>()(
       dailyPuzzle: null,
       woodpecker: null,
       endgames: {},
+      reviewsToday: null,
+      onboarded: false,
 
       newGame: ({ mode, playerColor, level, startFen = START_FEN }) =>
         set((s) => ({
@@ -457,6 +468,15 @@ export const useGame = create<GameState>()(
           return { endgames: { ...s.endgames, [id]: { tries: e.tries + 1, wins: e.wins + (won ? 1 : 0) } } }
         }),
 
+      countReview: () =>
+        set((s) => ({
+          reviewsToday: { date: today(), count: s.reviewsToday?.date === today() ? s.reviewsToday.count + 1 : 1 },
+        })),
+
+      replaceSynced: (patch) => set(patch),
+
+      finishOnboarding: (patch) => set({ ...patch, onboarded: true }),
+
       recordProgress: (key, clean) => {
         set((s) => {
           const p = s.progress[key] ?? { runs: 0, clean: 0 }
@@ -467,7 +487,7 @@ export const useGame = create<GameState>()(
       },
     }),
     {
-      name: 'knightly',
+      name: 'rookly',
       version: 2,
       storage: safeStorage,
       // 2: the recorded "Standard" sounds replace the synthesised default
@@ -503,7 +523,11 @@ export const useGame = create<GameState>()(
         dailyPuzzle,
         woodpecker,
         endgames,
+        reviewsToday,
+        onboarded,
       }) => ({
+        reviewsToday,
+        onboarded,
         accounts,
         dailyPuzzle,
         woodpecker,

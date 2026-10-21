@@ -79,7 +79,9 @@ export function explain(j: Judgement, fen: string, afterFen: string, played: str
       }
       const reply = after.pv ?? []
       const lost = -materialSwing(afterFen, reply, mover)
-      if (reply.length && lost >= 1) return `Danach gewinnt ${NAME[opp]} mit ${san(afterFen, reply[0])} ${what(lost)}.${better}`
+      // a blunder that only drops a pawn in the first moves loses more than that further on: say so
+      if (reply.length && (lost >= 3 || (lost >= 1 && j !== 'blunder'))) return `Danach gewinnt ${NAME[opp]} mit ${san(afterFen, reply[0])} ${what(lost)}.${better}`
+      if (reply.length && j === 'blunder') return `Nach ${san(afterFen, reply[0])} steht ${NAME[opp]} klar besser.${better}`
       // no material lost right away: a forcing reply still shows what the move allowed
       const answer = reply.length ? san(afterFen, reply[0]) : null
       if (answer && j !== 'inaccuracy' && /[x+]/.test(answer)) return `Danach kommt ${answer}.${better}`

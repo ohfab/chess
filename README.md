@@ -1,10 +1,18 @@
-# Knightly
+# Rookly
 
 Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben nach Motiv, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen wie auf chess.com. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, es gibt keinen Server und kein Konto.
 
-Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainieren.
+Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die App Rookly; gespeicherte Daten werden beim ersten Start übernommen.
 
 ## Features
+
+**Konto und Rookly Pro** (optional, siehe [PUBLISHING.md](PUBLISHING.md))
+- Ohne Backend läuft alles lokal und frei; mit Supabase gibt es Konten (Magic Link per E-Mail oder Google), Sync zwischen Geräten und das Abo Rookly Pro über Stripe (Karte, TWINT, Apple Pay, Google Pay)
+- Gratis: Spielen, Analyse, Brett-Editor, Import, Taktik, Tagesaufgabe, Hauptvarianten der 60 Eröffnungen, 3 Partie-Auswertungen pro Tag, 3 Bretter und 3 Figurensätze
+- Pro (CHF 1.– im Monat oder CHF 10.– im Jahr): unbegrenzte Auswertungen, KI-Coach auf dem Server (Claude), alle Eröffnungsvarianten, Woodpecker, Endspieltrainer, Serien-Import für den Coach, alle Designs
+- Konto-Seite mit Abo-Verwaltung (Stripe-Kundenportal), Daten-Export und -Import, Konto löschen
+- Willkommensbildschirm beim ersten Start: Spielstärke wählen, danach passen Bots und Taktik
+- Installierbar und offline nutzbar (Service Worker), Impressum, Datenschutz und AGB als Vorlagen unter `public/legal/`
 
 **Heute: tägliches Training mit Coach**
 - Jede Partie gegen Stockfish und jedes Eröffnungstraining landet im Archiv und wird im Hintergrund von Stockfish ausgewertet
@@ -37,7 +45,7 @@ Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainie
 - Ziehen per Drag & Drop oder Klick, Premoves während Stockfish rechnet, Rochade auch per König auf Turm
 - Umwandlungs-Auswahl wie auf Lichess (oder immer Dame)
 - Tipp-Knopf zeigt den besten Zug als Pfeil, Zug zurücknehmen, Aufgeben, Revanche
-- Patzer-Schutz (wie chessigmas „Blunder Shield“): bevor Stockfish antwortet, prüft Knightly deinen Zug. Verschenkt er mindestens 15 % Gewinnerwartung, warnt der Coach („Danach setzt Schwarz in einem Zug matt“) und du kannst zurücknehmen oder trotzdem spielen
+- Patzer-Schutz (wie chessigmas „Blunder Shield“): bevor Stockfish antwortet, prüft Rookly deinen Zug. Verschenkt er mindestens 15 % Gewinnerwartung, warnt der Coach („Danach setzt Schwarz in einem Zug matt“) und du kannst zurücknehmen oder trotzdem spielen
 - Eröffnungsname live während der Partie (ECO-Code + Name)
 
 **Analyse: Partien von chess.com und Lichess**
@@ -90,7 +98,8 @@ npm run openings    # Eröffnungsnamen neu erzeugen (lädt die Lichess-Listen)
 npm run repertoire  # Theorie-Bäume des Trainers neu erzeugen (lädt ~230 MB Turnierpartien)
 node scripts/build-puzzles.mjs  # Taktikaufgaben neu auswählen (lädt ~300 MB Puzzle-Datenbank)
 node scripts/build-pieces.mjs   # Figurensätze von Lichess neu laden
-npm run artifact    # Build plus dist/artifact.html für einen claude.ai-Link
+npm run artifact    # Build plus dist/artifact.html für einen claude.ai-Link (ohne Service Worker)
+supabase db push && supabase functions deploy …   # Backend, Schritt für Schritt in PUBLISHING.md
 ```
 
 Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem Push auf `main` oder den Entwicklungszweig. Dafür einmal in den Repo-Einstellungen unter *Pages* als Quelle „GitHub Actions“ wählen; die Seite liegt dann unter https://ohfab.github.io/chess/.
@@ -109,12 +118,15 @@ Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem 
 | `src/history/` | Partien-Archiv, Auswertung im Hintergrund |
 | `src/puzzles/` | Taktikaufgaben, Taktik-Seite, Woodpecker, Endspiele, Aufgaben-Spieler für Puzzles und eigene Fehler |
 | `src/theme/` | Brettfarben und Figurensätze |
+| `src/account/` | Konto, Pro-Plan, Sync, Upgrade- und Willkommens-Dialoge |
+| `supabase/` | Datenbank (Migration mit Zugriffsregeln) und Server-Funktionen: Stripe-Checkout, Kundenportal, Webhook, KI-Coach, Konto löschen |
+| `public/legal/` | Impressum, Datenschutz, AGB (Vorlagen) |
 | `src/play/` | Gegnerauswahl mit Bot-Avataren |
 | `src/import/` | Partien von chess.com und Lichess, Analyse-Seite |
 | `src/editor/` | Brett-Editor |
 | `src/ui/` | Menü, Spielerleisten, Coach, Zugliste, Graph, Dialoge |
 
-Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Knightly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
+Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Rookly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
 
 Sounds: das Set „Standard“ lädt `src/assets/sounds/move.mp3` und `capture.mp3`. Die Dateien liegen nicht im Repository (siehe `.gitignore`), weil sie nicht unter einer freien Lizenz stehen. Ohne sie fehlt „Standard“ in der Auswahl und Holz ist voreingestellt.
 
@@ -129,4 +141,4 @@ Sounds: das Set „Standard“ lädt `src/assets/sounds/move.mp3` und `capture.m
 - Figurensätze von Lichess: Merida (GPLv2+), Celtic, Fantasy, Spatial (Maurizio Monge, MIT), Chessnut (Apache 2.0), MPChess (GPLv3+), Papercut (CC BY 4.0, Nikolay Anzarov), Kupfer/RhosGFX (CC0), Pixel (AGPLv3+)
 - Icons von [Lucide](https://lucide.dev), ISC
 
-Weil Stockfish und chessground unter der GPL stehen, steht auch Knightly unter der GPL-3.0 (siehe `LICENSE`).
+Weil Stockfish und chessground unter der GPL stehen, steht auch Rookly unter der GPL-3.0 (siehe `LICENSE`). Ein kostenpflichtiges Abo ist damit vereinbar, solange der Quelltext öffentlich bleibt.

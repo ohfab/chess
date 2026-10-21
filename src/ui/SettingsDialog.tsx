@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Check, Volume2 } from 'lucide-react'
+import { Check, Lock, UserRound, Volume2 } from 'lucide-react'
+import { openAccount, requirePro, useAccount, useIsPro } from '../account/account'
+import { LegalLinks } from '../account/AccountDialogs'
+import { FREE_THEMES } from '../account/plans'
 import { playSound, SOUND_SETS } from '../game/sound'
 import type { Settings } from '../game/store'
 import { BOARDS, loadPreviews, PIECE_SETS } from '../theme/theme'
@@ -16,6 +19,10 @@ interface Props {
 
 export function SettingsDialog({ settings, onChange, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('design')
+  const pro = useIsPro()
+  const account = useAccount((a) => a.status)
+  // boards and piece sets past the first few come with Pro
+  const pick = (index: number, patch: Partial<Settings>) => (index < FREE_THEMES || requirePro('design') ? onChange(patch) : undefined)
   const [previews, setPreviews] = useState<Record<string, string> | null>(null)
   useEffect(() => {
     let live = true
@@ -48,8 +55,9 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
         <>
           <div className="field-label">Brett</div>
           <div className="swatches">
-            {BOARDS.map((b) => (
-              <button key={b.id} className={`swatch ${settings.board === b.id ? 'on' : ''}`} onClick={() => onChange({ board: b.id })}>
+            {BOARDS.map((b, i) => (
+              <button key={b.id} className={`swatch ${settings.board === b.id ? 'on' : ''}`} onClick={() => pick(i, { board: b.id })}>
+                {!pro && i >= FREE_THEMES && <Lock size={13} className="swatch-lock" aria-label="Pro" />}
                 <span className="swatch-board" style={{ ['--l' as string]: b.light, ['--d' as string]: b.dark }} />
                 <span>{b.name}</span>
               </button>
@@ -58,8 +66,9 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
 
           <div className="field-label">Figuren</div>
           <div className="swatches">
-            {PIECE_SETS.map((p) => (
-              <button key={p.id} className={`swatch ${settings.pieces === p.id ? 'on' : ''}`} onClick={() => onChange({ pieces: p.id })} title={`${p.author}, ${p.license}`}>
+            {PIECE_SETS.map((p, i) => (
+              <button key={p.id} className={`swatch ${settings.pieces === p.id ? 'on' : ''}`} onClick={() => pick(i, { pieces: p.id })} title={`${p.author}, ${p.license}`}>
+                {!pro && i >= FREE_THEMES && <Lock size={13} className="swatch-lock" aria-label="Pro" />}
                 <span className="swatch-piece">{previews?.[p.id] && <img src={previews[p.id]} alt="" />}</span>
                 <span>{p.name}</span>
               </button>
@@ -103,6 +112,10 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
           />
         </>
       )}
+      <button className="btn-secondary wide-btn" onClick={() => (onClose(), openAccount())}>
+        <UserRound size={16} /> {account === 'local' ? 'Daten sichern und laden' : 'Konto und Abo'}
+      </button>
+      <LegalLinks />
     </Modal>
   )
 }

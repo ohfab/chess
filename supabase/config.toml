@@ -1,0 +1,6 @@
+# Settings the Supabase CLI applies on `supabase functions deploy` / `supabase db push`.
+project_id = "rookly"
+
+# Stripe calls the webhook without a Supabase login; it checks Stripe's signature instead.
+[functions.stripe-webhook]
+verify_jwt = false

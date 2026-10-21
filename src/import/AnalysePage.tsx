@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Sparkles, Upload, X } from 'lucide-react'
 import { Piece } from '../board/Piece'
+import { APP_NAME, APP_URL } from '../brand'
 import { useGame } from '../game/store'
 import { ImportError, SITE_NAME, fetchGames, fetchProfile, remoteKey, type RemoteGame, type RemoteProfile, type Site } from './remote'
 
 interface Props {
   onAnalyse: (game: RemoteGame) => void
   /** files games in the archive so the coach can learn from them */
-  onQueue: (games: RemoteGame[]) => number
+  onQueue: (games: RemoteGame[]) => number | null
   onBoard: () => void
   onEditor: () => void
   onPaste: () => void
@@ -33,14 +34,13 @@ const SPEEDS: { id: string; label: string }[] = [
   { id: 'classical', label: 'Klassisch' },
 ]
 
-const PAGES_URL = 'https://ohfab.github.io/chess/'
 
 function errorText(e: unknown, site: Site, name: string) {
   if (e instanceof ImportError) {
     if (e.code === 'not-found') return `Auf ${SITE_NAME[site]} gibt es kein Konto „${name}“.`
     if (e.code === 'rate-limited') return `${SITE_NAME[site]} bremst gerade. Versuch es in einer Minute nochmal.`
     if (e.code === 'blocked')
-      return `Diese Ansicht darf ${SITE_NAME[site]} nicht erreichen. Öffne Knightly als Webseite (${PAGES_URL}) oder lade die PGN dort herunter und füge sie mit „PGN einfügen“ ein.`
+      return `Diese Ansicht darf ${SITE_NAME[site]} nicht erreichen. Öffne ${APP_NAME} als Webseite (${APP_URL}) oder lade die PGN dort herunter und füge sie mit „PGN einfügen“ ein.`
     return e.message
   }
   return 'Das hat nicht geklappt.'
@@ -182,7 +182,10 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
             </h3>
             <button
               className="btn-secondary small"
-              onClick={() => setQueued(onQueue(search.games.slice(0, 10)))}
+              onClick={() => {
+                const n = onQueue(search.games.slice(0, 10))
+                if (n !== null) setQueued(n)
+              }}
               title="Die letzten zehn Partien kommen ins Archiv und werden im Hintergrund ausgewertet"
             >
               <Sparkles size={15} /> Letzte 10 für den Coach
@@ -222,7 +225,7 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
                     </span>
                   </span>
                   {own?.review ? (
-                    <span className="remote-acc" title="Deine Genauigkeit laut Knightly">
+                    <span className="remote-acc" title={`Deine Genauigkeit laut ${APP_NAME}`}>
                       {own.review.accuracy[g.color].toFixed(1)}
                     </span>
                   ) : g.accuracy ? (

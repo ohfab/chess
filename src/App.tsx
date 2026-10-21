@@ -17,9 +17,9 @@ import {
   Star,
   Undo2,
   Upload,
+  UserRound,
 } from 'lucide-react'
 import { Board } from './board/Board'
-import { Piece } from './board/Piece'
 import { Promotion } from './board/Promotion'
 import { IDEAL, levelOf } from './engine/levels'
 import { formatScore, getOpponent, getReviewer, opponentMove, useAnalysis, whiteScore, whiteShare } from './engine/useEngine'
@@ -68,6 +68,11 @@ import { remoteKey, type RemoteGame } from './import/remote'
 import { BoardEditor } from './editor/BoardEditor'
 import { useBackgroundReviews } from './history/reviews'
 import { Nav, type Tab } from './ui/Nav'
+import { Logo } from './ui/Logo'
+import { allowReview, awaitPro, openAccount, requirePro, useAccount } from './account/account'
+import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
+import { Welcome } from './account/Welcome'
+import { APP_NAME } from './brand'
 import { PlayPage } from './play/PlayPage'
 import { TacticsPage } from './puzzles/TacticsPage'
 import { SettingsDialog } from './ui/SettingsDialog'
@@ -131,6 +136,20 @@ export default function App() {
   const [trainerHint, setTrainerHint] = useState<string | null>(null)
   const reviewRun = useRef(0)
   const trainer = useTrainer()
+  const account = useAccount()
+
+  // back from Stripe: wait for the webhook to switch the plan, then say so
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const result = params.get('checkout')
+    if (!result) return
+    params.delete('checkout')
+    history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : '') + location.hash)
+    if (result !== 'success') return
+    void awaitPro().then((ok) => flash(ok ? 'Danke! Pro ist aktiv.' : 'Danke! Pro wird gleich aktiv.'))
+    // runs once, on the page Stripe sent the player back to
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // a game from the endgame trainer, and the blunder guard's verdict on the player's last move
   const [endgame, setEndgame] = useState<Endgame | null>(null)
   const [guard, setGuard] = useState<{ fen: string; status: 'checking' | 'warn' | 'ok'; text?: string; san?: string } | null>(null)
@@ -294,6 +313,7 @@ export default function App() {
   }
 
   const startEndgame = (e: Endgame) => {
+    if (!requirePro('endgames')) return
     startGame({ mode: 'play', playerColor: e.color, level: IDEAL, startFen: e.fen })
     setEndgame(e)
   }
@@ -318,6 +338,10 @@ export default function App() {
   const startTraining = (setup: TrainingSetup) => {
     const o = openingById(setup.openingId)
     if (!o) return
+    // the free plan trains each opening's main line
+    if ((setup.choice === 'random' && o.variations.length > 1) || (setup.choice !== 'random' && setup.choice > 0)) {
+      if (!requirePro('variations')) return
+    }
     let variation = setup.choice === 'random' ? Math.floor(Math.random() * o.variations.length) : setup.choice
     // in random mode, avoid the same variation twice in a row
     const prev = useGame.getState().training
@@ -370,6 +394,8 @@ export default function App() {
   const startReview = () => {
     const s = useGame.getState()
     if (!s.plies.length) return flash('Noch keine Züge zum Auswerten')
+    if (!allowReview()) return
+    s.countReview()
     const run = ++reviewRun.current
     setDialog(null)
     setRetry(null)
@@ -427,6 +453,7 @@ export default function App() {
   }
 
   const startWoodpecker = async (fresh: boolean) => {
+    if (!requirePro('woodpecker')) return
     const s = useGame.getState()
     if (fresh || !s.woodpecker) s.startWoodpecker((await woodpeckerSet(s.puzzleRating)).map((p) => p.id))
     const w = useGame.getState().woodpecker!
@@ -469,6 +496,7 @@ export default function App() {
 
   /** Files games in the archive without opening them; the background reviewer takes them from there. */
   const queueRemote = (games: RemoteGame[]) => {
+    if (!requirePro('import')) return null
     const s = useGame.getState()
     const known = new Set(s.history.map((x) => x.key))
     let added = 0
@@ -553,7 +581,7 @@ export default function App() {
     const result = !outcome ? '*' : outcome.kind === 'draw' ? '1/2-1/2' : outcome.winner === 'white' ? '1-0' : '0-1'
     const names = (c: Color) => (!vsEngine ? '?' : c === playerColor ? 'Ich' : `Stockfish (${levelOf(level).label})`)
     return toPgn(startFen, plies, {
-      Event: 'Knightly',
+      Event: APP_NAME,
       Date: new Date().toISOString().slice(0, 10).replaceAll('-', '.'),
       White: names('white'),
       Black: names('black'),
@@ -1033,7 +1061,7 @@ export default function App() {
 
   return (
     <div className={`app view-${view}`}>
-      <Nav tab={tab} onNavigate={navigate} onSettings={() => setDialog('settings')} />
+      <Nav tab={tab} onNavigate={navigate} onSettings={() => setDialog('settings')} onAccount={openAccount} />
 
       <header className="mobile-head">
         {back ? (
@@ -1041,9 +1069,9 @@ export default function App() {
             <ChevronLeft size={24} />
           </button>
         ) : (
-          <button className="brand" onClick={() => setView('today')} aria-label="Knightly, zur Startseite">
-            <Piece role="knight" color="white" className="brand-mark" />
-            <span className="brand-name">Knightly</span>
+          <button className="brand" onClick={() => setView('today')} aria-label={`${APP_NAME}, zur Startseite`}>
+            <Logo className="brand-mark" />
+            <span className="brand-name">{APP_NAME}</span>
           </button>
         )}
         {headTitle && <b className="mobile-title">{headTitle}</b>}
@@ -1056,6 +1084,11 @@ export default function App() {
           <button className="icon-btn" onClick={() => setDialog('settings')} aria-label="Einstellungen">
             <SettingsIcon size={20} />
           </button>
+          {account.status !== 'local' && (
+            <button className="icon-btn account-btn" onClick={openAccount} aria-label="Konto">
+              {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={20} />}
+            </button>
+          )}
         </div>
       </header>
 
@@ -1210,6 +1243,9 @@ export default function App() {
           onClose={() => setDialog(null)}
         />
       )}
+      {account.accountOpen && <AccountDialog onClose={() => useAccount.setState({ accountOpen: false })} />}
+      {account.upgrade && <UpgradeDialog onClose={() => useAccount.setState({ upgrade: null })} />}
+      {!g.onboarded && <Welcome onDone={(next) => setView(next === 'analyse' ? 'analyse' : next)} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
   )

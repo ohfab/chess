@@ -10,7 +10,9 @@ import { themeName } from '../puzzles/themes'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
-import { aiError, aiPlan, getSample } from './ai'
+import { aiError, aiPlan, coachAvailable } from './ai'
+import { openAccount, requirePro, useAccount } from '../account/account'
+import { cloudEnabled } from '../account/cloud'
 import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
 import { useInsights } from './useInsights'
 import { candidates, localPlan, today, type DailyPlan, type PlanTask } from './plan'
@@ -52,11 +54,13 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
 
   // ---------------------------------------------------------------- AI coach
   const [hasAI, setHasAI] = useState<boolean | null>(null)
-  useEffect(() => void getSample().then((s) => setHasAI(!!s)), [])
+  useEffect(() => void coachAvailable().then(setHasAI), [])
   const [asking, setAsking] = useState(false)
   const [aiNote, setAiNote] = useState<string | null>(null)
 
   const askCoach = async (refresh: boolean) => {
+    if (cloudEnabled && useAccount.getState().status !== 'signed-in') return openAccount()
+    if (cloudEnabled && !requirePro('coach')) return
     setAsking(true)
     setAiNote(null)
     try {

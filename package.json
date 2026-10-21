@@ -1,6 +1,6 @@
 {
-  "name": "knightly",
-  "description": "Knightly: persönliches Schach-Training mit Stockfish und Eröffnungstrainer.",
+  "name": "rookly",
+  "description": "Rookly: Schach-Training mit Stockfish, Eröffnungstrainer, Taktik und Partie-Auswertung.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,10 +11,11 @@
     "preview": "vite preview",
     "openings": "node scripts/build-openings.mjs",
     "repertoire": "node --max-old-space-size=6000 scripts/build-repertoire.ts",
-    "artifact": "npm run build && node scripts/artifact-page.mjs"
+    "artifact": "NO_PWA=1 npm run build && node scripts/artifact-page.mjs"
   },
   "dependencies": {
     "@lichess-org/chessground": "~10.4.2",
+    "@supabase/supabase-js": "^2.118.0",
     "chess.js": "^1.4.0",
     "lucide-react": "~1.55.0",
     "react": "^19.3.1",
@@ -29,6 +30,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.89.0",
     "typescript": "~6.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0"
   }
 }

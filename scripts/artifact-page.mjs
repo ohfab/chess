@@ -8,6 +8,6 @@ const keep = [
   ...html.matchAll(/<link rel="stylesheet"[^>]*>/g),
   ...html.matchAll(/<script type="module"[^>]*><\/script>/g),
 ].map((m) => m[0])
-const page = ['<title>Knightly</title>', ...keep.filter((t) => t.startsWith('<link')), '<div id="root"></div>', ...keep.filter((t) => t.startsWith('<script'))].join('\n')
+const page = ['<title>Rookly</title>', ...keep.filter((t) => t.startsWith('<link')), '<div id="root"></div>', ...keep.filter((t) => t.startsWith('<script'))].join('\n')
 await writeFile(new URL('../dist/artifact.html', import.meta.url), page + '\n')
 console.log(page)

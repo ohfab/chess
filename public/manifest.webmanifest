@@ -1,16 +1,19 @@
 {
-  "name": "Knightly",
-  "short_name": "Knightly",
-  "description": "Persönliches Schach-Training mit Stockfish.",
+  "name": "Rookly – Schach trainieren",
+  "short_name": "Rookly",
+  "description": "Schach trainieren mit Stockfish: spielen, Partien auswerten, Eröffnungen und Taktik üben.",
+  "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#312e2b",
   "theme_color": "#21201d",
+  "categories": ["games", "education", "sports"],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

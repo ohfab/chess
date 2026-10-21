@@ -15,7 +15,7 @@ interface Props {
   score?: Score | null
 }
 
-/** Speech bubble from the Knightly coach, chess.com review style. */
+/** Speech bubble from the coach, chess.com review style. */
 export function Coach({ judgement, title, children, progress, actions, score }: Props) {
   return (
     <div className="coach">

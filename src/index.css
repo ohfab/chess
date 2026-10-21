@@ -1,4 +1,4 @@
-/* Knightly – dark UI in the spirit of chess.com: warm charcoal, green actions, green board. */
+/* Rookly – dark UI in the spirit of chess.com: warm charcoal, green actions, green board. */
 
 :root {
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -161,10 +161,8 @@ button:disabled {
 .brand-mark {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: var(--green);
-  box-shadow: inset 0 -3px 0 var(--green-shadow);
   flex: none;
+  display: block;
 }
 /* standalone pieces (see board/Piece.tsx) fill their slot */
 .piece-slot.cg-wrap {
@@ -2683,6 +2681,317 @@ button:disabled {
   background: var(--hover);
 }
 
+/* ------------------------------------------------------------------ account, Pro, welcome */
+
+.account-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+/* account and settings sit at the bottom of the sidebar; on phones they live in the header */
+.nav .nav-foot {
+  display: none;
+}
+.wide-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn-danger {
+  background: #c0453b;
+  color: #fff;
+  font-weight: 700;
+  padding: 11px 14px;
+  border-radius: 8px;
+  box-shadow: inset 0 -3px 0 #8a2f28;
+}
+.btn-danger.small {
+  font-size: 13px;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.email-form {
+  display: flex;
+  gap: 8px;
+}
+.email-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+.email-form input:focus {
+  outline: 0;
+  border-color: var(--green);
+}
+.account-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 10px 0;
+  color: var(--green-hi);
+}
+.account-sent b {
+  color: #fff;
+  font-size: 17px;
+}
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.account-head > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.account-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.account-avatar {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  font-weight: 800;
+  font-size: 20px;
+}
+.plan-badge {
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.plan-badge.pro {
+  background: linear-gradient(135deg, #e0a030, #c47a18);
+  color: #fff;
+}
+.sync-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.account-data,
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.legal-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.legal-links a:hover {
+  color: var(--text);
+}
+.upgrade-reason {
+  margin: -4px 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgb(224 160 48 / 0.14);
+  color: #f2c26b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  font-size: 14px;
+}
+.benefits li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.benefits svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--green-hi);
+}
+.price-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.price-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 16px 10px 12px;
+  border-radius: 12px;
+  background: var(--raised);
+  border: 2px solid transparent;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.25);
+  transition: border-color 0.12s;
+}
+.price-card:hover {
+  border-color: var(--green);
+}
+.price-card b {
+  font-size: 24px;
+}
+.price-card.best {
+  border-color: #e0a030;
+}
+.price-tag {
+  position: absolute;
+  top: -10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e0a030;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.variation {
+  position: relative;
+}
+.variation-lock,
+.swatch-lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #e0a030;
+}
+.swatch {
+  position: relative;
+}
+.swatch-lock {
+  top: 4px;
+  right: 4px;
+}
+.welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 20%, #3c3a37, #1b1a18 70%);
+  animation: fade 0.2s ease;
+  overflow-y: auto;
+}
+.welcome {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+.welcome-logo {
+  width: 72px;
+  height: 72px;
+  align-self: center;
+  filter: drop-shadow(0 8px 24px rgb(129 182 76 / 0.35));
+}
+.welcome h1 {
+  margin: 16px 0 6px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+.welcome > .muted {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.welcome .field-label {
+  text-align: left;
+}
+.welcome-levels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.welcome-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 2px solid transparent;
+  text-align: left;
+}
+.welcome-level.on {
+  border-color: var(--green);
+  background: var(--raised);
+}
+.welcome-level .muted {
+  font-size: 12px;
+}
+.welcome-more {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.welcome-more button {
+  font-size: 14px;
+}
+
 /* ------------------------------------------------------------------ game result */
 
 .result-players {
@@ -2820,7 +3129,7 @@ button:disabled {
     gap: 4px;
   }
   .nav-items .nav-item,
-  .nav-settings {
+  .nav-foot .nav-item {
     flex: none;
     padding: 10px 4px 8px;
   }
@@ -2831,9 +3140,14 @@ button:disabled {
     background: var(--raised);
     box-shadow: inset 3px 0 0 var(--green);
   }
+  .nav .nav-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: auto;
+  }
   .nav .nav-settings {
     display: flex;
-    margin-top: auto;
   }
   .panel-head {
     order: -2;
@@ -2997,7 +3311,7 @@ button:disabled {
     font-size: 21px;
   }
   .nav-items .nav-item,
-  .nav-settings {
+  .nav-foot .nav-item {
     flex-direction: row;
     gap: 12px;
     padding: 11px 12px;
