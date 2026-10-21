@@ -1,6 +1,6 @@
 // Builds the opening trainer's theory trees in src/data/repertoire/.
 //
-// For every opening in src/trainer/catalog.ts the tree holds:
+// For every opening in src/trainer/catalog-data.ts the tree holds:
 // - the catalog's own lines (checked for legality),
 // - every named line from lichess-org/chess-openings (CC0) that starts with the opening,
 // - the moves strong players actually chose, counted from a year of over-the-board games
@@ -11,7 +11,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { zstdDecompressSync } from 'node:zlib'
 import { Chess } from 'chess.js'
-import { CATALOG } from '../src/trainer/catalog.ts'
+import { CATALOG } from '../src/trainer/catalog-data.ts'
 
 const CACHE = new URL('./.cache/', import.meta.url)
 const OUT = new URL('../src/data/repertoire/', import.meta.url)

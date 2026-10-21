@@ -5,6 +5,7 @@ import { Piece } from '../board/Piece'
 import { LEVELS } from '../engine/levels'
 import { numbered, type Color } from '../game/rules'
 import { progressKey, type Progress } from '../game/store'
+import { locale, t, tn } from '../i18n/i18n'
 import { Toggle } from '../ui/Dialogs'
 import { fenAfter, lineOf, OPENING_STATS, rootOf } from './book'
 import type { OpeningDef } from './catalog'
@@ -26,8 +27,6 @@ interface Props {
   onBack: () => void
 }
 
-const games = new Intl.NumberFormat('de-DE')
-
 export function OpeningSetup({ opening, progress, level: initialLevel, onStart, onBack }: Props) {
   const [side, setSide] = useState<Color>(opening.side)
   const [level, setLevel] = useState(initialLevel)
@@ -40,11 +39,12 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
   const line = choice === 'random' ? root : lineOf(opening, choice)
   const fen = fenAfter(line)
   const stats = OPENING_STATS[opening.id]
+  const games = new Intl.NumberFormat(locale())
 
   return (
     <div className="setup">
       <button className="back" onClick={onBack}>
-        <ArrowLeft size={18} /> Alle Eröffnungen
+        <ArrowLeft size={18} /> {t('Alle Eröffnungen')}
       </button>
 
       <div className="setup-grid">
@@ -55,21 +55,21 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
 
         <div className="setup-form">
           <h2>{opening.name}</h2>
-          <p className="muted">{opening.en}</p>
+          {opening.en !== opening.name && <p className="muted">{opening.en}</p>}
           <p className="setup-about">{opening.about}</p>
 
-          <div className="field-label">Ich spiele</div>
+          <div className="field-label">{t('Ich spiele')}</div>
           <div className="segmented">
             {(['white', 'black'] as const).map((c) => (
               <button key={c} className={side === c ? 'on' : ''} onClick={() => setSide(c)}>
                 <Piece role="king" color={c} className="seg-piece" />
-                {c === 'white' ? 'Weiß' : 'Schwarz'}
+                {c === 'white' ? t('Weiß') : t('Schwarz')}
               </button>
             ))}
           </div>
 
           <div className="field-label">
-            Gegner <b>{LEVELS[level - 1].label}</b> · {LEVELS[level - 1].name}
+            {t('Gegner')} <b>{LEVELS[level - 1].label}</b> · {LEVELS[level - 1].name}
           </div>
           <div className="levels">
             {LEVELS.map((l) => (
@@ -78,11 +78,9 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
               </button>
             ))}
           </div>
-          <p className="hint-text">
-            In der Theorie spielt der Gegner wie die Meister. Danach spielt er mit dieser Stärke weiter.
-          </p>
+          <p className="hint-text">{t('In der Theorie spielt der Gegner wie die Meister. Danach spielt er mit dieser Stärke weiter.')}</p>
 
-          <div className="field-label">Variante</div>
+          <div className="field-label">{t('Variante')}</div>
           <div className="variations">
             <button className={`variation ${choice === 'random' ? 'on' : ''}`} onClick={() => setChoice('random')}>
               <span className="variation-icon">
@@ -90,8 +88,8 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
               </span>
               {!pro && opening.variations.length > 1 && <Lock size={15} className="variation-lock" aria-label="Pro" />}
               <span className="variation-text">
-                <b>Alle Varianten</b>
-                <span className="muted">Jede Runde eine andere, der Gegner wählt.</span>
+                <b>{t('Alle Varianten')}</b>
+                <span className="muted">{t('Jede Runde eine andere, der Gegner wählt.')}</span>
               </span>
             </button>
             {opening.variations.map((v, i) => {
@@ -106,12 +104,8 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
                     {v.note && <span className="muted">{v.note}</span>}
                   </span>
                   <span className="variation-stats">
-                    {stats.variations[i] > 0 && <span>{games.format(stats.variations[i])} Partien</span>}
-                    {p && (
-                      <span className="pill">
-                        {p.clean}/{p.runs} fehlerfrei
-                      </span>
-                    )}
+                    {stats.variations[i] > 0 && <span>{tn(stats.variations[i], '1 Partie', '{n} Partien', { n: games.format(stats.variations[i]) })}</span>}
+                    {p && <span className="pill">{t('{clean}/{runs} fehlerfrei', { clean: p.clean, runs: p.runs })}</span>}
                   </span>
                 </button>
               )
@@ -119,14 +113,14 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
           </div>
 
           <Toggle
-            label="Fehler zurücknehmen"
-            hint="Züge abseits der Theorie springen zurück, bis du den richtigen findest"
+            label={t('Fehler zurücknehmen')}
+            hint={t('Züge abseits der Theorie springen zurück, bis du den richtigen findest')}
             value={strict}
             onChange={setStrict}
           />
 
           <button className="btn-primary wide" onClick={() => onStart({ openingId: opening.id, choice, side, level, strict })}>
-            Training starten
+            {t('Training starten')}
           </button>
         </div>
       </div>

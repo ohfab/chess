@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Search, Play } from 'lucide-react'
 import { numbered } from '../game/rules'
+import { locale, t, tk, tn } from '../i18n/i18n'
 import { progressKey, type Progress } from '../game/store'
 import { fenAfter, rootOf } from './book'
 import { CATALOG, type OpeningDef } from './catalog'
 import { MiniBoard } from './MiniBoard'
 
 const GROUPS: { title: string; match: (o: OpeningDef) => boolean }[] = [
-  { title: 'Mit Weiß · 1.e4', match: (o) => o.side === 'white' && o.group === 'e4' },
-  { title: 'Mit Weiß · 1.d4', match: (o) => o.side === 'white' && o.group === 'd4' },
-  { title: 'Mit Weiß · Flankeneröffnungen', match: (o) => o.side === 'white' && o.group === 'flank' },
-  { title: 'Mit Schwarz · gegen 1.e4', match: (o) => o.side === 'black' && o.group === 'e4' },
-  { title: 'Mit Schwarz · gegen 1.d4', match: (o) => o.side === 'black' && o.group === 'd4' },
+  { title: tk('Mit Weiß · 1.e4'), match: (o) => o.side === 'white' && o.group === 'e4' },
+  { title: tk('Mit Weiß · 1.d4'), match: (o) => o.side === 'white' && o.group === 'd4' },
+  { title: tk('Mit Weiß · Flankeneröffnungen'), match: (o) => o.side === 'white' && o.group === 'flank' },
+  { title: tk('Mit Schwarz · gegen 1.e4'), match: (o) => o.side === 'black' && o.group === 'e4' },
+  { title: tk('Mit Schwarz · gegen 1.d4'), match: (o) => o.side === 'black' && o.group === 'd4' },
 ]
 
 type Filter = 'all' | 'white' | 'black'
@@ -42,14 +43,16 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
     <div className="openings">
       <div className="openings-head">
         <div>
-          <h2>Eröffnungen</h2>
-          <p className="muted">{CATALOG.length} Eröffnungen, Theorie aus 200.000 Turnierpartien</p>
+          <h2>{t('Eröffnungen')}</h2>
+          <p className="muted">
+            {t('{n} Eröffnungen, Theorie aus {games} Turnierpartien', { n: CATALOG.length, games: new Intl.NumberFormat(locale()).format(200000) })}
+          </p>
         </div>
         {current && (
           <button className="resume" onClick={current.onResume}>
             <Play size={16} />
             <span>
-              Weiter trainieren
+              {t('Weiter trainieren')}
               <small>{current.title}</small>
             </span>
           </button>
@@ -62,7 +65,7 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
           <input
             id="opening-search"
             type="search"
-            placeholder="Suchen, z. B. Caro-Kann oder Najdorf"
+            placeholder={t('Suchen, z. B. Caro-Kann oder Najdorf')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -70,7 +73,7 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
         <div className="segmented small">
           {(['all', 'white', 'black'] as const).map((f) => (
             <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>
-              {f === 'all' ? 'Alle' : f === 'white' ? 'Weiß' : 'Schwarz'}
+              {f === 'all' ? t('Alle') : f === 'white' ? t('Weiß') : t('Schwarz')}
             </button>
           ))}
         </div>
@@ -81,7 +84,7 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
         if (!items.length) return null
         return (
           <section key={group.title} className="opening-group">
-            <h3>{group.title}</h3>
+            <h3>{t(group.title)}</h3>
             <div className="opening-grid">
               {items.map((o) => (
                 <OpeningCard key={o.id} opening={o} progress={progress} onPick={() => onPick(o.id)} />
@@ -90,7 +93,7 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
           </section>
         )
       })}
-      {visible.length === 0 && <p className="muted empty">Keine Eröffnung gefunden.</p>}
+      {visible.length === 0 && <p className="muted empty">{t('Keine Eröffnung gefunden.')}</p>}
     </div>
   )
 }
@@ -105,15 +108,11 @@ function OpeningCard({ opening, progress, onPick }: { opening: OpeningDef; progr
       <MiniBoard fen={fen} orientation={opening.side} />
       <span className="opening-card-text">
         <b>{opening.name}</b>
-        <span className="muted">{opening.en}</span>
+        {opening.en !== opening.name && <span className="muted">{opening.en}</span>}
         <span className="opening-moves">{numbered(root)}</span>
         <span className="opening-meta">
-          {opening.variations.length} Varianten
-          {practised > 0 && (
-            <span className="pill">
-              {mastered}/{opening.variations.length} gemeistert
-            </span>
-          )}
+          {tn(opening.variations.length, '1 Variante', '{n} Varianten')}
+          {practised > 0 && <span className="pill">{t('{done}/{total} gemeistert', { done: mastered, total: opening.variations.length })}</span>}
         </span>
       </span>
     </button>
