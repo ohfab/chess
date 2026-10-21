@@ -10,10 +10,12 @@ interface Props {
   cursor: number
   /** reviews for the first plies, if the game was reviewed */
   reviews: MoveReview[]
+  /** plies from here on are a side line, not the game */
+  sideFrom?: number
   onJump: (cursor: number) => void
 }
 
-export function MoveList({ startFen, plies, cursor, reviews, onJump }: Props) {
+export function MoveList({ startFen, plies, cursor, reviews, sideFrom, onJump }: Props) {
   const box = useRef<HTMLDivElement>(null)
 
   // keep the current move in view without scrolling the page
@@ -38,7 +40,7 @@ export function MoveList({ startFen, plies, cursor, reviews, onJump }: Props) {
     idx === null ? (
       <span className="move empty" />
     ) : (
-      <button className={`move ${cursor === idx + 1 ? 'active' : ''}`} onClick={() => onJump(idx + 1)}>
+      <button className={`move ${cursor === idx + 1 ? 'active' : ''} ${sideFrom !== undefined && idx >= sideFrom ? 'side-line' : ''}`} onClick={() => onJump(idx + 1)}>
         {reviews[idx] && <Badge judgement={reviews[idx].judgement} size={16} />}
         {figurine(plies[idx].san)}
       </button>

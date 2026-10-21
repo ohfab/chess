@@ -100,3 +100,13 @@ export function explain(j: Judgement, fen: string, afterFen: string, played: str
       return null
   }
 }
+
+/** Why the engine's line is good for the side to move: a mate, material it wins, or simply how it goes on. */
+export function explainBest(fen: string, line: string[], score: Score | null): string {
+  const mover = turnOf(fen)
+  const mate = mateOf(score)
+  if (mate !== null && (mover === 'white' ? mate > 0 : mate < 0)) return mates(mover, Math.abs(mate))
+  const gain = materialSwing(fen, line, mover)
+  if (gain >= 1) return mover === 'white' ? t('So gewinnt Weiß {what}.', { what: what(gain) }) : t('So gewinnt Schwarz {what}.', { what: what(gain) })
+  return t('So spielt Stockfish weiter:')
+}

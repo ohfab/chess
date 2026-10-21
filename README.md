@@ -53,7 +53,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Partienliste mit Gegner, Wertung, Bedenkzeit, Datum, Eröffnung und Genauigkeit, Filter nach Bedenkzeit, ältere Partien nachladen
 - „Analysieren“ lädt die Partie aufs Brett und startet die Auswertung; die Partie kommt ins Archiv, der Coach lernt daraus
 - „Letzte 10 für den Coach“: die neuesten Partien ins Archiv, Stockfish wertet sie im Hintergrund aus
-- Gesuchte Konten bleiben als Schnellwahl gespeichert
+- Gesuchte Konten bleiben als Schnellwahl gespeichert; das eigene Konto („Das bin ich“, beim ersten Suchen automatisch) lädt seine Partien beim Öffnen der Analyse von selbst und wird mit dem Konto synchronisiert
 - Läuft über die öffentlichen Schnittstellen von chess.com und Lichess, ohne Anmeldung. Der Browser muss die beiden Seiten erreichen dürfen: auf GitHub Pages klappt das, in eingebetteten Ansichten mit strengen Regeln eventuell nicht (dann PGN einfügen)
 
 **Brett-Editor**
@@ -63,7 +63,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Analysebrett**
 - Stockfish 19 mit Bewertungsbalken und bis zu 5 Varianten, Klick auf eine Variante spielt den Zug
-- Beliebig vor- und zurückspringen, von jeder Stellung aus neue Züge ausprobieren
+- Beliebig vor- und zurückspringen, von jeder Stellung aus neue Züge ausprobieren: eigene Züge werden zur Seitenvariante (in der Zugliste kursiv), die Partie bleibt erhalten, „Zurück zur Partie“ springt dorthin, wo die Variante abging
 - PGN oder FEN laden, PGN und FEN kopieren
 
 **Partie-Auswertung**
@@ -73,6 +73,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Geschätzte Spielstärke (Elo) pro Seite und eine Note für Eröffnung, Mittelspiel, Endspiel, Taktik und Strategie
 - Bewertungsgraph über die ganze Partie, anklickbar, mit Punkten für Fehler und starke Züge
 - Badge auf dem Brett (als Vektor-Icon, springt kurz auf) und grüner Pfeil für den besseren Zug
+- **Bester Zug:** zeigt bei jedem Zug, was Stockfish gespielt hätte, und spielt die Folgezüge als kurze Variante vor (mit Pfeil für den nächsten Zug und einem Satz dazu, z. B. was die Variante gewinnt); „Weiter“ führt zurück in die Partie
 - **Nochmal versuchen:** bei Fehlern zurück in die Stellung und den besseren Zug selbst finden. Stockfish prüft auch Alternativen, die fast genauso gut sind
 
 **Design**

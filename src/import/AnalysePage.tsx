@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Sparkles, Upload, X } from 'lucide-react'
+import { ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Sparkles, Star, Upload, X } from 'lucide-react'
 import { Piece } from '../board/Piece'
 import { APP_NAME, APP_URL } from '../brand'
 import { useGame } from '../game/store'
@@ -53,9 +53,11 @@ function errorText(e: unknown, site: Site, name: string) {
 
 /** Analysis hub: games from chess.com and Lichess, the free board and the position editor. */
 export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: Props) {
-  const { accounts, history, rememberAccount, forgetAccount } = useGame()
-  const [site, setSite] = useState<Site>(remembered?.site ?? accounts[0]?.site ?? 'chesscom')
-  const [name, setName] = useState(remembered?.name ?? accounts[0]?.name ?? '')
+  const { accounts, history, rememberAccount, forgetAccount, updateSettings } = useGame()
+  // the player's own account: its games load by themselves
+  const me = useGame((s) => s.settings.myAccount)
+  const [site, setSite] = useState<Site>(remembered?.site ?? me?.site ?? accounts[0]?.site ?? 'chesscom')
+  const [name, setName] = useState(remembered?.name ?? me?.name ?? accounts[0]?.name ?? '')
   const [search, setSearch] = useState<Search | null>(remembered)
   const [busy, setBusy] = useState<'search' | 'more' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -79,12 +81,22 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
       setSearch({ site: s, name: profile?.name ?? user, profile, games: page.games, next: page.next })
       setSpeed('all')
       rememberAccount(s, profile?.name ?? user)
+      // the first account someone looks up is almost always their own
+      if (!useGame.getState().settings.myAccount) updateSettings({ myAccount: { site: s, name: profile?.name ?? user } })
     } catch (e) {
       setError(errorText(e, s, user))
     } finally {
       setBusy(null)
     }
   }
+
+  useEffect(() => {
+    if (!remembered && me) void run(me.site, me.name)
+    // once, when the page opens without a search from before
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const isMe = (s: Site, n: string) => !!me && me.site === s && me.name.toLowerCase() === n.toLowerCase()
 
   const more = async () => {
     if (!search?.next) return
@@ -161,10 +173,10 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
         </form>
         {accounts.length > 0 && (
           <div className="accounts">
-            {accounts.map((a) => (
-              <span key={`${a.site}:${a.name}`} className="account-chip">
+            {[...accounts].sort((a, b) => Number(isMe(b.site, b.name)) - Number(isMe(a.site, a.name))).map((a) => (
+              <span key={`${a.site}:${a.name}`} className={`account-chip ${isMe(a.site, a.name) ? 'mine' : ''}`}>
                 <button onClick={() => void run(a.site, a.name)}>
-                  <i className={`site-dot ${a.site}`} /> {a.name}
+                  {isMe(a.site, a.name) ? <Star size={13} className="mine-star" aria-label={t('Mein Konto')} /> : <i className={`site-dot ${a.site}`} />} {a.name}
                 </button>
                 <button className="chip-x" onClick={() => forgetAccount(a.site, a.name)} aria-label={t('{name} entfernen', { name: a.name })}>
                   <X size={13} />
@@ -178,7 +190,11 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
 
       {search && (
         <>
-          <Profile search={search} />
+          <Profile
+            search={search}
+            mine={isMe(search.site, search.name)}
+            onMine={() => updateSettings({ myAccount: isMe(search.site, search.name) ? null : { site: search.site, name: search.name } })}
+          />
           <Record games={search.games} />
 
           <div className="section-head games-head">
@@ -274,7 +290,7 @@ function family(name: string) {
   return words.slice(0, end >= 0 ? end + 1 : Math.min(2, words.length)).join(' ')
 }
 
-function Profile({ search }: { search: Search }) {
+function Profile({ search, mine, onMine }: { search: Search; mine: boolean; onMine: () => void }) {
   const p = search.profile
   const [avatarOk, setAvatarOk] = useState(true)
   return (
@@ -290,6 +306,14 @@ function Profile({ search }: { search: Search }) {
           {SITE_NAME[search.site]} <ExternalLink size={12} className="inline" />
         </a>
       </div>
+      <button
+        className={`mine-btn ${mine ? 'on' : ''}`}
+        onClick={onMine}
+        aria-pressed={mine}
+        title={mine ? t('Deine Partien laden beim Öffnen der Analyse von selbst') : t('Als dein Konto merken: die Partien laden dann von selbst')}
+      >
+        <Star size={15} /> {mine ? t('Mein Konto') : t('Das bin ich')}
+      </button>
       <div className="profile-ratings">
         {p?.ratings.map((r) => (
           <span key={r.label} className="rating-pill">

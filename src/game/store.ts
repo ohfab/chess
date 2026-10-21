@@ -48,6 +48,18 @@ export interface Settings {
   /** in games against Stockfish: stop and warn before a move that throws the game away */
   blunderGuard: boolean
   lang: Lang
+  /** the player's own chess.com or Lichess account: the analysis page loads its games */
+  myAccount: { site: Site; name: string } | null
+}
+
+/** The game's own moves while the analysis board shows a side line. */
+export interface Sideline {
+  /** the game */
+  plies: Ply[]
+  /** how many plies the side line shares with the game */
+  at: number
+  /** where "back to the game" returns to */
+  back: number
 }
 
 /** Woodpecker method: the same set of puzzles, solved again and again, faster each cycle. */
@@ -75,6 +87,8 @@ interface GameState {
   plies: Ply[]
   /** number of plies applied to the board (lets you step back through the game) */
   cursor: number
+  /** set while the analysis board leaves the game: then `plies` is the side line */
+  sideline: Sideline | null
   outcome: Outcome | null
   orientation: Color
   settings: Settings
@@ -110,6 +124,10 @@ interface GameState {
   /** the opponent's move: always played on the latest position, and the view jumps there */
   append: (uci: string) => void
   goTo: (cursor: number) => void
+  /** shows `ucis` from ply `at` as a side line; the game stays and the view starts at `at` */
+  showLine: (at: number, ucis: string[], back: number) => boolean
+  /** leaves the side line for the game's own moves */
+  backToGame: () => void
   takeback: () => void
   resign: () => void
   analyse: () => void
@@ -221,6 +239,7 @@ export const useGame = create<GameState>()(
       startFen: START_FEN,
       plies: [],
       cursor: 0,
+      sideline: null,
       outcome: null,
       orientation: 'white',
       settings: {
@@ -235,6 +254,7 @@ export const useGame = create<GameState>()(
         soundSet: 'felt',
         blunderGuard: false,
         lang: detectLang(),
+        myAccount: null,
       },
       review: null,
       training: null,
@@ -266,6 +286,7 @@ export const useGame = create<GameState>()(
           startFen,
           plies: [],
           cursor: 0,
+          sideline: null,
           outcome: null,
           orientation: playerColor,
           review: null,
@@ -282,6 +303,7 @@ export const useGame = create<GameState>()(
           startFen,
           plies,
           cursor: plies.length,
+          sideline: null,
           outcome: outcomeOf(startFen, plies),
           review: null,
           training: null,
@@ -299,9 +321,35 @@ export const useGame = create<GameState>()(
           return ply
         }
         const plies = [...s.plies.slice(0, s.cursor), ply]
-        set({ plies, cursor: plies.length, outcome: outcomeOf(s.startFen, plies) })
+        // in analysis a different move starts a side line: the game itself stays
+        let sideline = s.sideline ? { ...s.sideline, at: Math.min(s.sideline.at, s.cursor) } : null
+        if (!sideline && s.mode === 'analysis' && (next || s.review)) sideline = { plies: s.plies, at: s.cursor, back: s.cursor }
+        // back on the game's moves: the side line is over
+        if (sideline && plies.every((p, i) => sideline.plies[i]?.uci === p.uci)) {
+          set({ plies: sideline.plies, cursor: plies.length, sideline: null, outcome: outcomeOf(s.startFen, sideline.plies) })
+          return ply
+        }
+        set({ plies, cursor: plies.length, sideline, outcome: outcomeOf(s.startFen, plies) })
         return ply
       },
+
+      showLine: (at, ucis, back) => {
+        const s = get()
+        const line: Ply[] = []
+        for (const uci of ucis) {
+          const ply = play(line.length ? line[line.length - 1].fen : fenAt(s, at), uci)
+          if (!ply) break
+          line.push(ply)
+        }
+        if (!line.length) return false
+        const game = s.sideline?.plies ?? s.plies
+        const plies = [...s.plies.slice(0, at), ...line]
+        set({ plies, cursor: at, sideline: { plies: game, at: Math.min(at, s.sideline?.at ?? at), back }, outcome: outcomeOf(s.startFen, plies) })
+        return true
+      },
+
+      backToGame: () =>
+        set((s) => (s.sideline ? { plies: s.sideline.plies, cursor: s.sideline.back, sideline: null, outcome: outcomeOf(s.startFen, s.sideline.plies) } : {})),
 
       append: (uci) => {
         const s = get()
@@ -346,6 +394,7 @@ export const useGame = create<GameState>()(
           startFen: START_FEN,
           plies: [],
           cursor: 0,
+          sideline: null,
           outcome: null,
           orientation: playerColor,
           review: null,
@@ -443,6 +492,7 @@ export const useGame = create<GameState>()(
             startFen: game.startFen,
             plies,
             cursor: 0,
+            sideline: null,
             outcome: outcomeOf(game.startFen, plies),
             orientation: game.playerColor,
             review: unpackReview(game),
@@ -511,6 +561,7 @@ export const useGame = create<GameState>()(
         startFen,
         plies,
         cursor,
+        sideline,
         outcome,
         orientation,
         settings,
@@ -553,6 +604,7 @@ export const useGame = create<GameState>()(
         startFen,
         plies,
         cursor,
+        sideline,
         outcome,
         orientation,
         settings,

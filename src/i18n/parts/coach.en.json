@@ -226,5 +226,8 @@
   "ganze Serien von chess.com und Lichess auswerten": "review whole batches from chess.com and Lichess",
   "Alle Designs": "All designs",
   "10 Bretter und 10 Figurensätze": "10 boards and 10 piece sets",
-  "Schach trainieren, jeden Tag ein Zug besser": "Train chess, one move better every day"
+  "Schach trainieren, jeden Tag ein Zug besser": "Train chess, one move better every day",
+  "So gewinnt Weiß {what}.": "This way White wins {what}.",
+  "So gewinnt Schwarz {what}.": "This way Black wins {what}.",
+  "So spielt Stockfish weiter:": "Stockfish continues like this:"
 }

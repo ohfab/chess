@@ -6,10 +6,12 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  CornerUpLeft,
   Flag,
   Lightbulb,
   LayoutGrid,
   ListTree,
+  Play,
   RotateCcw,
   Settings as SettingsIcon,
   Share2,
@@ -30,6 +32,7 @@ import {
   isFinal,
   isPromotion,
   legalDests,
+  moveNumber,
   numbered,
   opposite,
   play,
@@ -47,7 +50,7 @@ import { applyBoard, applyPieces } from './theme/theme'
 import { fenAt, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
-import { explain } from './review/explain'
+import { explain, explainBest } from './review/explain'
 import { ASPECT_ORDER, reviewReport, type Aspect } from './review/stats'
 import { evaluate, isError, JUDGEMENT, JUDGEMENT_ORDER, lossOf, reviewedPrefix, runReview, type Review } from './review/review'
 import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type Verdict } from './trainer/book'
@@ -136,6 +139,9 @@ export default function App() {
   const [setupId, setSetupId] = useState<string | null>(null)
   const [note, setNote] = useState<TrainerNote | null>(null)
   const [trainerHint, setTrainerHint] = useState<string | null>(null)
+  // "Bester Zug": the engine's line from `at`, shown as a side line and played move by move
+  const [followup, setFollowup] = useState<{ at: number; end: number; own: boolean; playing: boolean } | null>(null)
+  const shownLine = g.sideline && followup ? followup : null
   const reviewRun = useRef(0)
   const trainer = useTrainer()
   const account = useAccount()
@@ -159,6 +165,9 @@ export default function App() {
   useBackgroundReviews(view === 'board' && (mode === 'play' || mode === 'training') && !outcome)
 
   const reviewed = review ? reviewedPrefix(review, plies) : 0
+  // the game itself, also while the board shows a side line
+  const gameLine = g.sideline?.plies ?? plies
+  const gameReviewed = review ? reviewedPrefix(review, gameLine) : 0
   // a game from chess.com or Lichess on the board: its players' names and ratings
   const imported = mode === 'analysis' ? g.history.find((x) => x.key === g.gameKey && x.mode === 'import')?.source : undefined
   const reviewing = mode === 'analysis' && review !== null && reviewed > 0
@@ -287,7 +296,14 @@ export default function App() {
   const nav = (to: number) => {
     setRetry(null)
     setPromotion(null)
+    setFollowup((f) => (f?.playing ? { ...f, playing: false } : f))
     useGame.getState().goTo(to)
+  }
+
+  const backToGame = () => {
+    setFollowup(null)
+    setRetry(null)
+    useGame.getState().backToGame()
   }
 
   const stopReview = () => {
@@ -298,6 +314,7 @@ export default function App() {
 
   const resetBoardState = () => {
     stopReview()
+    setFollowup(null)
     setRetry(null)
     setHintFen(null)
     setPromotion(null)
@@ -395,6 +412,8 @@ export default function App() {
   }
 
   const startReview = () => {
+    // a side line on the board: the review is about the game
+    if (useGame.getState().sideline) backToGame()
     const s = useGame.getState()
     if (!s.plies.length) return flash(t('Noch keine Züge zum Auswerten'))
     if (!allowReview()) return
@@ -514,6 +533,7 @@ export default function App() {
   }
 
   const commit = (uci: string) => {
+    setFollowup(null)
     if (!useGame.getState().move(uci)) setResync((r) => r + 1)
   }
 
@@ -536,6 +556,14 @@ export default function App() {
       }),
     )
   }
+
+  // the best line plays itself, about a move a second
+  const autoplay = !!shownLine?.playing && cursor < shownLine.end
+  useEffect(() => {
+    if (!autoplay) return
+    const timer = setTimeout(() => useGame.getState().goTo(useGame.getState().cursor + 1), 900)
+    return () => clearTimeout(timer)
+  }, [autoplay, cursor])
 
   // after a miss, put the pieces back for the next try
   useEffect(() => {
@@ -637,6 +665,11 @@ export default function App() {
       if (retry.status === 'solution' && retry.best) arrow(retry.best, 'best')
       return out
     }
+    if (shownLine) {
+      // the move the line plays next
+      if (cursor < shownLine.end && plies[cursor]) arrow(plies[cursor].uci, 'best')
+      return out
+    }
     if (moveReview && review) {
       const ply = plies[cursor - 1]
       const best = review.evals[cursor - 1].best
@@ -654,7 +687,7 @@ export default function App() {
       if (uci) arrow(uci, 'hint')
     }
     return out
-  }, [retry, moveReview, review, plies, cursor, showLines, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
+  }, [retry, shownLine, moveReview, review, plies, cursor, showLines, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
 
   // ---------------------------------------------------------------- coach
 
@@ -665,6 +698,18 @@ export default function App() {
     setHintFen(null)
     setRetry({ ply: i, fen: fenAt(g, i), best: review.evals[i].best, shown: null, status: 'try' })
   }
+
+  // the engine's best move instead of the game move, and how the game would have gone on
+  const showBest = () => {
+    if (!review || !moveReview) return
+    const at = cursor - 1
+    const e = review.evals[at]
+    const line = e.pv?.length ? e.pv : e.best ? [e.best] : []
+    setRetry(null)
+    if (!line.length || !g.showLine(at, line, cursor)) return flash(t('Dazu gibt es keine Variante.'))
+    setFollowup({ at, end: useGame.getState().plies.length, own: plies[at].uci === line[0], playing: true })
+  }
+  const playedBest = !!moveReview && !!review && plies[cursor - 1]?.uci === review.evals[cursor - 1]?.best
 
   let coach: ReactNode
   if (progress !== null) {
@@ -720,6 +765,57 @@ export default function App() {
           {retry.status === 'checking' ? t('Stockfish prüft deinen Zug.') : (retry.note ?? t('Statt {san} gab es etwas Besseres.', { san: figurine(plies[retry.ply].san) }))}
         </Coach>
       )
+  } else if (shownLine && review) {
+    const e = review.evals[shownLine.at]
+    const line = plies.slice(shownLine.at, shownLine.end)
+    const first = figurine(line[0].san)
+    coach = (
+      <Coach
+        judgement="best"
+        title={shownLine.own ? t('{san} war der beste Zug', { san: first }) : t('Bester Zug: {san}', { san: first })}
+        score={e.score}
+        actions={
+          <>
+            <button className="btn-primary small" onClick={backToGame}>
+              {t('Weiter')} <ChevronRight size={15} />
+            </button>
+            <button className="btn-secondary small" onClick={() => (useGame.getState().goTo(shownLine.at), setFollowup({ ...shownLine, playing: true }))}>
+              <Play size={14} /> {t('Nochmal abspielen')}
+            </button>
+          </>
+        }
+      >
+        {explainBest(fenAt(g, shownLine.at), line.map((p) => p.uci), e.score)}{' '}
+        <span className="line-moves">
+          {line.map((p, k) => {
+            const ply = shownLine.at + k
+            // move numbers as in the move list, also for games from a set-up position
+            const half = ply + (turnOf(startFen) === 'black' ? 1 : 0)
+            const n = moveNumber(startFen) + Math.floor(half / 2)
+            const label = half % 2 === 0 ? `${n}.` : k === 0 ? `${n}…` : ''
+            return (
+              <button key={k} className={`line-move ${cursor === ply + 1 ? 'on' : ''}`} onClick={() => nav(ply + 1)}>
+                {label}
+                {figurine(p.san)}
+              </button>
+            )
+          })}
+        </span>
+      </Coach>
+    )
+  } else if (g.sideline && cursor > g.sideline.at) {
+    coach = (
+      <Coach
+        title={t('Eigene Variante')}
+        actions={
+          <button className="btn-primary small" onClick={backToGame}>
+            <CornerUpLeft size={15} /> {t('Zurück zur Partie')}
+          </button>
+        }
+      >
+        {t('Die Partie bleibt gespeichert, du kannst jederzeit zurück.')}
+      </Coach>
+    )
   } else if (moveReview && review) {
     const ply = plies[cursor - 1]
     const j = moveReview.judgement
@@ -735,10 +831,17 @@ export default function App() {
         }
         score={after.score}
         actions={
-          retryable && (
-            <button className="btn-secondary small" onClick={startRetry}>
-              <RotateCcw size={16} /> {t('Nochmal versuchen')}
-            </button>
+          j !== 'book' && (
+            <>
+              <button className="btn-secondary small" onClick={showBest}>
+                <Lightbulb size={16} /> {playedBest ? t('Folgezüge') : t('Bester Zug')}
+              </button>
+              {retryable && (
+                <button className="btn-secondary small" onClick={startRetry}>
+                  <RotateCcw size={16} /> {t('Nochmal versuchen')}
+                </button>
+              )}
+            </>
           )
         }
       >
@@ -1003,7 +1106,14 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
-        <Tool label={t('Nochmal')} icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
+        {g.sideline ? (
+          <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />
+        ) : (
+          <>
+            <Tool label={t('Bester Zug')} icon={<Lightbulb size={20} />} onClick={showBest} disabled={!moveReview || moveReview.judgement === 'book'} />
+            <Tool label={t('Nochmal')} icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
+          </>
+        )}
         <button className="btn-primary" onClick={() => openNew()}>
           {t('Neue Partie')}
         </button>
@@ -1013,8 +1123,9 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
+        {g.sideline && <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />}
         <Tool label={t('Auswerten')} icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
-        <Tool label={t('Laden')} icon={<Upload size={20} />} onClick={() => setDialog('import')} />
+        {!g.sideline && <Tool label={t('Laden')} icon={<Upload size={20} />} onClick={() => setDialog('import')} />}
         <Tool label={t('Stellung')} icon={<LayoutGrid size={20} />} onClick={() => openEditor(fen)} />
         <Tool label={t('Teilen')} icon={<Share2 size={20} />} onClick={openShare} />
       </>
@@ -1222,14 +1333,14 @@ export default function App() {
           </div>
           <div className="coach-slot">{coach}</div>
 
-          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} moves={plies} onJump={nav} />}
+          {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={gameReviewed} startFen={startFen} moves={gameLine} onJump={nav} />}
           {reviewing && progress === null && <EvalGraph review={review} cursor={Math.min(cursor, reviewed)} onJump={nav} />}
 
           {showLines && (
             <EngineLines fen={fen} analysis={analysis} final={final} onPlay={mode === 'analysis' ? (uci) => commit(uci) : undefined} />
           )}
 
-          <MoveList startFen={startFen} plies={plies} cursor={cursor} reviews={reviewing ? review.moves.slice(0, reviewed) : []} onJump={nav} />
+          <MoveList startFen={startFen} plies={plies} cursor={cursor} reviews={reviewing ? review.moves.slice(0, reviewed) : []} sideFrom={g.sideline?.at} onJump={nav} />
 
           <div className="toolbar">
             {navLeft}

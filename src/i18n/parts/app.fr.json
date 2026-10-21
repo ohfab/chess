@@ -184,5 +184,12 @@
   "Startstellung": "Position initiale",
   "Leeren": "Vider",
   "Gegen Stockfish": "Contre Stockfish",
-  "Analysieren": "Analyser"
+  "Analysieren": "Analyser",
+  "Dazu gibt es keine Variante.": "Aucune variante pour ce coup.",
+  "{san} war der beste Zug": "{san} était le meilleur coup",
+  "Nochmal abspielen": "Rejouer",
+  "Eigene Variante": "Ta propre variante",
+  "Die Partie bleibt gespeichert, du kannst jederzeit zurück.": "La partie reste telle quelle, tu peux y revenir à tout moment.",
+  "Folgezüge": "Suite",
+  "Zur Partie": "À la partie"
 }

@@ -184,5 +184,12 @@
   "Startstellung": "Posizione iniziale",
   "Leeren": "Svuota",
   "Gegen Stockfish": "Contro Stockfish",
-  "Analysieren": "Analizza"
+  "Analysieren": "Analizza",
+  "Dazu gibt es keine Variante.": "Nessuna variante per questa mossa.",
+  "{san} war der beste Zug": "{san} era la mossa migliore",
+  "Nochmal abspielen": "Rivedi",
+  "Eigene Variante": "La tua variante",
+  "Die Partie bleibt gespeichert, du kannst jederzeit zurück.": "La partita resta com’era, puoi tornarci in qualsiasi momento.",
+  "Folgezüge": "Seguito",
+  "Zur Partie": "Alla partita"
 }
