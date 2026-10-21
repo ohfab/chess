@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { BookOpen, Check, Flame, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords } from 'lucide-react'
 import { levelOf } from '../engine/levels'
 import { useGame } from '../game/store'
-import type { SavedGame } from '../history/archive'
+import { isStale, type SavedGame } from '../history/archive'
 import { reviewSaved } from '../history/reviews'
 import { Piece } from '../board/Piece'
 import { aiError, aiPlan, getSample } from './ai'
-import { analyse, loadNames, MOTIFS, PHASE_NAMES, type Insights, type Names, type Phase } from './insights'
+import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
+import { useInsights } from './useInsights'
 import { candidates, localPlan, today, type DailyPlan, type PlanTask } from './plan'
 
 interface Props {
@@ -20,9 +21,7 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
   const g = useGame()
   const { history, daily, streak, puzzleRating, progress, solvedMistakes, level, playerColor, setDaily } = g
 
-  const [names, setNames] = useState<Names | null>(null)
-  useEffect(() => void loadNames().then(setNames), [])
-  const insights = useMemo(() => analyse(history, level, names), [history, level, names])
+  const insights = useInsights()
   const tasks = useMemo(
     () => candidates(insights, { progress, solvedMistakes: new Set(solvedMistakes), level, side: playerColor }),
     [insights, progress, solvedMistakes, level, playerColor],
@@ -44,7 +43,7 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
   }, [daily, insights, tasks, setDaily])
 
   // ---------------------------------------------------------------- background reviews
-  const pending = history.filter((x) => !x.review && x.ucis.length >= 4)
+  const pending = history.filter((x) => isStale(x.review) && x.ucis.length >= 4)
   const [reviewing, setReviewing] = useState<{ key: string; share: number } | null>(null)
   const nextKey = pending[0]?.key
   useEffect(() => {
@@ -86,13 +85,21 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
   const plan: DailyPlan | null = daily?.date === today() ? daily : null
   const doneCount = plan?.tasks.filter((t) => t.done >= t.target).length ?? 0
   const [dateLabel] = useState(() => new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const [greeting] = useState(() => {
+    const h = new Date().getHours()
+    return h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'
+  })
+  const share = plan?.tasks.length ? doneCount / plan.tasks.length : 0
 
   return (
     <div className="today">
       <div className="today-head">
-        <div>
-          <h2>Heute</h2>
-          <p className="muted">{dateLabel}</p>
+        <div className="today-title">
+          <Ring share={share} />
+          <div>
+            <h2>{greeting}</h2>
+            <p className="muted">{dateLabel}</p>
+          </div>
         </div>
         <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title="Tage in Folge mit erledigtem Plan">
           <Flame size={18} />
@@ -159,7 +166,7 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
             const Icon = KIND_ICON[t.kind]
             const complete = t.done >= t.target
             return (
-              <div key={t.id} className={`task ${complete ? 'complete' : ''}`}>
+              <div key={t.id} className={`task ${t.kind} ${complete ? 'complete' : ''}`}>
                 <span className="task-icon">{complete ? <Check size={20} /> : <Icon size={20} />}</span>
                 <div className="task-text">
                   <b>{t.title}</b>
@@ -214,6 +221,22 @@ export function TodayPage({ onStart, onOpenGame }: Props) {
         </section>
       )}
     </div>
+  )
+}
+
+/** Today's plan as a ring: filled as tasks get done. */
+function Ring({ share }: { share: number }) {
+  const r = 22
+  const c = 2 * Math.PI * r
+  return (
+    <svg className="ring" viewBox="0 0 52 52" role="img" aria-label={`${Math.round(share * 100)} % des Tagesplans erledigt`}>
+      <circle cx="26" cy="26" r={r} className="ring-track" />
+      <circle cx="26" cy="26" r={r} className="ring-fill" strokeDasharray={`${c * share} ${c}`} transform="rotate(-90 26 26)" />
+      <text x="26" y="31" textAnchor="middle" className="ring-text">
+        {Math.round(share * 100)}
+        <tspan className="ring-pct">%</tspan>
+      </text>
+    </svg>
   )
 }
 

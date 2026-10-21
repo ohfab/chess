@@ -1,8 +1,15 @@
-// Move sounds synthesised with Web Audio, in several sets. Nothing is downloaded:
-// each set is a recipe of noise bursts, thumps and tones.
+// Move sounds in several sets. "Standard" plays two recorded samples (move, capture) when
+// they are present in src/assets/sounds; every other set is synthesised with Web Audio from
+// noise bursts, thumps and tones, so nothing has to be downloaded for them.
 
 let ctx: AudioContext | null = null
 let noise: AudioBuffer | null = null
+
+// the samples are not part of the repository; without them "Standard" is not offered
+const SAMPLE_URLS = import.meta.glob<string>('../assets/sounds/*.mp3', { eager: true, query: '?url', import: 'default' })
+const samples = new Map<string, AudioBuffer>()
+const sampleName = (path: string) => path.split('/').pop()!.replace('.mp3', '')
+export const hasSamples = Object.keys(SAMPLE_URLS).length > 0
 
 function audio() {
   if (!ctx) {
@@ -10,9 +17,35 @@ function audio() {
     noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate)
     const data = noise.getChannelData(0)
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+    const ac = ctx
+    for (const [path, url] of Object.entries(SAMPLE_URLS))
+      void fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((bytes) => ac.decodeAudioData(bytes))
+        .then((buffer) => samples.set(sampleName(path), buffer))
+        .catch(() => {})
   }
   if (ctx.state === 'suspended') void ctx.resume()
   return ctx
+}
+
+// decode the samples on the first touch, before the first move needs them
+if (hasSamples && typeof window !== 'undefined')
+  for (const type of ['pointerdown', 'keydown'])
+    window.addEventListener(type, () => void audio(), { once: true, capture: true, passive: true })
+
+/** Plays a decoded sample; false if it is not (yet) available. */
+function sample(name: string, at = 0, gain = 1) {
+  const ac = audio()
+  const buffer = samples.get(name)
+  if (!buffer) return false
+  const src = ac.createBufferSource()
+  src.buffer = buffer
+  const g = ac.createGain()
+  g.gain.value = gain
+  src.connect(g).connect(ac.destination)
+  src.start(ac.currentTime + at)
+  return true
 }
 
 function envelope(ac: AudioContext, t: number, peak: number, attack: number, decay: number) {
@@ -64,22 +97,41 @@ function tone(at: number, { freq = 440, to, gain = 0.2, decay = 0.2, type = 'sin
 
 export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'end' | 'wrong'
 
-type Recipe = Record<SoundKind, () => void>
+type Recipe = Record<SoundKind, () => unknown>
 
 const chime = (notes: number[], gain = 0.08) => notes.forEach((f, i) => tone(0.2 + i * 0.09, { freq: f, gain, decay: 0.9, attack: 0.02 }))
 
+const WOOD: Recipe = {
+  move: () => (burst(0), tone(0, { freq: 140, to: 84, gain: 0.3, decay: 0.09 })),
+  capture: () => (burst(0, { freq: 1300, gain: 0.7, decay: 0.09 }), tone(0, { freq: 110, to: 66, gain: 0.4, decay: 0.1 }), burst(0.045, { freq: 2100, gain: 0.35, decay: 0.05 })),
+  castle: () => (burst(0), burst(0.09, { freq: 1500, gain: 0.4 })),
+  check: () => (burst(0, { gain: 0.6 }), tone(0.02, { freq: 880, gain: 0.05, decay: 0.6 })),
+  end: () => chime([523.25, 659.25, 783.99]),
+  wrong: () => (burst(0, { freq: 600, gain: 0.45, decay: 0.12 }), tone(0, { freq: 90, to: 60, gain: 0.3, decay: 0.15 })),
+}
+
 export const SOUND_SETS: { id: string; name: string; recipe: Recipe }[] = [
+  ...(hasSamples
+    ? [
+        {
+          id: 'standard',
+          name: 'Standard',
+          // the wood recipe stands in until the samples are decoded
+          recipe: {
+            move: () => sample('move') || WOOD.move(),
+            capture: () => sample('capture') || WOOD.capture(),
+            castle: () => (sample('move') && sample('move', 0.085, 0.8)) || WOOD.castle(),
+            check: () => (sample('move') ? tone(0.015, { freq: 1046.5, gain: 0.045, decay: 0.45, attack: 0.01 }) : WOOD.check()),
+            end: () => chime([523.25, 659.25, 783.99], 0.07),
+            wrong: () => tone(0, { freq: 220, to: 150, gain: 0.12, decay: 0.2, type: 'triangle' }),
+          },
+        },
+      ]
+    : []),
   {
     id: 'wood',
     name: 'Holz',
-    recipe: {
-      move: () => (burst(0), tone(0, { freq: 140, to: 84, gain: 0.3, decay: 0.09 })),
-      capture: () => (burst(0, { freq: 1300, gain: 0.7, decay: 0.09 }), tone(0, { freq: 110, to: 66, gain: 0.4, decay: 0.1 }), burst(0.045, { freq: 2100, gain: 0.35, decay: 0.05 })),
-      castle: () => (burst(0), burst(0.09, { freq: 1500, gain: 0.4 })),
-      check: () => (burst(0, { gain: 0.6 }), tone(0.02, { freq: 880, gain: 0.05, decay: 0.6 })),
-      end: () => chime([523.25, 659.25, 783.99]),
-      wrong: () => (burst(0, { freq: 600, gain: 0.45, decay: 0.12 }), tone(0, { freq: 90, to: 60, gain: 0.3, decay: 0.15 })),
-    },
+    recipe: WOOD,
   },
   {
     id: 'click',

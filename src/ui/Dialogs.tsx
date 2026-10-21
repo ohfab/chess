@@ -1,79 +1,10 @@
 import { useState } from 'react'
-import { Shuffle } from 'lucide-react'
-import { LEVELS, levelOf } from '../engine/levels'
-import type { Mode } from '../game/store'
+import { Star } from 'lucide-react'
+import { levelOf } from '../engine/levels'
+import { BotAvatar } from '../play/PlayPage'
 import { loadPgn, validateFen, type Color, type Outcome, type Ply } from '../game/rules'
 import { Modal } from './Modal'
 import { Piece } from '../board/Piece'
-
-export function NewGameDialog({
-  mode: initialMode,
-  level: initialLevel,
-  onStart,
-  onClose,
-}: {
-  mode: Mode
-  level: number
-  onStart: (opts: { mode: Mode; playerColor: Color; level: number }) => void
-  onClose: () => void
-}) {
-  const [mode, setMode] = useState<Mode>(initialMode)
-  const [side, setSide] = useState<Color | 'random'>('white')
-  const [level, setLevel] = useState(initialLevel)
-
-  const start = () => {
-    const playerColor = side === 'random' ? (Math.random() < 0.5 ? 'white' : 'black') : side
-    onStart({ mode, playerColor, level })
-  }
-
-  return (
-    <Modal title="Neue Partie" onClose={onClose}>
-      <div className="segmented">
-        <button className={mode === 'play' ? 'on' : ''} onClick={() => setMode('play')}>
-          Gegen Stockfish
-        </button>
-        <button className={mode === 'analysis' ? 'on' : ''} onClick={() => setMode('analysis')}>
-          Analysebrett
-        </button>
-      </div>
-
-      {mode === 'play' && (
-        <>
-          <div className="field-label">Ich spiele</div>
-          <div className="sides">
-            {(['white', 'random', 'black'] as const).map((s) => (
-              <button key={s} className={`side-pick ${side === s ? 'on' : ''}`} onClick={() => setSide(s)}>
-                {s === 'random' ? (
-                  <Shuffle size={26} />
-                ) : (
-                  <Piece role="king" color={s} className="side-piece" />
-                )}
-                <span>{s === 'white' ? 'Weiß' : s === 'black' ? 'Schwarz' : 'Zufall'}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="field-label">
-            Stärke <b>{levelOf(level).label}</b> · {levelOf(level).name}
-          </div>
-          <input
-            className="slider"
-            type="range"
-            min={1}
-            max={LEVELS.length}
-            value={level}
-            onChange={(e) => setLevel(Number(e.target.value))}
-            aria-label="Stärke"
-          />
-        </>
-      )}
-
-      <button className="btn-primary wide" onClick={start}>
-        {mode === 'play' ? 'Spielen' : 'Brett öffnen'}
-      </button>
-    </Modal>
-  )
-}
 
 const REASONS: Record<string, string> = {
   checkmate: 'durch Schachmatt',
@@ -87,6 +18,7 @@ const REASONS: Record<string, string> = {
 export function ResultDialog({
   outcome,
   playerColor,
+  opponentLevel,
   onReview,
   onNew,
   onRematch,
@@ -95,6 +27,8 @@ export function ResultDialog({
 }: {
   outcome: Outcome
   playerColor: Color
+  /** the engine's level, when the game was against it */
+  opponentLevel?: number
   onReview: () => void
   onNew: () => void
   onRematch: () => void
@@ -102,16 +36,34 @@ export function ResultDialog({
   onClose: () => void
 }) {
   const won = outcome.kind !== 'draw' && outcome.winner === playerColor
+  const state = outcome.kind === 'draw' ? 'draw' : won ? 'won' : 'lost'
   const title = outcome.kind === 'draw' ? 'Remis' : won ? 'Du hast gewonnen!' : 'Der Gegner gewinnt'
   const reason = REASONS[outcome.kind === 'draw' ? outcome.reason : outcome.kind]
+  const score = outcome.kind === 'draw' ? '½–½' : outcome.winner === 'white' ? '1–0' : '0–1'
+  const you = (
+    <div className={`result-side ${won ? 'winner' : ''}`}>
+      <span className="result-face you">
+        <Piece role="king" color={playerColor} className="result-piece" />
+      </span>
+      <b>Du</b>
+    </div>
+  )
+  const them = (
+    <div className={`result-side ${state === 'lost' ? 'winner' : ''}`}>
+      {opponentLevel ? <BotAvatar level={opponentLevel} className="result-face" /> : <span className="result-face"><Piece role="king" color={playerColor === 'white' ? 'black' : 'white'} className="result-piece" /></span>}
+      <b>{opponentLevel ? `Stockfish ${levelOf(opponentLevel).label}` : 'Gegner'}</b>
+    </div>
+  )
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal title={title} onClose={onClose} className={`result-modal ${state}`}>
       <p className="result-reason">{reason}</p>
-      <div className={`result-emblem ${outcome.kind === 'draw' ? 'draw' : won ? 'won' : 'lost'}`}>
-        {outcome.kind === 'draw' ? '½–½' : won ? '1–0' : '0–1'}
+      <div className="result-players">
+        {playerColor === 'white' ? you : them}
+        <div className={`result-emblem ${state}`}>{score}</div>
+        {playerColor === 'white' ? them : you}
       </div>
       <button className="btn-primary wide" onClick={onReview}>
-        Partie-Auswertung
+        <Star size={18} className="inline" /> Partie-Auswertung
       </button>
       <div className="btn-row">
         <button className="btn-secondary" onClick={onRematch}>

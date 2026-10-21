@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { Piece } from '../board/Piece'
+import type { Score } from '../engine/engine'
+import { formatScore } from '../engine/useEngine'
 import { Badge } from '../review/Badge'
 import type { Judgement } from '../review/review'
 
@@ -9,10 +11,12 @@ interface Props {
   children?: ReactNode
   progress?: number
   actions?: ReactNode
+  /** engine score after the move, from White's view */
+  score?: Score | null
 }
 
 /** Speech bubble from the Knightly coach, chess.com review style. */
-export function Coach({ judgement, title, children, progress, actions }: Props) {
+export function Coach({ judgement, title, children, progress, actions, score }: Props) {
   return (
     <div className="coach">
       <Piece role="knight" color="white" className="coach-avatar" />
@@ -21,6 +25,9 @@ export function Coach({ judgement, title, children, progress, actions }: Props) 
           <div className="coach-title">
             {judgement && <Badge judgement={judgement} size={28} />}
             {title}
+            {score && (
+              <span className={`coach-eval ${('mate' in score ? score.mate : score.cp) < 0 ? 'neg' : ''}`}>{formatScore(score)}</span>
+            )}
           </div>
         )}
         {children && <div className="coach-text">{children}</div>}

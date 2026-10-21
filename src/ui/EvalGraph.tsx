@@ -1,5 +1,7 @@
 import type { MouseEvent } from 'react'
-import { JUDGEMENT, type Review } from '../review/review'
+import { JUDGEMENT, type Judgement, type Review } from '../review/review'
+
+const MARKED: Judgement[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder']
 
 const W = 600
 const H = 80
@@ -24,7 +26,7 @@ export function EvalGraph({ review, cursor, onJump }: { review: Review; cursor: 
       <span className="evalgraph-cursor" style={{ left: `${fx(cursor) * 100}%` }} />
       {/* dots in HTML so they stay round while the svg stretches */}
       {review.moves.map((m, i) =>
-        m.judgement === 'inaccuracy' || m.judgement === 'mistake' || m.judgement === 'blunder' ? (
+        MARKED.includes(m.judgement) ? (
           <span
             key={i}
             className="evalgraph-dot"

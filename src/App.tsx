@@ -4,19 +4,15 @@ import type { Key } from '@lichess-org/chessground/types'
 import {
   Activity,
   ArrowUpDown,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Flag,
   Lightbulb,
   ListTree,
-  Microscope,
   RotateCcw,
   Settings as SettingsIcon,
   Share2,
   Star,
-  Swords,
-  Target,
   Undo2,
   Upload,
 } from 'lucide-react'
@@ -48,7 +44,8 @@ import { applyBoard, applyPieces } from './theme/theme'
 import { fenAt, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
-import { evaluate, JUDGEMENT, JUDGEMENT_ORDER, lossOf, reviewedPrefix, runReview, type Review } from './review/review'
+import { explain } from './review/explain'
+import { evaluate, isError, JUDGEMENT, JUDGEMENT_ORDER, lossOf, reviewedPrefix, runReview, type Review } from './review/review'
 import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type Verdict } from './trainer/book'
 import { OpeningBrowser } from './trainer/OpeningBrowser'
 import { OpeningSetup, type TrainingSetup } from './trainer/OpeningSetup'
@@ -62,7 +59,10 @@ import { DrillPlayer, type DrillItem, type DrillResult } from './puzzles/DrillPl
 import { pickPuzzles, rate } from './puzzles/puzzles'
 import { themeName } from './puzzles/themes'
 import { Coach } from './ui/Coach'
-import { ImportDialog, NewGameDialog, ResultDialog, ShareDialog } from './ui/Dialogs'
+import { ImportDialog, ResultDialog, ShareDialog } from './ui/Dialogs'
+import { Nav, type Tab } from './ui/Nav'
+import { PlayPage } from './play/PlayPage'
+import { TacticsPage } from './puzzles/TacticsPage'
 import { SettingsDialog } from './ui/SettingsDialog'
 import { EngineLines } from './ui/EngineLines'
 import { EvalBar } from './ui/EvalBar'
@@ -70,7 +70,7 @@ import { EvalGraph } from './ui/EvalGraph'
 import { MoveList } from './ui/MoveList'
 import { PlayerStrip } from './ui/PlayerStrip'
 
-type Dialog = 'new' | 'settings' | 'import' | 'share' | 'result'
+type Dialog = 'settings' | 'import' | 'share' | 'result'
 
 /** "Try again" on a reviewed move: the board goes back one ply and waits for a better move. */
 interface Retry {
@@ -85,7 +85,7 @@ interface Retry {
   note?: string
 }
 
-type View = 'today' | 'board' | 'openings' | 'setup' | 'drill'
+type View = 'today' | 'play' | 'tactics' | 'board' | 'openings' | 'setup' | 'drill'
 
 /** Feedback on the player's last move in an opening drill. */
 interface TrainerNote {
@@ -116,10 +116,9 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [confirmResign, setConfirmResign] = useState(false)
   const [share, setShare] = useState<{ pgn: string; fen: string } | null>(null)
-  const [newMode, setNewMode] = useState<Mode>('play')
   // a fresh start opens the opening menu; a game in progress stays on the board
   const [view, setView] = useState<View>(() => (useGame.getState().plies.length && !useGame.getState().outcome ? 'board' : 'today'))
-  const [drill, setDrill] = useState<{ title: string; items: DrillItem[]; taskId?: string } | null>(null)
+  const [drill, setDrill] = useState<{ title: string; items: DrillItem[]; taskId?: string; from: View } | null>(null)
   const [setupId, setSetupId] = useState<string | null>(null)
   const [note, setNote] = useState<TrainerNote | null>(null)
   const [trainerHint, setTrainerHint] = useState<string | null>(null)
@@ -253,9 +252,10 @@ export default function App() {
     g.load(start, list)
   }
 
-  const openNew = (m: Mode) => {
-    setNewMode(m)
-    setDialog('new')
+  /** "New game": back to the opponent picker */
+  const openNew = () => {
+    setDialog(null)
+    setView('play')
   }
 
   const openSetup = (id: string) => {
@@ -344,24 +344,30 @@ export default function App() {
 
   // ---------------------------------------------------------------- daily training
 
-  const startTask = async (task: PlanTask, insights: Insights) => {
+  const startMistakes = (insights: Insights, count: number, from: View, taskId?: string) => {
+    const solved = new Set(useGame.getState().solvedMistakes)
+    const items: DrillItem[] = insights.mistakes
+      .filter((m) => !solved.has(`${m.gameKey}:${m.ply}`))
+      .slice(0, count)
+      .map((m) => ({ kind: 'mistake', key: `${m.gameKey}:${m.ply}`, fen: m.fen, best: m.best, playedSan: m.san, winBefore: m.winBefore, date: m.date }))
+    if (!items.length) return flash('Alle Fehler sind schon gelöst')
+    setDrill({ title: 'Deine Fehler', items, taskId, from })
+    setView('drill')
+  }
+
+  const startPuzzles = async (theme: string | undefined, count: number, from: View, taskId?: string) => {
     const s = useGame.getState()
+    const puzzles = await pickPuzzles({ theme, rating: s.puzzleRating, count, skip: new Set(s.seenPuzzles) })
+    if (!puzzles.length) return flash('Keine neuen Aufgaben zu diesem Thema')
+    setDrill({ title: theme ? themeName(theme) : 'Taktik-Mix', items: puzzles.map((puzzle) => ({ kind: 'puzzle', puzzle })), taskId, from })
+    setView('drill')
+  }
+
+  const startTask = async (task: PlanTask, insights: Insights) => {
     const left = Math.max(1, task.target - task.done)
-    if (task.kind === 'mistakes') {
-      const solved = new Set(s.solvedMistakes)
-      const items: DrillItem[] = insights.mistakes
-        .filter((m) => !solved.has(`${m.gameKey}:${m.ply}`))
-        .slice(0, left)
-        .map((m) => ({ kind: 'mistake', key: `${m.gameKey}:${m.ply}`, fen: m.fen, best: m.best, playedSan: m.san, winBefore: m.winBefore, date: m.date }))
-      if (!items.length) return flash('Alle Fehler sind schon gelöst')
-      setDrill({ title: 'Deine Fehler', items, taskId: task.id })
-      setView('drill')
-    } else if (task.kind === 'puzzles') {
-      const puzzles = await pickPuzzles({ theme: task.theme, rating: s.puzzleRating, count: left, skip: new Set(s.seenPuzzles) })
-      if (!puzzles.length) return flash('Keine neuen Aufgaben zu diesem Thema')
-      setDrill({ title: task.theme ? themeName(task.theme) : 'Taktik-Mix', items: puzzles.map((puzzle) => ({ kind: 'puzzle', puzzle })), taskId: task.id })
-      setView('drill')
-    } else if (task.kind === 'opening' && task.openingId) {
+    if (task.kind === 'mistakes') startMistakes(insights, left, 'today', task.id)
+    else if (task.kind === 'puzzles') await startPuzzles(task.theme, left, 'today', task.id)
+    else if (task.kind === 'opening' && task.openingId) {
       startTraining({ openingId: task.openingId, choice: task.variation ?? 0, side: task.side ?? 'white', level, strict: true })
     } else if (task.kind === 'game') {
       startGame({ mode: 'play', playerColor: Math.random() < 0.5 ? 'white' : 'black', level: task.level ?? level })
@@ -531,7 +537,7 @@ export default function App() {
 
   // ---------------------------------------------------------------- coach
 
-  const retryable = moveReview && ['inaccuracy', 'mistake', 'blunder'].includes(moveReview.judgement)
+  const retryable = moveReview && (moveReview.judgement === 'inaccuracy' || isError(moveReview.judgement))
   const startRetry = () => {
     if (!review || !moveReview) return
     const i = cursor - 1
@@ -588,8 +594,8 @@ export default function App() {
   } else if (moveReview && review) {
     const ply = plies[cursor - 1]
     const j = moveReview.judgement
-    const best = review.evals[cursor - 1].best
-    const bestSan = best && best !== ply.uci ? pvToSan(fenAt(g, cursor - 1), [best])[0] : null
+    const after = review.evals[cursor]
+    const text = j === 'book' ? named?.name : explain(j, fenAt(g, cursor - 1), ply.fen, ply.uci, review.evals[cursor - 1], after)
     coach = (
       <Coach
         judgement={j}
@@ -598,6 +604,7 @@ export default function App() {
             <b className="coach-san">{figurine(ply.san)}</b> {JUDGEMENT[j].phrase}
           </span>
         }
+        score={after.score}
         actions={
           retryable && (
             <button className="btn-secondary small" onClick={startRetry}>
@@ -606,7 +613,7 @@ export default function App() {
           )
         }
       >
-        {j === 'book' ? named?.name : bestSan ? `Bester Zug war ${figurine(bestSan)}.` : null}
+        {text}
       </Coach>
     )
   } else if (reviewing && cursor === 0) {
@@ -805,7 +812,7 @@ export default function App() {
     tools = (
       <>
         <Tool label="Auswertung" icon={<Star size={20} />} onClick={startReview} />
-        <button className="btn-primary" onClick={() => openNew('play')}>
+        <button className="btn-primary" onClick={() => openNew()}>
           Neue Partie
         </button>
       </>
@@ -815,7 +822,7 @@ export default function App() {
       <>
         <Tool label="Engine" icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
         <Tool label="Nochmal" icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
-        <button className="btn-primary" onClick={() => openNew('play')}>
+        <button className="btn-primary" onClick={() => openNew()}>
           Neue Partie
         </button>
       </>
@@ -831,50 +838,78 @@ export default function App() {
     )
   }
 
-  const tab = view === 'today' || view === 'drill' ? 'today' : view !== 'board' || mode === 'training' ? 'openings' : mode
-  // the play tab opens the board; on the board itself it starts a new game
-  const goPlay = () => (mode === 'play' && view !== 'board' ? setView('board') : openNew('play'))
+  const tab: Tab =
+    view === 'drill'
+      ? drill?.from === 'tactics'
+        ? 'tactics'
+        : 'today'
+      : view === 'board'
+        ? mode === 'training'
+          ? 'openings'
+          : mode
+        : view === 'setup'
+          ? 'openings'
+          : (view as Tab)
   const goAnalysis = () => {
     if (mode !== 'analysis') g.analyse()
     setView('board')
   }
+  const navigate = (t: Tab) => {
+    if (t === 'analysis') goAnalysis()
+    else setView(t)
+  }
   const setupOpening = setupId ? openingById(setupId) : undefined
+  const running = mode === 'play' && plies.length > 0 && !outcome
+  const boardTitle =
+    mode === 'play' ? `Gegen Stockfish ${levelOf(level).label}` : mode === 'training' ? (trainer.drill?.name ?? 'Eröffnungstraining') : reviewing ? 'Partie-Auswertung' : 'Analyse'
+  // phones: the board views get a back button instead of the tab bar
+  const back = view === 'board' ? (mode === 'training' ? 'openings' : mode === 'play' ? 'play' : 'today') : view === 'drill' ? (drill?.from ?? 'today') : view === 'setup' ? 'openings' : null
+  const headTitle = view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : null
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <Piece role="knight" color="white" className="brand-mark" />
-          <span className="brand-name">Knightly</span>
-        </div>
-        <nav className="tabs">
-          <button className={`tab ${tab === 'today' ? 'on' : ''}`} onClick={() => setView('today')}>
-            <Target size={18} />
-            <span>Heute</span>
+    <div className={`app view-${view}`}>
+      <Nav tab={tab} onNavigate={navigate} onSettings={() => setDialog('settings')} />
+
+      <header className="mobile-head">
+        {back ? (
+          <button className="icon-btn" onClick={() => setView(back)} aria-label="Zurück">
+            <ChevronLeft size={24} />
           </button>
-          <button className={`tab ${tab === 'play' ? 'on' : ''}`} onClick={goPlay}>
-            <Swords size={18} />
-            <span>Spielen</span>
-          </button>
-          <button className={`tab ${tab === 'openings' ? 'on' : ''}`} onClick={() => setView('openings')}>
-            <BookOpen size={18} />
-            <span>Eröffnungen</span>
-          </button>
-          <button className={`tab ${tab === 'analysis' ? 'on' : ''}`} onClick={goAnalysis}>
-            <Microscope size={18} />
-            <span>Analyse</span>
-          </button>
-        </nav>
+        ) : (
+          <div className="brand">
+            <Piece role="knight" color="white" className="brand-mark" />
+            <span className="brand-name">Knightly</span>
+          </div>
+        )}
+        {headTitle && <b className="mobile-title">{headTitle}</b>}
         <div className="topbar-actions">
-          <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen">
-            <ArrowUpDown size={20} />
-          </button>
+          {view === 'board' && (
+            <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen">
+              <ArrowUpDown size={20} />
+            </button>
+          )}
           <button className="icon-btn" onClick={() => setDialog('settings')} aria-label="Einstellungen">
             <SettingsIcon size={20} />
           </button>
         </div>
       </header>
 
+      {view === 'play' && (
+        <main className="page">
+          <PlayPage
+            level={level}
+            running={running ? { fen: liveFen, orientation, label: `${levelOf(level).label} · Zug ${Math.ceil(plies.length / 2)}`, onResume: () => setView('board') } : undefined}
+            onStart={({ playerColor: color, level: l }) => startGame({ mode: 'play', playerColor: color, level: l })}
+            onAnalysis={goAnalysis}
+            onImport={() => setDialog('import')}
+          />
+        </main>
+      )}
+      {view === 'tactics' && (
+        <main className="page">
+          <TacticsPage onPuzzles={(theme) => void startPuzzles(theme, 5, 'tactics')} onMistakes={(ins) => startMistakes(ins, 5, 'tactics')} />
+        </main>
+      )}
       {view === 'today' && (
         <main className="page">
           <TodayPage onStart={(t, ins) => void startTask(t, ins)} onOpenGame={openArchived} />
@@ -888,7 +923,7 @@ export default function App() {
           coordinates={settings.coordinates}
           sound={settings.sound}
           onResult={(r) => drillResult(drill.taskId, r)}
-          onExit={() => setView('today')}
+          onExit={() => setView(drill.from)}
         />
       )}
       {view === 'openings' && (
@@ -943,6 +978,12 @@ export default function App() {
         </section>
 
         <aside className="side">
+          <div className="panel-head">
+            <b>{boardTitle}</b>
+            <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen" title="Brett drehen (F)">
+              <ArrowUpDown size={18} />
+            </button>
+          </div>
           <div className="coach-slot">{coach}</div>
 
           {reviewing && progress === null && cursor === 0 && <Summary review={review} plies={reviewed} startFen={startFen} />}
@@ -962,7 +1003,6 @@ export default function App() {
         </aside>
       </main>
 
-      {dialog === 'new' && <NewGameDialog mode={newMode} level={level} onStart={startGame} onClose={() => setDialog(null)} />}
       {dialog === 'settings' && <SettingsDialog settings={settings} onChange={g.updateSettings} onClose={() => setDialog(null)} />}
       {dialog === 'import' && <ImportDialog onLoad={loadGame} onClose={() => setDialog(null)} />}
       {dialog === 'share' && share && <ShareDialog pgn={share.pgn} fen={share.fen} onCopy={copy} onClose={() => setDialog(null)} />}
@@ -970,8 +1010,9 @@ export default function App() {
         <ResultDialog
           outcome={outcome}
           playerColor={playerColor}
+          opponentLevel={vsEngine && mode === 'play' ? level : undefined}
           onReview={startReview}
-          onNew={() => setDialog('new')}
+          onNew={openNew}
           rematchLabel={mode === 'training' ? 'Nochmal' : 'Revanche'}
           onRematch={() => (mode === 'training' ? restartTraining() : startGame({ mode: 'play', playerColor: opposite(playerColor), level }))}
           onClose={() => setDialog(null)}

@@ -29,7 +29,7 @@ type Point = [number, number]
 
 const fixed = (p: Point) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`
 
-function arrowSvg(dx: number, dy: number, style: Style) {
+function arrowSvg(dx: number, dy: number, style: Style, animate: boolean) {
   const shaft = 21 * style.size
   const headLength = 40 * style.size
   const headHalf = 27 * style.size
@@ -43,7 +43,7 @@ function arrowSvg(dx: number, dy: number, style: Style) {
   const len = Math.hypot(end[0] - from[0], end[1] - from[1])
   const u: Point = [(end[0] - from[0]) / len, (end[1] - from[1]) / len]
   const n: Point = [-u[1], u[0]]
-  const tip: Point = [end[0] - u[0] * 6, end[1] - u[1] * 6]
+  const tip: Point = [end[0] - u[0] * 8, end[1] - u[1] * 8]
   const base: Point = [tip[0] - u[0] * headLength, tip[1] - u[1] * headLength]
   // the shaft reaches a little into the head so no seam shows between them
   const shaftEnd: Point = [base[0] + u[0] * 2, base[1] + u[1] * 2]
@@ -51,15 +51,17 @@ function arrowSvg(dx: number, dy: number, style: Style) {
   const head = [tip, [base[0] + n[0] * headHalf, base[1] + n[1] * headHalf], [base[0] - n[0] * headHalf, base[1] - n[1] * headHalf]]
     .map((p) => fixed(p as Point))
     .join(' ')
+  // the group's opacity applies to shaft and head together, so their overlap never shows;
+  // a thin stroke of the same colour rounds the head's corners
   return (
-    `<g opacity="${style.opacity}">` +
-    `<polyline points="${line}" fill="none" stroke="${style.color}" stroke-width="${shaft.toFixed(1)}" stroke-linejoin="miter" stroke-linecap="butt"/>` +
-    `<polygon points="${head}" fill="${style.color}"/></g>`
+    `<g opacity="${style.opacity}"${animate ? ' class="kn-arrow"' : ''}>` +
+    `<polyline points="${line}" fill="none" stroke="${style.color}" stroke-width="${shaft.toFixed(1)}" stroke-linejoin="round" stroke-linecap="butt"/>` +
+    `<polygon points="${head}" fill="${style.color}" stroke="${style.color}" stroke-width="4" stroke-linejoin="round"/></g>`
   )
 }
 
-const circleSvg = (style: Style) =>
-  `<circle cx="50" cy="50" r="45" fill="none" stroke="${style.color}" stroke-width="7" opacity="${style.opacity}"/>`
+const circleSvg = (style: Style, animate: boolean) =>
+  `<circle cx="50" cy="50" r="45" fill="none" stroke="${style.color}" stroke-width="7" opacity="${style.opacity}"${animate ? ' class="kn-circle"' : ''}/>`
 
 const square = (key: Key, orientation: Color): Point => {
   const file = key.charCodeAt(0) - 97
@@ -67,13 +69,17 @@ const square = (key: Key, orientation: Color): Point => {
   return orientation === 'white' ? [file, 7 - rank] : [7 - file, rank]
 }
 
-/** Turns a brush shape into one of our drawings; shapes that already are custom pass through. */
-export function drawn(shape: DrawShape, orientation: Color, faint = false): DrawShape {
+/**
+ * Turns a brush shape into one of our drawings; shapes that already are custom pass through.
+ * `animate` lets the arrow grow out of its start square when it first appears (engine lines,
+ * hints, the better move in the review); arrows the user draws appear at once.
+ */
+export function drawn(shape: DrawShape, orientation: Color, { faint = false, animate = false } = {}): DrawShape {
   if (shape.customSvg || !shape.brush) return shape
   const base = STYLES[shape.brush] ?? STYLES.green
   const style = faint ? { ...base, opacity: base.opacity * 0.6 } : base
-  if (!shape.dest || shape.dest === shape.orig) return { orig: shape.orig, customSvg: { html: circleSvg(style) } }
+  if (!shape.dest || shape.dest === shape.orig) return { orig: shape.orig, customSvg: { html: circleSvg(style, animate) } }
   const [x1, y1] = square(shape.orig, orientation)
   const [x2, y2] = square(shape.dest, orientation)
-  return { orig: shape.orig, customSvg: { html: arrowSvg(x2 - x1, y2 - y1, style) } }
+  return { orig: shape.orig, customSvg: { html: arrowSvg(x2 - x1, y2 - y1, style, animate) } }
 }

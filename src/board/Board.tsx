@@ -118,8 +118,8 @@ export function Board(props: BoardProps) {
   const { shapes, orientation } = props
   useEffect(() => {
     if (!width) return api.current?.setAutoShapes([])
-    const all = [...shapes, ...userShapes].map((s) => drawn(s, orientation))
-    if (preview) all.push(drawn(preview, orientation, true))
+    const all = [...shapes.map((s) => drawn(s, orientation, { animate: true })), ...userShapes.map((s) => drawn(s, orientation))]
+    if (preview) all.push(drawn(preview, orientation, { faint: true }))
     api.current?.setAutoShapes(all)
   }, [shapes, orientation, userShapes, preview, width])
 

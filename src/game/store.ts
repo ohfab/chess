@@ -189,7 +189,7 @@ export const useGame = create<GameState>()(
         multiPv: 3,
         board: 'green',
         pieces: 'cburnett',
-        soundSet: 'wood',
+        soundSet: 'standard',
       },
       review: null,
       training: null,
@@ -346,8 +346,14 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'knightly',
-      version: 1,
+      version: 2,
       storage: safeStorage,
+      // 2: the recorded "Standard" sounds replace the synthesised default
+      migrate: (persisted, version) => {
+        const p = persisted as Partial<GameState>
+        if (version < 2 && p.settings) p.settings = { ...p.settings, soundSet: 'standard' }
+        return p as GameState
+      },
       partialize: ({
         gameId,
         gameKey,

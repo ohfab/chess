@@ -2,7 +2,7 @@ import { Chess, type Square } from 'chess.js'
 import { whiteShare } from '../engine/useEngine'
 import type { SavedGame } from '../history/archive'
 import { opposite, turnOf, type Color } from '../game/rules'
-import type { Judgement } from '../review/review'
+import { isError, type Judgement } from '../review/review'
 import { CATALOG } from '../trainer/catalog'
 
 // What the player's reviewed games say about them: where they lose points, which
@@ -167,7 +167,7 @@ export function analyse(history: SavedGame[], currentLevel: number, names: Names
       const phase = phaseOf(before, ply)
       phases[phase].moves++
       const judgement = r.judgements[ply]
-      if (judgement !== 'mistake' && judgement !== 'blunder') continue
+      if (!isError(judgement)) continue
       phases[phase].errors++
       if (phase === 'opening') earlyErrors++
       const after = chess.fen()

@@ -1,6 +1,6 @@
 # Knightly
 
-Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, es gibt keinen Server und kein Konto.
+Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben nach Motiv, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen wie auf chess.com. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, es gibt keinen Server und kein Konto.
 
 Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainieren.
 
@@ -13,7 +13,8 @@ Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainie
 - KI-Coach: In der claude.ai-Ansicht liest Claude deine Zahlen, stellt den Plan zusammen und erklärt deine größten Schwächen mit konkreten Tipps. Ohne Claude kommt der Plan aus der eigenen Auswertung
 - Serie (Tage in Folge), Genauigkeitsverlauf, Bilanz, Taktik-Wertung, letzte Partien zum Öffnen in der Analyse
 
-**Taktikaufgaben**
+**Taktik**
+- Eigene Seite mit Taktik-Wertung, Taktik-Mix, deinen Fehlerstellungen und 20 Motiven zum gezielten Üben (Gabeln, Fesselungen, Matt in 2 …), mit Trefferquote pro Motiv
 - 2.131 ausgewählte Aufgaben aus der Lichess-Puzzle-Datenbank, 20 Motive von Gabel bis Grundreihenmatt, Wertungen von 400 bis 2600+
 - Eigene Taktik-Wertung (Elo), Aufgaben passend dazu, gesehene kommen nicht wieder
 - Fehlerstellungen aus deinen Partien: Stockfish akzeptiert auch Züge, die fast so gut sind wie der beste
@@ -29,7 +30,7 @@ Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainie
 - Fortschritt pro Variante und Farbe (fehlerfreie Durchgänge), Häkchen im Menü
 
 **Spielen gegen Stockfish**
-- 10 Stärkestufen von ~800 bis „Ideal“, Farbe wählbar (Weiß, Schwarz, Zufall)
+- Gegnerauswahl wie bei den chess.com-Bots: 10 Stärkestufen von ~800 bis „Ideal“, jede mit eigenem Avatar, Farbe wählbar (Weiß, Schwarz, Zufall); eine laufende Partie lässt sich dort fortsetzen
 - Ziehen per Drag & Drop oder Klick, Premoves während Stockfish rechnet, Rochade auch per König auf Turm
 - Umwandlungs-Auswahl wie auf Lichess (oder immer Dame)
 - Tipp-Knopf zeigt den besten Zug als Pfeil, Zug zurücknehmen, Aufgeben, Revanche
@@ -41,15 +42,17 @@ Der Name: *Knight* (Springer) + *nightly*, also jeden Abend ein bisschen trainie
 - PGN oder FEN laden, PGN und FEN kopieren
 
 **Partie-Auswertung**
-- Stockfish prüft jeden Zug und bewertet ihn: Buchzug, Bester Zug, Exzellent, Gut, Ungenauigkeit, Fehler, Patzer
+- Stockfish prüft jeden Zug und bewertet ihn wie chess.com: Brillant (gutes Opfer), Stark (der einzige gute Zug), Bester Zug, Exzellent, Gut, Buchzug, Ungenauigkeit, Fehler, Verpasst (Fehler des Gegners nicht genutzt, Matt übersehen), Patzer
+- Der Coach erklärt den Zug: was danach verloren geht („Danach gewinnt Schwarz mit ♝xf3 eine Figur“), welches Matt droht oder was möglich gewesen wäre, dazu die Bewertung nach dem Zug
 - Genauigkeit in Prozent für beide Seiten, Übersicht wie auf chess.com
-- Bewertungsgraph über die ganze Partie, anklickbar
-- Badge auf dem Brett und grüner Pfeil für den besseren Zug
+- Bewertungsgraph über die ganze Partie, anklickbar, mit Punkten für Fehler und starke Züge
+- Badge auf dem Brett (als Vektor-Icon, springt kurz auf) und grüner Pfeil für den besseren Zug
 - **Nochmal versuchen:** bei Fehlern zurück in die Stellung und den besseren Zug selbst finden. Stockfish prüft auch Alternativen, die fast genauso gut sind
 
 **Design**
-- 10 Brettfarben, 10 freie Figurensätze von Lichess, 5 Sound-Sets (Holz, Klick, Filz, Marimba, Retro), alle synthetisiert
-- Pfeile im chess.com-Stil: eine saubere Form, Springerzüge als L; eigene Pfeile und Kreise per Rechtsklick
+- Menü als Seitenleiste (Desktop) oder Tab-Leiste unten (Handy): Heute, Spielen, Taktik, Eröffnungen, Analyse
+- 10 Brettfarben, 10 freie Figurensätze von Lichess, Sound-Sets: „Standard“ mit aufgenommenen Zug- und Schlag-Sounds (siehe unten) sowie Holz, Klick, Filz, Marimba und Retro, synthetisiert
+- Pfeile im chess.com-Stil: eine saubere Form, Springerzüge als L, Engine-Pfeile wachsen beim Erscheinen aus dem Startfeld; eigene Pfeile und Kreise per Rechtsklick
 - Bewertungsbalken per Schalter auch beim Spielen und im Eröffnungstraining
 
 **Sonstiges**
@@ -82,16 +85,19 @@ Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem 
 | `src/engine/` | Stockfish im Web Worker (UCI), Stärkestufen, Hooks für Gegner und Analyse |
 | `src/board/` | Brett auf Basis von chessground, Umwandlungs-Auswahl, Brett-Design |
 | `src/game/` | Regeln (chess.js), Spielstand (zustand), Eröffnungen, Sounds |
-| `src/review/` | Partie-Auswertung, Zugbewertung, Genauigkeit, Badges |
+| `src/review/` | Partie-Auswertung, Zugbewertung, Erklärungen des Coachs, Genauigkeit, Badges |
 | `src/trainer/` | Eröffnungskatalog, Theorie-Bäume, Trainer-Logik, Menü und Setup |
 | `scripts/build-repertoire.ts` | Prüft jede Katalog-Linie und baut die Bäume aus Namen und Partien |
 | `src/coach/` | Heute-Seite: Auswertung der Partien, Tagesplan, KI-Coach |
 | `src/history/` | Partien-Archiv, Auswertung im Hintergrund |
-| `src/puzzles/` | Taktikaufgaben, Aufgaben-Spieler für Puzzles und eigene Fehler |
+| `src/puzzles/` | Taktikaufgaben, Taktik-Seite, Aufgaben-Spieler für Puzzles und eigene Fehler |
 | `src/theme/` | Brettfarben und Figurensätze |
-| `src/ui/` | Spielerleisten, Coach, Zugliste, Graph, Dialoge |
+| `src/play/` | Gegnerauswahl mit Bot-Avataren |
+| `src/ui/` | Menü, Spielerleisten, Coach, Zugliste, Graph, Dialoge |
 
-Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
+Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Knightly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite ist der Mittelwert der Lichess-Genauigkeit je Zug.
+
+Sounds: das Set „Standard“ lädt `src/assets/sounds/move.mp3` und `capture.mp3`. Die Dateien liegen nicht im Repository (siehe `.gitignore`), weil sie nicht unter einer freien Lizenz stehen. Ohne sie fehlt „Standard“ in der Auswahl und Holz ist voreingestellt.
 
 ## Lizenzen und Danke
 

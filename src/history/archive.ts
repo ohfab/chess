@@ -23,14 +23,22 @@ export interface SavedGame {
 
 /** A review in compact form: evals are centipawns from White's view, or "M3" / "M-2". */
 export interface SavedReview {
+  /** grading rules the review was made with; older ones are redone in the background */
+  v?: number
   evals: (number | string | null)[]
   best: (string | null)[]
+  /** the engine's main line per position, space-separated (older reviews lack it) */
+  pv?: (string | null)[]
   judgements: Judgement[]
   losses: number[]
   accuracy: Record<Color, number>
 }
 
 export const MAX_GAMES = 100
+
+/** 2: brilliant, great and miss, as on chess.com */
+export const REVIEW_VERSION = 2
+export const isStale = (r: SavedReview | undefined) => !r || (r.v ?? 1) < REVIEW_VERSION
 
 export function scoreFor(outcome: Outcome | null, player: Color) {
   if (!outcome) return null
@@ -44,8 +52,10 @@ const unpackScore = (v: number | string | null): Score | null =>
 
 export function packReview(r: Review): SavedReview {
   return {
+    v: REVIEW_VERSION,
     evals: r.evals.map((e) => packScore(e.score)),
     best: r.evals.map((e) => e.best),
+    pv: r.evals.map((e) => e.pv?.slice(0, 6).join(' ') || null),
     judgements: r.moves.map((m) => m.judgement),
     losses: r.moves.map((m) => Math.round(m.loss * 1000) / 1000),
     accuracy: r.accuracy,
@@ -64,7 +74,7 @@ export function unpackReview(game: SavedGame): Review | null {
       const score = unpackScore(v)
       // finished positions have no score; the next move's loss tells who won
       const win = score ? whiteShare(score) : terminalWin(game, i)
-      return { score, best: r.best[i] ?? null, win }
+      return { score, best: r.best[i] ?? null, pv: r.pv?.[i]?.split(' '), win }
     }),
   }
 }

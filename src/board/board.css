@@ -81,3 +81,36 @@
 .orientation-black coords :nth-child(odd) {
   color: var(--sq-dark);
 }
+
+/* engine arrows grow out of their start square; circles and review badges pop in */
+.board .kn-arrow {
+  transform-origin: 50px 50px;
+  animation: kn-arrow-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.board .kn-circle {
+  transform-origin: 50px 50px;
+  animation: kn-pop 0.2s ease-out both;
+}
+.board .kn-badge {
+  transform-origin: 85px 11px;
+  animation: kn-pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes kn-arrow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+}
+@keyframes kn-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board .kn-arrow,
+  .board .kn-circle,
+  .board .kn-badge {
+    animation: none;
+  }
+}
