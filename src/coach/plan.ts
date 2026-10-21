@@ -1,9 +1,10 @@
 import { levelOf } from '../engine/levels'
 import type { Color } from '../game/rules'
 import type { Progress } from '../game/store'
+import { t, tn, type Lang } from '../i18n/i18n'
 import { themeName } from '../puzzles/themes'
 import { CATALOG } from '../trainer/catalog'
-import { MOTIFS, PHASE_NAMES, type Insights } from './insights'
+import { MOTIFS, type Insights, type Phase } from './insights'
 
 // A day's training: a handful of tasks, each one something the app can start directly.
 // Candidates come from the insights; the AI coach picks and explains them, and without it
@@ -40,8 +41,28 @@ export const today = () => new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD 
 
 const pct = (x: number) => `${Math.round(x * 100)} %`
 
+const openingTitle = (opening: string, variation: string) => t('Eröffnung: {opening} · {variation}', { opening, variation })
+
+/** Why the weakest phase gets its own block; one sentence per phase for the grammar. */
+const phaseReason = (phase: Phase, rate: number) =>
+  phase === 'opening'
+    ? t('In der Eröffnung passieren dir die meisten Fehler ({pct} deiner Züge).', { pct: pct(rate) })
+    : phase === 'middlegame'
+      ? t('Im Mittelspiel passieren dir die meisten Fehler ({pct} deiner Züge).', { pct: pct(rate) })
+      : t('Im Endspiel passieren dir die meisten Fehler ({pct} deiner Züge).', { pct: pct(rate) })
+
 /** Everything worth doing today, most needed first. */
-export function candidates(ins: Insights, ctx: { progress: Record<string, Progress>; solvedMistakes: Set<string>; level: number; side: Color }): PlanTask[] {
+export function candidates(
+  ins: Insights,
+  ctx: {
+    progress: Record<string, Progress>
+    solvedMistakes: Set<string>
+    level: number
+    side: Color
+    /** the language the texts come out in (the current one); callers memoize on it */
+    lang?: Lang
+  },
+): PlanTask[] {
   const out: PlanTask[] = []
   const open = ins.mistakes.filter((m) => !ctx.solvedMistakes.has(`${m.gameKey}:${m.ply}`))
 
@@ -50,8 +71,15 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
     out.push({
       id: 'mistakes',
       kind: 'mistakes',
-      title: 'Deine Fehler wiederholen',
-      reason: `${open.length === 1 ? 'Eine Stellung' : `${open.length} Stellungen`} aus deinen Partien, in denen es einen viel besseren Zug gab${blunders ? `, davon ${blunders} Patzer` : ''}.`,
+      title: t('Deine Fehler wiederholen'),
+      reason: blunders
+        ? tn(
+            open.length,
+            'Eine Stellung aus deinen Partien, in denen es einen viel besseren Zug gab, davon {blunders} Patzer.',
+            '{n} Stellungen aus deinen Partien, in denen es einen viel besseren Zug gab, davon {blunders} Patzer.',
+            { blunders },
+          )
+        : tn(open.length, 'Eine Stellung aus deinen Partien, in denen es einen viel besseren Zug gab.', '{n} Stellungen aus deinen Partien, in denen es einen viel besseren Zug gab.'),
       target: Math.min(5, open.length),
       done: 0,
     })
@@ -63,15 +91,15 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
       id: `puzzles:${m.theme}`,
       kind: 'puzzles',
       theme: m.theme,
-      title: `Taktik: ${themeName(m.theme)}`,
-      reason: `${m.name}: ${count}× in deinen letzten Partien. ${m.advice}`,
+      title: t('Taktik: {theme}', { theme: themeName(m.theme) }),
+      reason: t('{motif}: {n}× in deinen letzten Partien. {advice}', { motif: m.name, n: count, advice: m.advice }),
       target: 5,
       done: 0,
     })
   }
 
   // the phase with the highest error rate gets its own block
-  const worst = (Object.entries(ins.phases) as [keyof typeof PHASE_NAMES, Insights['phases']['opening']][])
+  const worst = (Object.entries(ins.phases) as [Phase, Insights['phases']['opening']][])
     .filter(([, p]) => p.moves >= 10)
     .sort((a, b) => b[1].rate - a[1].rate)[0]
   if (worst && worst[1].rate > 0.04) {
@@ -81,8 +109,8 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
         id: `puzzles:${theme}`,
         kind: 'puzzles',
         theme,
-        title: `Taktik: ${themeName(theme)}`,
-        reason: `Im ${PHASE_NAMES[worst[0]]} passieren dir die meisten Fehler (${pct(worst[1].rate)} deiner Züge).`,
+        title: t('Taktik: {theme}', { theme: themeName(theme) }),
+        reason: phaseReason(worst[0], worst[1].rate),
         target: 5,
         done: 0,
       })
@@ -103,8 +131,8 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
         openingId,
         variation: Number(v),
         side: side as Color,
-        title: `Eröffnung: ${o.name} · ${o.variations[Number(v)].name}`,
-        reason: `Bisher ${drilled.clean} von ${drilled.runs} Durchgängen fehlerfrei.`,
+        title: openingTitle(o.name, o.variations[Number(v)].name),
+        reason: t('Bisher {clean} von {runs} Durchgängen fehlerfrei.', { clean: drilled.clean, runs: drilled.runs }),
         target: 1,
         done: 0,
       })
@@ -119,8 +147,13 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
       openingId,
       variation,
       side,
-      title: `Eröffnung: ${o.name} · ${o.variations[variation].name}${side !== o.side ? ` (als ${side === 'white' ? 'Weiß' : 'Schwarz'})` : ''}`,
-      reason: `${reached.games === 1 ? 'Eine Partie' : `${reached.games} Partien`} in dieser Eröffnung, ${reached.earlyErrors} Fehler schon in den ersten zehn Zügen.`,
+      title: openingTitle(o.name, o.variations[variation].name) + (side !== o.side ? ` ${side === 'white' ? t('(als Weiß)') : t('(als Schwarz)')}` : ''),
+      reason: tn(
+        reached.games,
+        'Eine Partie in dieser Eröffnung, {errors} Fehler schon in den ersten zehn Zügen.',
+        '{n} Partien in dieser Eröffnung, {errors} Fehler schon in den ersten zehn Zügen.',
+        { errors: reached.earlyErrors },
+      ),
       target: 1,
       done: 0,
     })
@@ -131,20 +164,27 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
     id: `game:${level}`,
     kind: 'game',
     level,
-    title: `Partie gegen ${levelOf(level).label}`,
+    title: t('Partie gegen {level}', { level: levelOf(level).label }),
     reason:
       ins.games < 3
-        ? 'Eine Partie zeigt dem Coach, wo du stehst.'
+        ? t('Eine Partie zeigt dem Coach, wo du stehst.')
         : level > ctx.level
-          ? 'Du gewinnst zuletzt sicher: Zeit für einen stärkeren Gegner.'
-          : 'Eine ernste Partie auf deinem Niveau, danach wird sie ausgewertet.',
+          ? t('Du gewinnst zuletzt sicher: Zeit für einen stärkeren Gegner.')
+          : t('Eine ernste Partie auf deinem Niveau, danach wird sie ausgewertet.'),
     target: 1,
     done: 0,
   })
 
   // nothing to go on yet: a general tactics mix and an opening to start with
   if (!out.some((t) => t.kind === 'puzzles'))
-    out.unshift({ id: 'puzzles:mix', kind: 'puzzles', title: 'Taktik-Mix', reason: 'Fünf Aufgaben quer durch alle Motive, passend zu deiner Wertung.', target: 5, done: 0 })
+    out.unshift({
+      id: 'puzzles:mix',
+      kind: 'puzzles',
+      title: t('Taktik-Mix'),
+      reason: t('Fünf Aufgaben quer durch alle Motive, passend zu deiner Wertung.'),
+      target: 5,
+      done: 0,
+    })
   if (!out.some((t) => t.kind === 'opening')) {
     const o = CATALOG.find((x) => x.id === (ctx.side === 'white' ? 'italian' : 'caro-kann'))!
     out.push({
@@ -153,8 +193,8 @@ export function candidates(ins: Insights, ctx: { progress: Record<string, Progre
       openingId: o.id,
       variation: 0,
       side: o.side,
-      title: `Eröffnung: ${o.name} · ${o.variations[0].name}`,
-      reason: 'Eine solide Eröffnung, mit der du die Theorie-Prüfung kennenlernst.',
+      title: openingTitle(o.name, o.variations[0].name),
+      reason: t('Eine solide Eröffnung, mit der du die Theorie-Prüfung kennenlernst.'),
       target: 1,
       done: 0,
     })
@@ -172,11 +212,11 @@ export function localPlan(ins: Insights, tasks: PlanTask[]): DailyPlan {
   const top = ins.motifs[0]
   const summary =
     ins.reviewed === 0
-      ? 'Noch keine ausgewerteten Partien. Spiel eine Partie oder trainiere eine Eröffnung, dann erkennt der Coach deine Muster.'
+      ? t('Noch keine ausgewerteten Partien. Spiel eine Partie oder trainiere eine Eröffnung, dann erkennt der Coach deine Muster.')
       : [
-          ins.accuracy.average !== null && `Deine Genauigkeit liegt im Schnitt bei ${ins.accuracy.average.toFixed(1)} %.`,
-          top && `Am häufigsten: ${MOTIFS[top.motif].name} (${top.count}×).`,
-          'Der Plan setzt genau dort an.',
+          ins.accuracy.average !== null && t('Deine Genauigkeit liegt im Schnitt bei {accuracy} %.', { accuracy: ins.accuracy.average.toFixed(1) }),
+          top && t('Am häufigsten: {motif} ({n}×).', { motif: MOTIFS[top.motif].name, n: top.count }),
+          t('Der Plan setzt genau dort an.'),
         ]
           .filter(Boolean)
           .join(' ')
@@ -184,7 +224,7 @@ export function localPlan(ins: Insights, tasks: PlanTask[]): DailyPlan {
     date: today(),
     tasks: picked.slice(0, 5),
     summary,
-    focus: ins.motifs.slice(0, 3).map(({ motif, count }) => ({ title: MOTIFS[motif].name, why: `${count}× in deinen Partien`, tip: MOTIFS[motif].advice })),
+    focus: ins.motifs.slice(0, 3).map(({ motif, count }) => ({ title: MOTIFS[motif].name, why: t('{n}× in deinen Partien', { n: count }), tip: MOTIFS[motif].advice })),
     byAI: false,
   }
 }

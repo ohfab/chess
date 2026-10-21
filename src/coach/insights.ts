@@ -2,6 +2,7 @@ import { Chess, type Square } from 'chess.js'
 import { whiteShare } from '../engine/useEngine'
 import type { SavedGame } from '../history/archive'
 import { opposite, turnOf, type Color } from '../game/rules'
+import { translateFields } from '../i18n/i18n'
 import { isError, type Judgement } from '../review/review'
 import { phaseOf } from '../review/stats'
 import { CATALOG } from '../trainer/catalog'
@@ -24,6 +25,10 @@ export const MOTIFS: Record<Motif, { name: string; theme: string; advice: string
 }
 
 export const PHASE_NAMES: Record<Phase, string> = { opening: 'Eröffnung', middlegame: 'Mittelspiel', endgame: 'Endspiel' }
+
+// i18n-fields: name, advice, opening, middlegame, endgame
+for (const m of Object.values(MOTIFS)) translateFields(m, 'name', 'advice')
+translateFields(PHASE_NAMES, 'opening', 'middlegame', 'endgame')
 
 export interface Mistake {
   gameKey: string

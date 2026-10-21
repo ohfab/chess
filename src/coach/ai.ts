@@ -1,4 +1,5 @@
 import { levelOf } from '../engine/levels'
+import { getLang, t, type Lang } from '../i18n/i18n'
 import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
 import { today, type DailyPlan, type PlanTask } from './plan'
 
@@ -40,6 +41,14 @@ interface Answer {
 
 const DAY = 24 * 60 * 60 * 1000
 
+/** How the coach is told which language to write in; the server function has the same list. */
+const WRITE_IN: Record<Lang, string> = {
+  de: 'auf Deutsch (Du-Form)',
+  en: 'auf Englisch (in English, addressing the player as "you")',
+  fr: 'auf Französisch (en français, en tutoyant la personne)',
+  it: 'auf Italienisch (in italiano, dando del tu)',
+}
+
 export async function aiPlan(
   ins: Insights,
   tasks: PlanTask[],
@@ -79,7 +88,8 @@ export async function aiPlan(
     'Du bist ein erfahrener, freundlicher Schachtrainer. Du sprichst mit einer Person, die täglich mit einer App trainiert.',
     'Unten stehen die Zahlen aus ihren von Stockfish ausgewerteten Partien und die Trainingseinheiten, die die App heute anbieten kann.',
     'Stelle daraus das Training für heute zusammen: wähle 3 bis 5 Einheiten in sinnvoller Reihenfolge, die genau an den größten Schwächen ansetzen.',
-    'Sprich die Person direkt an (Du-Form), auf Deutsch, konkret und ohne Floskeln. Erfinde keine Zahlen, nutze nur die gegebenen.',
+    'Sprich die Person direkt an, konkret und ohne Floskeln. Erfinde keine Zahlen, nutze nur die gegebenen.',
+    `Schreibe alle Texte (summary, focus, reason) ${WRITE_IN[getLang()]}.`,
     '',
     'Antworte nur mit JSON in dieser Form:',
     '{"summary": "2-3 Sätze: wie du spielst und woran es heute geht", "focus": [{"title": "kurzer Name der Schwäche", "why": "woran man es in seinen Partien sieht", "tip": "ein konkreter Denk-Tipp für die nächste Partie"}], "plan": [{"id": "eine id aus den Einheiten", "reason": "ein Satz, warum heute"}]}',
@@ -90,7 +100,7 @@ export async function aiPlan(
   ].join('\n')
 
   let answer: Answer
-  if (cloudEnabled) answer = await callFunction<Answer>('coach', { data, options })
+  if (cloudEnabled) answer = await callFunction<Answer>('coach', { data, options, lang: getLang() })
   else {
     const s = await getSample()
     if (!s) throw { code: 'not_granted' }
@@ -124,19 +134,19 @@ export function aiError(e: unknown) {
   const code = e instanceof CloudError ? e.code : (e as { code?: string })?.code
   switch (code) {
     case 'not_signed_in':
-      return 'Melde dich an, um den KI-Coach zu nutzen.'
+      return t('Melde dich an, um den KI-Coach zu nutzen.')
     case 'pro_required':
-      return 'Der KI-Coach gehört zu Pro.'
+      return t('Der KI-Coach gehört zu Pro.')
     case 'not_granted':
     case 'sampling_disabled':
     case 'not_declared':
     case 'capability_disabled':
-      return 'Der KI-Coach ist hier nicht verfügbar. Der Plan unten kommt aus der eigenen Auswertung.'
+      return t('Der KI-Coach ist hier nicht verfügbar. Der Plan unten kommt aus der eigenen Auswertung.')
     case 'rate_limited':
-      return 'Der Coach hat heute schon genug geplant. Morgen gibt es einen neuen Plan.'
+      return t('Der Coach hat heute schon genug geplant. Morgen gibt es einen neuen Plan.')
     case 'cancelled':
       return null
     default:
-      return 'Der Coach hat gerade keine Antwort geliefert. Versuch es gleich nochmal.'
+      return t('Der Coach hat gerade keine Antwort geliefert. Versuch es gleich nochmal.')
   }
 }

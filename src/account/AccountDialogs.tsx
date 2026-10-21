@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Check, Cloud, CloudOff, Crown, Download, LogOut, Mail, Sparkles, Trash2, Upload } from 'lucide-react'
 import { APP_NAME } from '../brand'
+import { locale, t, tk } from '../i18n/i18n'
 import { Modal } from '../ui/Modal'
 import { CloudError } from './cloud'
 import {
@@ -15,12 +16,13 @@ import {
   startCheckout,
   useAccount,
 } from './account'
-import { FEATURE_TEXT, PRICE, PRO_BENEFITS } from './plans'
+import { FEATURE_TEXT, FREE_REVIEWS_PER_DAY, PRICE, PRO_BENEFITS } from './plans'
 
+// the legal pages themselves are in German, the Swiss version is the binding one
 const LEGAL = [
-  ['Impressum', 'legal/impressum.html'],
-  ['Datenschutz', 'legal/datenschutz.html'],
-  ['AGB', 'legal/agb.html'],
+  [tk('Impressum'), 'legal/impressum.html'],
+  [tk('Datenschutz'), 'legal/datenschutz.html'],
+  [tk('AGB'), 'legal/agb.html'],
 ] as const
 
 export function LegalLinks() {
@@ -28,7 +30,7 @@ export function LegalLinks() {
     <div className="legal-links">
       {LEGAL.map(([label, href]) => (
         <a key={href} href={href} target="_blank" rel="noreferrer">
-          {label}
+          {t(label)}
         </a>
       ))}
     </div>
@@ -38,13 +40,13 @@ export function LegalLinks() {
 const errorText = (e: unknown) =>
   e instanceof CloudError
     ? e.code === 'price_not_configured'
-      ? 'Das Abo ist noch nicht eingerichtet.'
+      ? t('Das Abo ist noch nicht eingerichtet.')
       : e.code === 'already_pro'
-        ? 'Du hast Pro schon.'
-        : 'Das hat nicht geklappt. Versuch es gleich nochmal.'
+        ? t('Du hast Pro schon.')
+        : t('Das hat nicht geklappt. Versuch es gleich nochmal.')
     : e instanceof Error && e.message
       ? e.message
-      : 'Das hat nicht geklappt.'
+      : t('Das hat nicht geklappt.')
 
 /** Sign in, see the plan, manage the subscription, export or delete the data. */
 export function AccountDialog({ onClose }: { onClose: () => void }) {
@@ -71,7 +73,7 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
 
   const send = (e: FormEvent) => {
     e.preventDefault()
-    if (!email.includes('@')) return setError('Bitte eine E-Mail-Adresse eingeben.')
+    if (!email.includes('@')) return setError(t('Bitte eine E-Mail-Adresse eingeben.'))
     void run(async () => {
       await signInWithEmail(email.trim())
       setSent(true)
@@ -81,10 +83,10 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
   const dataTools = (
     <div className="account-data">
       <button className="btn-secondary small" onClick={exportData}>
-        <Download size={15} /> Daten exportieren
+        <Download size={15} /> {t('Daten exportieren')}
       </button>
       <button className="btn-secondary small" onClick={() => file.current?.click()}>
-        <Upload size={15} /> Sicherung laden
+        <Upload size={15} /> {t('Sicherung laden')}
       </button>
       <input
         ref={file}
@@ -101,41 +103,49 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
   )
 
   return (
-    <Modal title={a.status === 'signed-in' ? 'Dein Konto' : 'Konto'} onClose={onClose} className="account-modal">
+    <Modal title={a.status === 'signed-in' ? t('Dein Konto') : t('Konto')} onClose={onClose} className="account-modal">
       {a.status === 'local' && (
         <>
           <p className="muted">
-            <CloudOff size={15} className="inline" /> Diese Version speichert alles nur auf diesem Gerät, alle Funktionen sind frei. Mit einer Sicherung nimmst du deinen Fortschritt auf ein anderes Gerät mit.
+            <CloudOff size={15} className="inline" />{' '}
+            {t('Diese Version speichert alles nur auf diesem Gerät, alle Funktionen sind frei. Mit einer Sicherung nimmst du deinen Fortschritt auf ein anderes Gerät mit.')}
           </p>
           {dataTools}
         </>
       )}
 
-      {a.status === 'loading' && <p className="muted">Einen Moment …</p>}
+      {a.status === 'loading' && <p className="muted">{t('Einen Moment …')}</p>}
 
       {a.status === 'signed-out' &&
         (sent ? (
           <div className="account-sent">
             <Mail size={28} />
-            <b>Schau in dein Postfach</b>
-            <p className="muted">Wir haben einen Anmelde-Link an {email} geschickt. Öffne ihn auf diesem Gerät.</p>
+            <b>{t('Schau in dein Postfach')}</b>
+            <p className="muted">{t('Wir haben einen Anmelde-Link an {email} geschickt. Öffne ihn auf diesem Gerät.', { email })}</p>
           </div>
         ) : (
           <>
-            <p className="muted">Mit einem Konto ist dein Training auf allen Geräten gleich, und du kannst {APP_NAME} Pro holen.</p>
+            <p className="muted">{t('Mit einem Konto ist dein Training auf allen Geräten gleich, und du kannst {app} Pro holen.', { app: APP_NAME })}</p>
             <button className="btn-secondary wide-btn" onClick={() => void run(signInWithGoogle)} disabled={busy}>
-              <GoogleMark /> Mit Google anmelden
+              <GoogleMark /> {t('Mit Google anmelden')}
             </button>
             <div className="or">
-              <span>oder</span>
+              <span>{t('oder')}</span>
             </div>
             <form className="email-form" onSubmit={send}>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="deine@email.ch" autoComplete="email" aria-label="E-Mail" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('deine@email.ch')}
+                autoComplete="email"
+                aria-label={t('E-Mail')}
+              />
               <button className="btn-primary" disabled={busy}>
-                Link senden
+                {t('Link senden')}
               </button>
             </form>
-            <p className="muted small">Kein Passwort nötig: du bekommst einen Link per E-Mail.</p>
+            <p className="muted small">{t('Kein Passwort nötig: du bekommst einen Link per E-Mail.')}</p>
           </>
         ))}
 
@@ -145,45 +155,53 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
             <span className="account-avatar">{(a.email ?? '?').slice(0, 1).toUpperCase()}</span>
             <div>
               <b>{a.email}</b>
-              <span className={`plan-badge ${pro ? 'pro' : ''}`}>{pro ? `${APP_NAME} Pro` : 'Gratis'}</span>
+              <span className={`plan-badge ${pro ? 'pro' : ''}`}>{pro ? `${APP_NAME} Pro` : t('Gratis')}</span>
             </div>
           </div>
           {pro ? (
             <p className="muted small">
               {a.subscriptionStatus === 'canceled' || a.subscriptionStatus === null
-                ? `Pro bis ${new Date(a.proUntil!).toLocaleDateString('de-CH')}.`
-                : `${a.interval === 'yearly' ? 'Jahresabo' : 'Monatsabo'}, läuft und verlängert sich automatisch.`}
+                ? t('Pro bis {date}.', { date: new Date(a.proUntil!).toLocaleDateString(locale()) })
+                : a.interval === 'yearly'
+                  ? t('Jahresabo, läuft und verlängert sich automatisch.')
+                  : t('Monatsabo, läuft und verlängert sich automatisch.')}
             </p>
           ) : (
             <button className="btn-primary wide-btn" onClick={() => useAccount.setState({ upgrade: 'pro', accountOpen: false })}>
-              <Crown size={17} /> {APP_NAME} Pro holen
+              <Crown size={17} /> {t('{app} Pro holen', { app: APP_NAME })}
             </button>
           )}
           {(pro || a.subscriptionStatus) && (
             <button className="btn-secondary wide-btn" onClick={() => void run(openBillingPortal)} disabled={busy}>
-              Abo und Zahlung verwalten
+              {t('Abo und Zahlung verwalten')}
             </button>
           )}
           <p className="sync-line">
             {a.syncError ? <CloudOff size={15} /> : <Cloud size={15} />}
-            {a.syncError ? 'Sync gerade nicht möglich' : a.syncedAt ? `Synchronisiert, ${new Date(a.syncedAt).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}` : 'Wird synchronisiert …'}
+            {a.syncError
+              ? t('Sync gerade nicht möglich')
+              : a.syncedAt
+                ? t('Synchronisiert, {time}', { time: new Date(a.syncedAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })
+                : t('Wird synchronisiert …')}
           </p>
           {dataTools}
           <div className="account-actions">
             <button className="btn-secondary small" onClick={() => void run(signOut)} disabled={busy}>
-              <LogOut size={15} /> Abmelden
+              <LogOut size={15} /> {t('Abmelden')}
             </button>
             {confirmDelete ? (
               <button className="btn-danger small" onClick={() => void run(deleteAccount)} disabled={busy}>
-                <Trash2 size={15} /> Wirklich löschen
+                <Trash2 size={15} /> {t('Wirklich löschen')}
               </button>
             ) : (
               <button className="btn-secondary small" onClick={() => setConfirmDelete(true)}>
-                <Trash2 size={15} /> Konto löschen
+                <Trash2 size={15} /> {t('Konto löschen')}
               </button>
             )}
           </div>
-          {confirmDelete && <p className="muted small">Das löscht dein Konto und die Daten in der Cloud. Ein laufendes Abo wird beendet. Auf diesem Gerät bleibt alles.</p>}
+          {confirmDelete && (
+            <p className="muted small">{t('Das löscht dein Konto und die Daten in der Cloud. Ein laufendes Abo wird beendet. Auf diesem Gerät bleibt alles.')}</p>
+          )}
         </>
       )}
 
@@ -198,7 +216,7 @@ export function UpgradeDialog({ onClose }: { onClose: () => void }) {
   const a = useAccount()
   const [busy, setBusy] = useState<'monthly' | 'yearly' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const reason = a.upgrade && a.upgrade !== 'pro' ? FEATURE_TEXT[a.upgrade] : null
+  const reason = a.upgrade && a.upgrade !== 'pro' ? t(FEATURE_TEXT[a.upgrade], { n: FREE_REVIEWS_PER_DAY }) : null
 
   const buy = async (plan: 'monthly' | 'yearly') => {
     if (a.status !== 'signed-in') return useAccount.setState({ upgrade: null, accountOpen: true })
@@ -220,28 +238,28 @@ export function UpgradeDialog({ onClose }: { onClose: () => void }) {
           <li key={b.title}>
             <Check size={17} />
             <span>
-              <b>{b.title}</b> <span className="muted">{b.text}</span>
+              <b>{t(b.title)}</b> <span className="muted">{t(b.text, { n: FREE_REVIEWS_PER_DAY })}</span>
             </span>
           </li>
         ))}
       </ul>
       <div className="price-cards">
         <button className="price-card" onClick={() => void buy('monthly')} disabled={!!busy}>
-          <span className="muted">Monatlich</span>
+          <span className="muted">{t('Monatlich')}</span>
           <b>{PRICE.monthly}</b>
-          <span className="muted small">pro Monat, jederzeit kündbar</span>
+          <span className="muted small">{t('pro Monat, jederzeit kündbar')}</span>
         </button>
         <button className="price-card best" onClick={() => void buy('yearly')} disabled={!!busy}>
           <span className="price-tag">
-            <Sparkles size={12} /> 2 Monate gratis
+            <Sparkles size={12} /> {t('2 Monate gratis')}
           </span>
-          <span className="muted">Jährlich</span>
+          <span className="muted">{t('Jährlich')}</span>
           <b>{PRICE.yearly}</b>
-          <span className="muted small">pro Jahr</span>
+          <span className="muted small">{t('pro Jahr')}</span>
         </button>
       </div>
-      {a.status !== 'signed-in' && <p className="muted small">Zuerst anmelden, dann geht es zur Zahlung (Karte, TWINT, Apple Pay oder Google Pay).</p>}
-      {busy && <p className="muted small">Weiter zur sicheren Zahlung bei Stripe …</p>}
+      {a.status !== 'signed-in' && <p className="muted small">{t('Zuerst anmelden, dann geht es zur Zahlung (Karte, TWINT, Apple Pay oder Google Pay).')}</p>}
+      {busy && <p className="muted small">{t('Weiter zur sicheren Zahlung bei Stripe …')}</p>}
       {error && <p className="error">{error}</p>}
       <LegalLinks />
     </Modal>

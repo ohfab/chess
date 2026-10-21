@@ -10,6 +10,7 @@ import { themeName } from '../puzzles/themes'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
+import { getLang, locale, t, tn } from '../i18n/i18n'
 import { aiError, aiPlan, coachAvailable } from './ai'
 import { openAccount, requirePro, useAccount } from '../account/account'
 import { cloudEnabled } from '../account/cloud'
@@ -30,9 +31,11 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
   const { history, daily, streak, puzzleRating, progress, solvedMistakes, level, playerColor, setDaily } = g
 
   const insights = useInsights()
+  // the texts are written in the chosen language, so a new language makes new candidates
+  const lang = getLang()
   const tasks = useMemo(
-    () => candidates(insights, { progress, solvedMistakes: new Set(solvedMistakes), level, side: playerColor }),
-    [insights, progress, solvedMistakes, level, playerColor],
+    () => candidates(insights, { progress, solvedMistakes: new Set(solvedMistakes), level, side: playerColor, lang }),
+    [insights, progress, solvedMistakes, level, playerColor, lang],
   )
 
   // a fresh plan each day; until the coach is asked it follows the analysis as new games come in
@@ -44,7 +47,8 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
       // work already started today stays on the list
       const started = daily.tasks.filter((t) => t.done > 0 && !next.tasks.some((n) => n.id === t.id))
       next.tasks = [...started, ...next.tasks.map((t) => ({ ...t, done: done.get(t.id) ?? 0 }))].slice(0, 6)
-      const same = next.summary === daily.summary && next.tasks.map((t) => t.id).join() === daily.tasks.map((t) => t.id).join()
+      const texts = (p: DailyPlan) => p.tasks.map((t) => `${t.id}|${t.title}|${t.reason}`).join()
+      const same = next.summary === daily.summary && texts(next) === texts(daily)
       if (same) return
     }
     setDaily(next)
@@ -78,11 +82,10 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
 
   const plan: DailyPlan | null = daily?.date === today() ? daily : null
   const doneCount = plan?.tasks.filter((t) => t.done >= t.target).length ?? 0
-  const [dateLabel] = useState(() => new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))
-  const [greeting] = useState(() => {
-    const h = new Date().getHours()
-    return h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'
-  })
+  const [now] = useState(() => new Date())
+  const dateLabel = now.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
+  const hour = now.getHours()
+  const greeting = hour < 5 ? t('Gute Nacht') : hour < 11 ? t('Guten Morgen') : hour < 18 ? t('Guten Tag') : t('Guten Abend')
   const share = plan?.tasks.length ? doneCount / plan.tasks.length : 0
 
   return (
@@ -95,10 +98,10 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
             <p className="muted">{dateLabel}</p>
           </div>
         </div>
-        <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title="Tage in Folge mit erledigtem Plan">
+        <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title={t('Tage in Folge mit erledigtem Plan')}>
           <Flame size={18} />
           <b>{streak.last >= yesterdayKey() ? streak.count : 0}</b>
-          <span>Tage</span>
+          <span>{t('Tage')}</span>
         </div>
       </div>
 
@@ -106,10 +109,10 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
         <Piece role="knight" color="white" className="coach-avatar" />
         <div className="coach-card-body">
           <div className="coach-card-title">
-            <b>{plan?.byAI ? 'Dein Coach' : 'Deine Auswertung'}</b>
+            <b>{plan?.byAI ? t('Dein Coach') : t('Deine Auswertung')}</b>
             {plan?.byAI && (
               <span className="pill">
-                <Sparkles size={11} /> KI
+                <Sparkles size={11} /> {t('KI')}
               </span>
             )}
           </div>
@@ -129,14 +132,14 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
             <div className="coach-card-actions">
               <button className="btn-primary small" onClick={() => askCoach(!!plan?.byAI)} disabled={asking}>
                 {asking ? (
-                  'Coach denkt nach …'
+                  t('Coach denkt nach …')
                 ) : plan?.byAI ? (
                   <>
-                    <RefreshCw size={15} /> Neu planen
+                    <RefreshCw size={15} /> {t('Neu planen')}
                   </>
                 ) : (
                   <>
-                    <Sparkles size={15} /> KI-Coach: Plan erstellen
+                    <Sparkles size={15} /> {t('KI-Coach: Plan erstellen')}
                   </>
                 )}
               </button>
@@ -148,31 +151,27 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
 
       <section>
         <div className="section-head">
-          <h3>Training für heute</h3>
-          {plan && (
-            <span className="muted">
-              {doneCount} von {plan.tasks.length} erledigt
-            </span>
-          )}
+          <h3>{t('Training für heute')}</h3>
+          {plan && <span className="muted">{t('{done} von {total} erledigt', { done: doneCount, total: plan.tasks.length })}</span>}
         </div>
         <div className="tasks">
-          {plan?.tasks.map((t) => {
-            const Icon = KIND_ICON[t.kind]
-            const complete = t.done >= t.target
+          {plan?.tasks.map((task) => {
+            const Icon = KIND_ICON[task.kind]
+            const complete = task.done >= task.target
             return (
-              <div key={t.id} className={`task ${t.kind} ${complete ? 'complete' : ''}`}>
+              <div key={task.id} className={`task ${task.kind} ${complete ? 'complete' : ''}`}>
                 <span className="task-icon">{complete ? <Check size={20} /> : <Icon size={20} />}</span>
                 <div className="task-text">
-                  <b>{t.title}</b>
-                  <span className="muted">{t.reason}</span>
-                  {t.target > 1 && (
-                    <span className="task-progress" aria-label={`${t.done} von ${t.target}`}>
-                      <i style={{ width: `${(t.done / t.target) * 100}%` }} />
+                  <b>{task.title}</b>
+                  <span className="muted">{task.reason}</span>
+                  {task.target > 1 && (
+                    <span className="task-progress" aria-label={t('{done} von {total}', { done: task.done, total: task.target })}>
+                      <i style={{ width: `${(task.done / task.target) * 100}%` }} />
                     </span>
                   )}
                 </div>
-                <button className={complete ? 'btn-secondary small' : 'btn-primary small'} onClick={() => onStart(t, insights)}>
-                  {complete ? 'Nochmal' : t.done ? 'Weiter' : 'Start'}
+                <button className={complete ? 'btn-secondary small' : 'btn-primary small'} onClick={() => onStart(task, insights)}>
+                  {complete ? t('Nochmal') : task.done ? t('Weiter') : t('Start')}
                 </button>
               </div>
             )
@@ -181,9 +180,7 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
       </section>
 
       {reviewShare !== null && pending > 0 && (
-        <p className="reviewing">
-          Stockfish wertet deine Partien aus: noch {pending} … {Math.round(reviewShare * 100)} %
-        </p>
+        <p className="reviewing">{t('Stockfish wertet deine Partien aus: noch {n} … {pct} %', { n: pending, pct: Math.round(reviewShare * 100) })}</p>
       )}
 
       <DailyPuzzle onStart={onDailyPuzzle} />
@@ -193,19 +190,19 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
       {history.length > 0 && (
         <section>
           <div className="section-head">
-            <h3>Letzte Partien</h3>
+            <h3>{t('Letzte Partien')}</h3>
           </div>
           <div className="archive">
             {history.slice(0, 12).map((game) => (
               <button key={game.key} className="archive-row" onClick={() => onOpenGame(game)}>
                 <span className={`result ${game.score === 1 ? 'won' : game.score === 0 ? 'lost' : game.score === 0.5 ? 'draw' : ''}`}>
-                  {game.score === 1 ? 'S' : game.score === 0 ? 'N' : game.score === 0.5 ? 'R' : '–'}
+                  {game.score === 1 ? t('S') : game.score === 0 ? t('N') : game.score === 0.5 ? t('R') : '–'}
                 </span>
                 <span className="archive-text">
                   <b>{archiveTitle(game)}</b>
                   <span className="muted">
-                    {new Date(game.date).toLocaleDateString('de-DE')} · {Math.ceil(game.sans.length / 2)} {Math.ceil(game.sans.length / 2) === 1 ? 'Zug' : 'Züge'} · mit{' '}
-                    {game.playerColor === 'white' ? 'Weiß' : 'Schwarz'}
+                    {new Date(game.date).toLocaleDateString(locale())} · {tn(Math.ceil(game.sans.length / 2), '1 Zug', '{n} Züge')} ·{' '}
+                    {game.playerColor === 'white' ? t('mit Weiß') : t('mit Schwarz')}
                   </span>
                 </span>
                 <span className="archive-acc">{game.review ? `${game.review.accuracy[game.playerColor].toFixed(1)}` : '…'}</span>
@@ -223,7 +220,7 @@ function Ring({ share }: { share: number }) {
   const r = 22
   const c = 2 * Math.PI * r
   return (
-    <svg className="ring" viewBox="0 0 52 52" role="img" aria-label={`${Math.round(share * 100)} % des Tagesplans erledigt`}>
+    <svg className="ring" viewBox="0 0 52 52" role="img" aria-label={t('{pct} % des Tagesplans erledigt', { pct: Math.round(share * 100) })}>
       <circle cx="26" cy="26" r={r} className="ring-track" />
       <circle cx="26" cy="26" r={r} className="ring-fill" strokeDasharray={`${c * share} ${c}`} transform="rotate(-90 26 26)" />
       <text x="26" y="31" textAnchor="middle" className="ring-text">
@@ -249,18 +246,18 @@ function DailyPuzzle({ onStart }: { onStart: (puzzle: Puzzle) => void }) {
         <MiniBoard fen={after?.fen ?? puzzle.fen} orientation={side} last={after ? [after.uci.slice(0, 2), after.uci.slice(2, 4)] : undefined} />
       </span>
       <div className="daily-text">
-        <span className="stat-label">Tagesaufgabe</span>
-        <b>{side === 'white' ? 'Weiß' : 'Schwarz'} am Zug</b>
+        <span className="stat-label">{t('Tagesaufgabe')}</span>
+        <b>{side === 'white' ? t('Weiß am Zug') : t('Schwarz am Zug')}</b>
         <span className="muted">
-          {[...new Set(puzzle.themes.map(themeName))].slice(0, 2).join(' · ')} · Wertung {puzzle.rating}
+          {[...new Set(puzzle.themes.map(themeName))].slice(0, 2).join(' · ')} · {t('Wertung {rating}', { rating: puzzle.rating })}
         </span>
         {done ? (
           <span className={`daily-done ${done.solved ? 'ok' : ''}`}>
-            <Check size={15} /> {done.solved ? 'Heute gelöst' : 'Heute mit Hilfe gelöst'}
+            <Check size={15} /> {done.solved ? t('Heute gelöst') : t('Heute mit Hilfe gelöst')}
           </span>
         ) : null}
         <button className={done ? 'btn-secondary small' : 'btn-primary small'} onClick={() => onStart(puzzle)}>
-          {done ? 'Nochmal ansehen' : 'Lösen'}
+          {done ? t('Nochmal ansehen') : t('Lösen')}
         </button>
       </div>
     </section>
@@ -272,9 +269,9 @@ function archiveTitle(game: SavedGame) {
     const s = game.source
     const opp = game.playerColor === 'white' ? s.black : s.white
     const elo = game.playerColor === 'white' ? s.blackElo : s.whiteElo
-    return `${SITE_NAME[s.site]} · gegen ${opp}${elo ? ` (${elo})` : ''}`
+    return `${SITE_NAME[s.site]} · ${t('gegen {name}', { name: opp })}${elo ? ` (${elo})` : ''}`
   }
-  return `${game.mode === 'training' ? 'Eröffnungstraining' : 'Gegen Stockfish'} · ${levelOf(game.level).label}`
+  return `${game.mode === 'training' ? t('Eröffnungstraining') : t('Gegen Stockfish')} · ${levelOf(game.level).label}`
 }
 
 function yesterdayKey() {
@@ -289,47 +286,45 @@ function Stats({ insights, puzzleRating }: { insights: Insights; puzzleRating: n
   return (
     <section>
       <div className="section-head">
-        <h3>So spielst du</h3>
-        <span className="muted">
-          {insights.reviewed} von {insights.games} Partien ausgewertet
-        </span>
+        <h3>{t('So spielst du')}</h3>
+        <span className="muted">{t('{reviewed} von {games} Partien ausgewertet', { reviewed: insights.reviewed, games: insights.games })}</span>
       </div>
       <div className="stat-grid">
         <div className="stat">
-          <span className="stat-label">Genauigkeit</span>
+          <span className="stat-label">{t('Genauigkeit')}</span>
           <b className="stat-value">{accuracy.average !== null ? accuracy.average.toFixed(1) : '–'}</b>
           {trend !== null && (
             <span className={`stat-trend ${trend >= 0 ? 'up' : 'down'}`}>
-              {trend >= 0 ? '▲' : '▼'} {Math.abs(trend).toFixed(1)} zuletzt
+              {trend >= 0 ? '▲' : '▼'} {t('{value} zuletzt', { value: Math.abs(trend).toFixed(1) })}
             </span>
           )}
           {accuracy.perGame.length > 1 && <Sparkline values={accuracy.perGame} />}
         </div>
         <div className="stat">
-          <span className="stat-label">Bilanz</span>
+          <span className="stat-label">{t('Bilanz')}</span>
           <b className="stat-value">
             {results.won}–{results.drawn}–{results.lost}
           </b>
-          <span className="muted">Siege · Remis · Niederlagen</span>
+          <span className="muted">{t('Siege · Remis · Niederlagen')}</span>
         </div>
         <div className="stat">
-          <span className="stat-label">Taktik-Wertung</span>
+          <span className="stat-label">{t('Taktik-Wertung')}</span>
           <b className="stat-value">{puzzleRating}</b>
-          <span className="muted">aus den gelösten Aufgaben</span>
+          <span className="muted">{t('aus den gelösten Aufgaben')}</span>
         </div>
       </div>
 
       {insights.reviewed > 0 && (
         <div className="two-col">
           <div className="panel-block">
-            <h4>Fehler pro Spielphase</h4>
-            <p className="muted small">Anteil deiner Züge, die ein Fehler oder Patzer waren</p>
+            <h4>{t('Fehler pro Spielphase')}</h4>
+            <p className="muted small">{t('Anteil deiner Züge, die ein Fehler oder Patzer waren')}</p>
             <PhaseBars phases={phases} />
           </div>
           <div className="panel-block">
-            <h4>Wiederkehrende Muster</h4>
+            <h4>{t('Wiederkehrende Muster')}</h4>
             {motifs.length === 0 ? (
-              <p className="muted small">Noch keine Muster erkannt.</p>
+              <p className="muted small">{t('Noch keine Muster erkannt.')}</p>
             ) : (
               <ul className="motifs">
                 {motifs.slice(0, 5).map((m) => (
@@ -352,7 +347,7 @@ function PhaseBars({ phases }: { phases: Insights['phases'] }) {
   return (
     <div className="bars">
       {(Object.keys(phases) as Phase[]).map((p) => (
-        <div key={p} className="bar-row" title={`${phases[p].errors} Fehler in ${phases[p].moves} Zügen`}>
+        <div key={p} className="bar-row" title={t('{errors} Fehler in {moves} Zügen', { errors: phases[p].errors, moves: phases[p].moves })}>
           <span className="bar-label">{PHASE_NAMES[p]}</span>
           <span className="bar-track">
             <i style={{ width: `${(phases[p].rate / max) * 100}%` }} />
@@ -384,13 +379,17 @@ function Sparkline({ values }: { values: number[] }) {
         }}
         onMouseLeave={() => setHover(null)}
         role="img"
-        aria-label={`Genauigkeit der letzten ${values.length} Partien`}
+        aria-label={t('Genauigkeit der letzten {n} Partien', { n: values.length })}
       >
         <polyline points={points} fill="none" className="spark-line" />
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={0} y2={H} className="spark-cross" />}
         <circle cx={x(hover ?? values.length - 1)} cy={y(values[hover ?? values.length - 1])} r={4} className="spark-dot" />
       </svg>
-      <span className="spark-tip">{hover !== null ? `Partie ${hover + 1}: ${values[hover].toFixed(1)}` : `zuletzt ${values[values.length - 1].toFixed(1)}`}</span>
+      <span className="spark-tip">
+        {hover !== null
+          ? t('Partie {n}: {value}', { n: hover + 1, value: values[hover].toFixed(1) })
+          : t('zuletzt {value}', { value: values[values.length - 1].toFixed(1) })}
+      </span>
     </div>
   )
 }

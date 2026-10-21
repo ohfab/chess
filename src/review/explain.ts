@@ -1,12 +1,12 @@
 import { Chess } from 'chess.js'
 import type { Score } from '../engine/engine'
 import { figurine, opposite, pvToSan, turnOf, type Color } from '../game/rules'
+import { t, tn } from '../i18n/i18n'
 import type { Judgement, PositionEval } from './review'
 
 // The coach's sentence under a reviewed move: what the move allows, or what it missed.
 
 const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
-const NAME: Record<Color, string> = { white: 'Weiß', black: 'Schwarz' }
 
 function balance(chess: Chess, color: Color) {
   let sum = 0
@@ -32,7 +32,20 @@ function materialSwing(fen: string, line: string[], color: Color) {
   return swing
 }
 
-const what = (n: number) => (n >= 8 ? 'die Dame' : n >= 5 ? 'einen Turm' : n >= 3 ? 'eine Figur' : n >= 2 ? 'Material' : 'einen Bauern')
+const what = (n: number) => (n >= 8 ? t('die Dame') : n >= 5 ? t('einen Turm') : n >= 3 ? t('eine Figur') : n >= 2 ? t('Material') : t('einen Bauern'))
+
+// Sentences that name a side are written out for each side, so every language can say
+// "White" and "Black" the way it does in the middle of a sentence.
+const mates = (side: Color, n: number) =>
+  side === 'white' ? tn(n, 'Weiß setzt in einem Zug matt.', 'Weiß setzt in {n} Zügen matt.') : tn(n, 'Schwarz setzt in einem Zug matt.', 'Schwarz setzt in {n} Zügen matt.')
+const matesAfter = (side: Color, n: number) =>
+  side === 'white'
+    ? tn(n, 'Danach setzt Weiß in einem Zug matt.', 'Danach setzt Weiß in {n} Zügen matt.')
+    : tn(n, 'Danach setzt Schwarz in einem Zug matt.', 'Danach setzt Schwarz in {n} Zügen matt.')
+const wins = (side: Color, move: string | null, material: string) =>
+  side === 'white' ? t('Danach gewinnt Weiß mit {move} {what}.', { move: move ?? '', what: material }) : t('Danach gewinnt Schwarz mit {move} {what}.', { move: move ?? '', what: material })
+const better = (side: Color, move: string | null) =>
+  side === 'white' ? t('Nach {move} steht Weiß klar besser.', { move: move ?? '' }) : t('Nach {move} steht Schwarz klar besser.', { move: move ?? '' })
 
 const mateOf = (score: Score | null) => (score && 'mate' in score ? score.mate : null)
 
@@ -49,43 +62,39 @@ export function explain(j: Judgement, fen: string, afterFen: string, played: str
 
   switch (j) {
     case 'brilliant':
-      return 'Ein starkes Opfer: die Figur ist absichtlich preisgegeben, und es geht trotzdem auf.'
+      return t('Ein starkes Opfer: die Figur ist absichtlich preisgegeben, und es geht trotzdem auf.')
     case 'great':
-      return 'Der einzige gute Zug in dieser Stellung. Alles andere hätte viel verschenkt.'
+      return t('Der einzige gute Zug in dieser Stellung. Alles andere hätte viel verschenkt.')
     case 'best':
     case 'excellent':
     case 'good': {
       const mate = mateOf(after.score)
-      if (mate !== null && (mover === 'white' ? mate > 0 : mate < 0))
-        return `${NAME[mover]} setzt in ${Math.abs(mate) === 1 ? 'einem Zug' : `${Math.abs(mate)} Zügen`} matt.`
-      return best && j !== 'best' ? `Bester Zug war ${best}.` : null
+      if (mate !== null && (mover === 'white' ? mate > 0 : mate < 0)) return mates(mover, Math.abs(mate))
+      return best && j !== 'best' ? t('Bester Zug war {move}.', { move: best }) : null
     }
     case 'miss': {
       const mate = mateOf(before.score)
       if (mate !== null && (mover === 'white' ? mate > 0 : mate < 0) && best)
-        return `Matt in ${Math.abs(mate) === 1 ? 'einem Zug' : `${Math.abs(mate)} Zügen`} war möglich: ${best}.`
+        return tn(Math.abs(mate), 'Matt in einem Zug war möglich: {move}.', 'Matt in {n} Zügen war möglich: {move}.', { move: best })
       const gain = before.pv ? materialSwing(fen, before.pv, mover) : 0
-      if (best && gain >= 1) return `Mit ${best} war ${what(gain)} zu gewinnen.`
-      return best ? `Der Gegner hatte gerade gepatzt. Mit ${best} wäre der Vorteil geblieben.` : null
+      if (best && gain >= 1) return t('Mit {move} war {what} zu gewinnen.', { move: best, what: what(gain) })
+      return best ? t('Der Gegner hatte gerade gepatzt. Mit {move} wäre der Vorteil geblieben.', { move: best }) : null
     }
     case 'inaccuracy':
     case 'mistake':
     case 'blunder': {
-      const better = best ? ` Besser war ${best}.` : ''
+      const instead = best ? ` ${t('Besser war {move}.', { move: best })}` : ''
       const mate = mateOf(after.score)
-      if (mate !== null && (opp === 'white' ? mate > 0 : mate < 0)) {
-        const n = Math.abs(mate)
-        return `Danach setzt ${NAME[opp]} in ${n === 1 ? 'einem Zug' : `${n} Zügen`} matt.${better}`
-      }
+      if (mate !== null && (opp === 'white' ? mate > 0 : mate < 0)) return matesAfter(opp, Math.abs(mate)) + instead
       const reply = after.pv ?? []
       const lost = -materialSwing(afterFen, reply, mover)
       // a blunder that only drops a pawn in the first moves loses more than that further on: say so
-      if (reply.length && (lost >= 3 || (lost >= 1 && j !== 'blunder'))) return `Danach gewinnt ${NAME[opp]} mit ${san(afterFen, reply[0])} ${what(lost)}.${better}`
-      if (reply.length && j === 'blunder') return `Nach ${san(afterFen, reply[0])} steht ${NAME[opp]} klar besser.${better}`
+      if (reply.length && (lost >= 3 || (lost >= 1 && j !== 'blunder'))) return wins(opp, san(afterFen, reply[0]), what(lost)) + instead
+      if (reply.length && j === 'blunder') return better(opp, san(afterFen, reply[0])) + instead
       // no material lost right away: a forcing reply still shows what the move allowed
       const answer = reply.length ? san(afterFen, reply[0]) : null
-      if (answer && j !== 'inaccuracy' && /[x+]/.test(answer)) return `Danach kommt ${answer}.${better}`
-      return best ? `Besser war ${best}.` : null
+      if (answer && j !== 'inaccuracy' && /[x+]/.test(answer)) return t('Danach kommt {move}.', { move: answer }) + instead
+      return best ? t('Besser war {move}.', { move: best }) : null
     }
     default:
       return null

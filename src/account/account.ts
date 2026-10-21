@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import { useGame } from '../game/store'
+import { t } from '../i18n/i18n'
 import { callFunction, cloudEnabled, supabase } from './cloud'
 import { FREE_REVIEWS_PER_DAY, type ProFeature } from './plans'
 import { mergeState, snapshot, type Synced } from './sync'
@@ -215,7 +216,7 @@ export function exportData() {
 /** Restores an export, merged with what is already on this device. */
 export async function importData(file: File) {
   const parsed = JSON.parse(await file.text())
-  if (parsed?.app !== 'rookly' || typeof parsed.data !== 'object') throw new Error('not a Rookly export')
+  if (parsed?.app !== 'rookly' || typeof parsed.data !== 'object') throw new Error(t('Diese Datei ist keine Rookly-Sicherung.'))
   const merged = mergeState(snapshot(useGame.getState()), parsed.data as Partial<Synced>, true)
   useGame.getState().replaceSynced(merged)
 }

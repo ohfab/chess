@@ -1,5 +1,5 @@
 // The AI coach for Pro members: Claude reads the player's numbers and today's candidate tasks
-// and returns the day's plan. Body: { data, options } as built by src/coach/ai.ts.
+// and returns the day's plan. Body: { data, options, lang } as built by src/coach/ai.ts.
 import Anthropic from 'npm:@anthropic-ai/sdk@1'
 import { json, preflight } from '../_shared/http.ts'
 import { admin, isPro, profileOf, userFrom } from '../_shared/supabase.ts'
@@ -8,13 +8,23 @@ const client = new Anthropic() // ANTHROPIC_API_KEY from the function's secrets
 const MODEL = Deno.env.get('COACH_MODEL') ?? 'claude-opus-5-5'
 const DAILY_LIMIT = Number(Deno.env.get('COACH_DAILY_LIMIT') ?? 3)
 
-const SYSTEM = [
-  'Du bist ein erfahrener, freundlicher Schachtrainer in der Trainings-App Rookly.',
-  'Du bekommst die Zahlen aus den von Stockfish ausgewerteten Partien einer Person und die Trainingseinheiten, die die App heute anbieten kann.',
-  'Stelle daraus das Training für heute zusammen: 3 bis 5 Einheiten in sinnvoller Reihenfolge, die genau an den größten Schwächen ansetzen.',
-  'Sprich die Person direkt an (Du-Form), auf Deutsch, konkret und ohne Floskeln. Nutze nur die gegebenen Zahlen, erfinde keine.',
-  'summary: 2 bis 3 Sätze, wie die Person spielt und woran es heute geht. focus: höchstens 3 Schwächen mit einem konkreten Denk-Tipp. plan: nur ids aus der Liste der Einheiten.',
-].join('\n')
+/** The app's languages and how the coach is told to write in them (same list as src/coach/ai.ts). */
+const WRITE_IN: Record<string, string> = {
+  de: 'auf Deutsch (Du-Form)',
+  en: 'auf Englisch (in English, addressing the player as "you")',
+  fr: 'auf Französisch (en français, en tutoyant la personne)',
+  it: 'auf Italienisch (in italiano, dando del tu)',
+}
+
+const system = (lang: string) =>
+  [
+    'Du bist ein erfahrener, freundlicher Schachtrainer in der Trainings-App Rookly.',
+    'Du bekommst die Zahlen aus den von Stockfish ausgewerteten Partien einer Person und die Trainingseinheiten, die die App heute anbieten kann.',
+    'Stelle daraus das Training für heute zusammen: 3 bis 5 Einheiten in sinnvoller Reihenfolge, die genau an den größten Schwächen ansetzen.',
+    'Sprich die Person direkt an, konkret und ohne Floskeln. Nutze nur die gegebenen Zahlen, erfinde keine.',
+    `Schreibe alle Texte (summary, focus, reason) ${WRITE_IN[lang] ?? WRITE_IN.de}.`,
+    'summary: 2 bis 3 Sätze, wie die Person spielt und woran es heute geht. focus: höchstens 3 Schwächen mit einem konkreten Denk-Tipp. plan: nur ids aus der Liste der Einheiten.',
+  ].join('\n')
 
 const PLAN_SCHEMA = {
   type: 'object',
@@ -52,6 +62,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => null)
   if (!body || typeof body !== 'object' || !Array.isArray(body.options)) return json(req, { error: 'bad_request' }, 400)
+  const lang = typeof body.lang === 'string' && body.lang in WRITE_IN ? body.lang : 'de'
   const input = JSON.stringify({ data: body.data ?? {}, options: body.options })
   if (input.length > 30000) return json(req, { error: 'too_large' }, 413)
 
@@ -67,7 +78,7 @@ Deno.serve(async (req) => {
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'medium', format: { type: 'json_schema', schema: PLAN_SCHEMA } },
-      system: SYSTEM,
+      system: system(lang),
       messages: [{ role: 'user', content: `Spielerdaten und Einheiten:\n${input}` }],
     })
     if (response.stop_reason === 'refusal') return json(req, { error: 'refused' }, 422)

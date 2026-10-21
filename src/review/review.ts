@@ -4,6 +4,7 @@ import { getReviewer, getReviewPool, whiteScore, whiteShare } from '../engine/us
 import { isBook, loadOpenings } from '../game/openings'
 import { gameAccuracy } from './accuracy'
 import { turnOf, type Color, type Ply } from '../game/rules'
+import { translateFields } from '../i18n/i18n'
 
 export type Judgement = 'book' | 'brilliant' | 'great' | 'best' | 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'miss' | 'blunder'
 
@@ -229,6 +230,9 @@ export const JUDGEMENT: Record<Judgement, { label: string; color: string; phrase
   miss: { label: 'Verpasst', color: '#ff7769', phrase: 'verpasst eine Chance' },
   blunder: { label: 'Patzer', color: '#fa412d', phrase: 'ist ein Patzer' },
 }
+
+// i18n-fields: label, phrase
+for (const j of Object.values(JUDGEMENT)) translateFields(j, 'label', 'phrase')
 
 export const JUDGEMENT_ORDER: Judgement[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder']
 
