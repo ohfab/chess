@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react'
+import { t } from '../i18n/i18n'
 import { JUDGEMENT, type Judgement, type Review } from '../review/review'
 
 const MARKED: Judgement[] = ['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder']
@@ -18,7 +19,7 @@ export function EvalGraph({ review, cursor, onJump }: { review: Review; cursor: 
   }
 
   return (
-    <div className="evalgraph" onClick={jump} role="img" aria-label="Bewertungsverlauf">
+    <div className="evalgraph" onClick={jump} role="img" aria-label={t('Bewertungsverlauf')}>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <path d={`M0,${H} L${line} L${W},${H} Z`} className="evalgraph-area" />
         <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="evalgraph-mid" />

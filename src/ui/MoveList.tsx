@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Badge } from '../review/Badge'
 import type { MoveReview } from '../review/review'
 import { figurine, moveNumber, turnOf, type Ply } from '../game/rules'
+import { t } from '../i18n/i18n'
 
 interface Props {
   startFen: string
@@ -45,7 +46,7 @@ export function MoveList({ startFen, plies, cursor, reviews, onJump }: Props) {
 
   return (
     <div className="movelist" ref={box}>
-      {rows.length === 0 && <div className="movelist-empty">Noch keine Züge</div>}
+      {rows.length === 0 && <div className="movelist-empty">{t('Noch keine Züge')}</div>}
       {rows.map(([n, w, b]) => (
         <div className="moverow" key={n}>
           <span className="movenum">{n}.</span>

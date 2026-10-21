@@ -1,6 +1,7 @@
 import { Bot, User } from 'lucide-react'
 import { Piece } from '../board/Piece'
 import type { Color } from '../game/rules'
+import { t } from '../i18n/i18n'
 
 const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 }
 const ROLE: Record<string, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen' }
@@ -51,7 +52,7 @@ export function PlayerStrip({ name, detail, color, bot, startFen, fen, thinking,
         </div>
       </div>
       {thinking && (
-        <div className="thinking" aria-label="denkt nach">
+        <div className="thinking" aria-label={t('denkt nach')}>
           <i />
           <i />
           <i />

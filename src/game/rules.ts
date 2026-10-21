@@ -1,5 +1,6 @@
 import { Chess, type Square } from 'chess.js'
 import type { Key } from '@lichess-org/chessground/types'
+import { t } from '../i18n/i18n'
 
 export type Color = 'white' | 'black'
 
@@ -138,7 +139,7 @@ export function validateFen(fen: string): string | null {
     new Chess(fen)
     return null
   } catch (e) {
-    return e instanceof Error ? e.message : 'Ungültige FEN'
+    return e instanceof Error ? e.message : t('Ungültige FEN')
   }
 }
 

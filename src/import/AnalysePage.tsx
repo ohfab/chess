@@ -3,6 +3,7 @@ import { ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Spa
 import { Piece } from '../board/Piece'
 import { APP_NAME, APP_URL } from '../brand'
 import { useGame } from '../game/store'
+import { locale, t, tk, tn } from '../i18n/i18n'
 import { ImportError, SITE_NAME, fetchGames, fetchProfile, remoteKey, type RemoteGame, type RemoteProfile, type Site } from './remote'
 
 interface Props {
@@ -26,24 +27,28 @@ interface Search {
 let remembered: Search | null = null
 
 const SPEEDS: { id: string; label: string }[] = [
-  { id: 'all', label: 'Alle' },
-  { id: 'rapid', label: 'Schnellschach' },
-  { id: 'blitz', label: 'Blitz' },
-  { id: 'bullet', label: 'Bullet' },
-  { id: 'daily', label: 'Täglich' },
-  { id: 'classical', label: 'Klassisch' },
+  { id: 'all', label: tk('Alle') },
+  { id: 'rapid', label: tk('Schnellschach') },
+  { id: 'blitz', label: tk('Blitz') },
+  { id: 'bullet', label: tk('Bullet') },
+  { id: 'daily', label: tk('Täglich') },
+  { id: 'classical', label: tk('Klassisch') },
 ]
 
 
 function errorText(e: unknown, site: Site, name: string) {
   if (e instanceof ImportError) {
-    if (e.code === 'not-found') return `Auf ${SITE_NAME[site]} gibt es kein Konto „${name}“.`
-    if (e.code === 'rate-limited') return `${SITE_NAME[site]} bremst gerade. Versuch es in einer Minute nochmal.`
+    if (e.code === 'not-found') return t('Auf {site} gibt es kein Konto „{name}“.', { site: SITE_NAME[site], name })
+    if (e.code === 'rate-limited') return t('{site} bremst gerade. Versuch es in einer Minute nochmal.', { site: SITE_NAME[site] })
     if (e.code === 'blocked')
-      return `Diese Ansicht darf ${SITE_NAME[site]} nicht erreichen. Öffne ${APP_NAME} als Webseite (${APP_URL}) oder lade die PGN dort herunter und füge sie mit „PGN einfügen“ ein.`
+      return t('Diese Ansicht darf {site} nicht erreichen. Öffne {app} als Webseite ({url}) oder lade die PGN dort herunter und füge sie mit „PGN einfügen“ ein.', {
+        site: SITE_NAME[site],
+        app: APP_NAME,
+        url: APP_URL,
+      })
     return e.message
   }
-  return 'Das hat nicht geklappt.'
+  return t('Das hat nicht geklappt.')
 }
 
 /** Analysis hub: games from chess.com and Lichess, the free board and the position editor. */
@@ -106,30 +111,30 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
   return (
     <div className="analyse-page">
       <div className="page-head">
-        <h2>Analyse</h2>
-        <p className="muted">Deine Partien von chess.com und Lichess auswerten, Stellungen aufbauen oder frei ausprobieren</p>
+        <h2>{t('Analyse')}</h2>
+        <p className="muted">{t('Deine Partien von chess.com und Lichess auswerten, Stellungen aufbauen oder frei ausprobieren')}</p>
       </div>
 
       <div className="tool-cards">
         <button className="tool-card" onClick={onBoard}>
           <Microscope size={22} />
-          <b>Analysebrett</b>
-          <span>Frei ziehen, Stockfish rechnet mit</span>
+          <b>{t('Analysebrett')}</b>
+          <span>{t('Frei ziehen, Stockfish rechnet mit')}</span>
         </button>
         <button className="tool-card" onClick={onEditor}>
           <LayoutGrid size={22} />
-          <b>Brett-Editor</b>
-          <span>Figuren aufstellen, dann analysieren oder spielen</span>
+          <b>{t('Brett-Editor')}</b>
+          <span>{t('Figuren aufstellen, dann analysieren oder spielen')}</span>
         </button>
         <button className="tool-card" onClick={onPaste}>
           <Upload size={22} />
-          <b>PGN einfügen</b>
-          <span>Partie oder FEN aus der Zwischenablage</span>
+          <b>{t('PGN einfügen')}</b>
+          <span>{t('Partie oder FEN aus der Zwischenablage')}</span>
         </button>
       </div>
 
       <section className="import-card">
-        <h3>Partien suchen</h3>
+        <h3>{t('Partien suchen')}</h3>
         <form className="import-form" onSubmit={submit}>
           <div className="segmented site-pick">
             {(['chesscom', 'lichess'] as Site[]).map((s) => (
@@ -143,14 +148,14 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={`Benutzername auf ${SITE_NAME[site]}`}
+              placeholder={t('Benutzername auf {site}', { site: SITE_NAME[site] })}
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              aria-label="Benutzername"
+              aria-label={t('Benutzername')}
             />
             <button className="btn-primary small" disabled={!name.trim() || busy === 'search'}>
-              {busy === 'search' ? <Loader2 size={16} className="spin" /> : 'Suchen'}
+              {busy === 'search' ? <Loader2 size={16} className="spin" /> : t('Suchen')}
             </button>
           </div>
         </form>
@@ -161,7 +166,7 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
                 <button onClick={() => void run(a.site, a.name)}>
                   <i className={`site-dot ${a.site}`} /> {a.name}
                 </button>
-                <button className="chip-x" onClick={() => forgetAccount(a.site, a.name)} aria-label={`${a.name} entfernen`}>
+                <button className="chip-x" onClick={() => forgetAccount(a.site, a.name)} aria-label={t('{name} entfernen', { name: a.name })}>
                   <X size={13} />
                 </button>
               </span>
@@ -178,7 +183,7 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
 
           <div className="section-head games-head">
             <h3>
-              Partien von {search.name} <span className="muted">· {search.games.length}</span>
+              {t('Partien von {name}', { name: search.name })} <span className="muted">· {search.games.length}</span>
             </h3>
             <button
               className="btn-secondary small"
@@ -186,21 +191,23 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
                 const n = onQueue(search.games.slice(0, 10))
                 if (n !== null) setQueued(n)
               }}
-              title="Die letzten zehn Partien kommen ins Archiv und werden im Hintergrund ausgewertet"
+              title={t('Die letzten zehn Partien kommen ins Archiv und werden im Hintergrund ausgewertet')}
             >
-              <Sparkles size={15} /> Letzte 10 für den Coach
+              <Sparkles size={15} /> {t('Letzte 10 für den Coach')}
             </button>
           </div>
           {queued !== null && (
             <p className="muted small">
-              {queued ? `${queued} ${queued === 1 ? 'Partie' : 'Partien'} im Archiv, Stockfish wertet sie im Hintergrund aus.` : 'Die letzten zehn sind schon im Archiv.'}
+              {queued
+                ? tn(queued, '1 Partie im Archiv, Stockfish wertet sie im Hintergrund aus.', '{n} Partien im Archiv, Stockfish wertet sie im Hintergrund aus.')
+                : t('Die letzten zehn sind schon im Archiv.')}
             </p>
           )}
           {speeds.length > 2 && (
             <div className="chips">
               {speeds.map((s) => (
                 <button key={s.id} className={`chip ${speed === s.id ? 'on' : ''}`} onClick={() => setSpeed(s.id)}>
-                  {s.label}
+                  {t(s.label)}
                 </button>
               ))}
             </div>
@@ -212,7 +219,7 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
               const opp = g.color === 'white' ? g.black : g.white
               return (
                 <div key={g.id} className="remote-game">
-                  <span className={`result ${g.score === 1 ? 'won' : g.score === 0 ? 'lost' : 'draw'}`}>{g.score === 1 ? 'S' : g.score === 0 ? 'N' : 'R'}</span>
+                  <span className={`result ${g.score === 1 ? 'won' : g.score === 0 ? 'lost' : 'draw'}`}>{/* first letters of win, loss, draw */ g.score === 1 ? t('S') : g.score === 0 ? t('N') : t('R')}</span>
                   <Piece role="king" color={g.color} className="remote-side" />
                   <span className="remote-text">
                     <b>
@@ -220,33 +227,33 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
                       {opp.rating ? <span className="muted"> ({opp.rating})</span> : null}
                     </b>
                     <span className="muted">
-                      {g.clock || g.speed} · {new Date(g.date).toLocaleDateString('de-DE')}
+                      {g.clock || g.speed} · {new Date(g.date).toLocaleDateString(locale())}
                       {g.opening ? ` · ${shortOpening(g.opening)}` : ''}
                     </span>
                   </span>
                   {own?.review ? (
-                    <span className="remote-acc" title={`Deine Genauigkeit laut ${APP_NAME}`}>
-                      {own.review.accuracy[g.color].toFixed(1)}
+                    <span className="remote-acc" title={t('Deine Genauigkeit laut {app}', { app: APP_NAME })}>
+                      {own.review.accuracy[g.color].toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                     </span>
                   ) : g.accuracy ? (
-                    <span className="remote-acc site" title="Genauigkeit laut chess.com">
-                      {g.accuracy[g.color].toFixed(1)}
+                    <span className="remote-acc site" title={t('Genauigkeit laut chess.com')}>
+                      {g.accuracy[g.color].toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                     </span>
                   ) : null}
-                  <a className="icon-btn remote-link" href={g.url} target="_blank" rel="noreferrer" aria-label={`Auf ${SITE_NAME[g.site]} ansehen`}>
+                  <a className="icon-btn remote-link" href={g.url} target="_blank" rel="noreferrer" aria-label={t('Auf {site} ansehen', { site: SITE_NAME[g.site] })}>
                     <ExternalLink size={16} />
                   </a>
                   <button className="btn-primary small" onClick={() => onAnalyse(g)}>
-                    {own?.review ? 'Öffnen' : 'Analysieren'}
+                    {own?.review ? t('Öffnen') : t('Analysieren')}
                   </button>
                 </div>
               )
             })}
-            {!shown.length && <p className="muted">Keine Partien {speed !== 'all' ? 'in dieser Bedenkzeit ' : ''}gefunden.</p>}
+            {!shown.length && <p className="muted">{speed !== 'all' ? t('Keine Partien in dieser Bedenkzeit gefunden.') : t('Keine Partien gefunden.')}</p>}
           </div>
           {search.next && (
             <button className="btn-secondary more-btn" onClick={more} disabled={busy === 'more'}>
-              {busy === 'more' ? <Loader2 size={16} className="spin" /> : <ChevronDown size={16} />} Ältere Partien laden
+              {busy === 'more' ? <Loader2 size={16} className="spin" /> : <ChevronDown size={16} />} {t('Ältere Partien laden')}
             </button>
           )}
         </>
@@ -286,7 +293,7 @@ function Profile({ search }: { search: Search }) {
       <div className="profile-ratings">
         {p?.ratings.map((r) => (
           <span key={r.label} className="rating-pill">
-            <span>{r.label}</span>
+            <span>{t(r.label)}</span>
             <b>{r.rating}</b>
           </span>
         ))}
@@ -321,25 +328,25 @@ function Record({ games }: { games: RemoteGame[] }) {
   return (
     <div className="record">
       <div className="record-cell">
-        <span className="stat-label">Bilanz</span>
+        <span className="stat-label">{t('Bilanz')}</span>
         <b className="stat-value">
           {all.won}–{all.drawn}–{all.lost}
         </b>
         <WinBar r={all} />
       </div>
       <div className="record-cell">
-        <span className="stat-label">Mit Weiß</span>
+        <span className="stat-label">{t('Mit Weiß')}</span>
         <b className="stat-value">{pct(white)} %</b>
         <WinBar r={white} />
       </div>
       <div className="record-cell">
-        <span className="stat-label">Mit Schwarz</span>
+        <span className="stat-label">{t('Mit Schwarz')}</span>
         <b className="stat-value">{pct(black)} %</b>
         <WinBar r={black} />
       </div>
       {openings.length > 0 && (
         <div className="record-cell wide">
-          <span className="stat-label">Häufigste Eröffnungen</span>
+          <span className="stat-label">{t('Häufigste Eröffnungen')}</span>
           <ul className="record-openings">
             {openings.map((o) => (
               <li key={o.name}>
@@ -356,9 +363,9 @@ function Record({ games }: { games: RemoteGame[] }) {
 }
 
 function WinBar({ r }: { r: { n: number; won: number; drawn: number; lost: number } }) {
-  if (!r.n) return <span className="muted small">keine Partien</span>
+  if (!r.n) return <span className="muted small">{t('keine Partien')}</span>
   return (
-    <span className="winbar" title={`${r.won} Siege, ${r.drawn} Remis, ${r.lost} Niederlagen`}>
+    <span className="winbar" title={t('{won} Siege, {drawn} Remis, {lost} Niederlagen', { won: r.won, drawn: r.drawn, lost: r.lost })}>
       <i className="w" style={{ width: `${(r.won / r.n) * 100}%` }} />
       <i className="d" style={{ width: `${(r.drawn / r.n) * 100}%` }} />
       <i className="l" style={{ width: `${(r.lost / r.n) * 100}%` }} />

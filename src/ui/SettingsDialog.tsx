@@ -5,7 +5,7 @@ import { LegalLinks } from '../account/AccountDialogs'
 import { FREE_THEMES } from '../account/plans'
 import { playSound, SOUND_SETS } from '../game/sound'
 import type { Settings } from '../game/store'
-import { LANGS } from '../i18n/i18n'
+import { LANGS, t } from '../i18n/i18n'
 import { BOARDS, loadPreviews, PIECE_SETS } from '../theme/theme'
 import { Toggle } from './Dialogs'
 import { Modal } from './Modal'
@@ -42,8 +42,8 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
   }
 
   return (
-    <Modal title="Einstellungen" onClose={onClose}>
-      <div className="lang-row" role="radiogroup" aria-label="Sprache">
+    <Modal title={t('Einstellungen')} onClose={onClose}>
+      <div className="lang-row" role="radiogroup" aria-label={t('Sprache')}>
         {LANGS.map((l) => (
           <button key={l.id} role="radio" aria-checked={settings.lang === l.id} className={`chip ${settings.lang === l.id ? 'on' : ''}`} onClick={() => onChange({ lang: l.id })} lang={l.id}>
             {l.name}
@@ -52,16 +52,16 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
       </div>
       <div className="segmented">
         <button className={tab === 'design' ? 'on' : ''} onClick={() => setTab('design')}>
-          Design
+          {t('Design')}
         </button>
         <button className={tab === 'game' ? 'on' : ''} onClick={() => setTab('game')}>
-          Spiel
+          {t('Spiel')}
         </button>
       </div>
 
       {tab === 'design' ? (
         <>
-          <div className="field-label">Brett</div>
+          <div className="field-label">{t('Brett')}</div>
           <div className="swatches">
             {BOARDS.map((b, i) => (
               <button key={b.id} className={`swatch ${settings.board === b.id ? 'on' : ''}`} onClick={() => pick(i, { board: b.id })}>
@@ -72,7 +72,7 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
             ))}
           </div>
 
-          <div className="field-label">Figuren</div>
+          <div className="field-label">{t('Figuren')}</div>
           <div className="swatches">
             {PIECE_SETS.map((p, i) => (
               <button key={p.id} className={`swatch ${settings.pieces === p.id ? 'on' : ''}`} onClick={() => pick(i, { pieces: p.id })} title={`${p.author}, ${p.license}`}>
@@ -83,10 +83,10 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
             ))}
           </div>
 
-          <div className="field-label">Sound</div>
+          <div className="field-label">{t('Sound')}</div>
           <div className="sound-sets">
             <button className={`chip ${!settings.sound ? 'on' : ''}`} onClick={() => onChange({ sound: false })}>
-              Aus
+              {t('Aus')}
             </button>
             {SOUND_SETS.map((s) => (
               <button key={s.id} className={`chip ${settings.sound && settings.soundSet === s.id ? 'on' : ''}`} onClick={() => pickSound(s.id)}>
@@ -94,19 +94,19 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
               </button>
             ))}
           </div>
-          <Toggle label="Koordinaten" value={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
+          <Toggle label={t('Koordinaten')} value={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
         </>
       ) : (
         <>
-          <Toggle label="Immer Dame bei Umwandlung" value={settings.autoQueen} onChange={(autoQueen) => onChange({ autoQueen })} />
+          <Toggle label={t('Immer Dame bei Umwandlung')} value={settings.autoQueen} onChange={(autoQueen) => onChange({ autoQueen })} />
           <Toggle
-            label="Bewertung beim Spielen und Üben"
-            hint="Zeigt den Bewertungsbalken auch gegen Stockfish und im Eröffnungstraining"
+            label={t('Bewertung beim Spielen und Üben')}
+            hint={t('Zeigt den Bewertungsbalken auch gegen Stockfish und im Eröffnungstraining')}
             value={settings.evalInPlay}
             onChange={(evalInPlay) => onChange({ evalInPlay })}
           />
           <div className="field-label">
-            Engine-Linien in der Analyse <b>{settings.multiPv}</b>
+            {t('Engine-Linien in der Analyse')} <b>{settings.multiPv}</b>
           </div>
           <input
             id="multipv"
@@ -116,12 +116,12 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
             max={5}
             value={settings.multiPv}
             onChange={(e) => onChange({ multiPv: Number(e.target.value) })}
-            aria-label="Engine-Linien"
+            aria-label={t('Engine-Linien')}
           />
         </>
       )}
       <button className="btn-secondary wide-btn" onClick={() => (onClose(), openAccount())}>
-        <UserRound size={16} /> {account === 'local' ? 'Daten sichern und laden' : 'Konto und Abo'}
+        <UserRound size={16} /> {account === 'local' ? t('Daten sichern und laden') : t('Konto und Abo')}
       </button>
       <LegalLinks />
     </Modal>

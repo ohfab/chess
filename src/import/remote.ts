@@ -1,4 +1,5 @@
 import type { Color } from '../game/rules'
+import { t, tk, tn } from '../i18n/i18n'
 
 // Recent games of a chess.com or Lichess account, through their public APIs (both allow
 // requests from any page). Nothing needs a login; private or closed accounts simply fail.
@@ -23,7 +24,7 @@ export interface RemoteGame {
   result: string
   /** bullet, blitz, rapid, classical, daily */
   speed: string
-  /** "5+3", "10 min", "1 Tag" */
+  /** "5+3", "10 min", "1 Tag" (in the language at loading time) */
   clock: string
   /** end of the game, ms */
   date: number
@@ -40,6 +41,7 @@ export interface RemoteProfile {
   name: string
   avatar?: string
   url: string
+  /** label: German key, shown through t() */
   ratings: { label: string; rating: number }[]
 }
 
@@ -65,11 +67,11 @@ async function getJson(url: string, init?: RequestInit) {
     res = await fetch(url, init)
   } catch {
     // a network error here almost always means the page may not reach that site at all
-    throw new ImportError('blocked', 'Keine Verbindung zum Server.')
+    throw new ImportError('blocked', t('Keine Verbindung zum Server.'))
   }
-  if (res.status === 404) throw new ImportError('not-found', 'Diesen Benutzer gibt es nicht.')
-  if (res.status === 429 || res.status === 403) throw new ImportError('rate-limited', 'Zu viele Anfragen, bitte kurz warten.')
-  if (!res.ok) throw new ImportError('failed', `Der Server antwortet mit ${res.status}.`)
+  if (res.status === 404) throw new ImportError('not-found', t('Diesen Benutzer gibt es nicht.'))
+  if (res.status === 429 || res.status === 403) throw new ImportError('rate-limited', t('Zu viele Anfragen, bitte kurz warten.'))
+  if (!res.ok) throw new ImportError('failed', t('Der Server antwortet mit {status}.', { status: res.status }))
   return res
 }
 
@@ -118,7 +120,7 @@ function chesscomResult(g: ChesscomGame) {
 function chesscomClock(tc: string) {
   if (tc.includes('/')) {
     const days = Math.round(Number(tc.split('/')[1]) / 86400)
-    return days === 1 ? '1 Tag' : `${days} Tage`
+    return tn(days, '1 Tag', '{n} Tage')
   }
   const [base, inc] = tc.split('+').map(Number)
   return clockLabel(base, inc || 0)
@@ -134,13 +136,13 @@ async function chesscomProfile(name: string): Promise<RemoteProfile> {
   try {
     const st = await (await getJson(`https://api.chess.com/pub/player/${encodeURIComponent(user)}/stats`)).json()
     for (const [key, label] of [
-      ['chess_rapid', 'Schnellschach'],
-      ['chess_blitz', 'Blitz'],
-      ['chess_bullet', 'Bullet'],
-      ['chess_daily', 'Täglich'],
+      ['chess_rapid', tk('Schnellschach')],
+      ['chess_blitz', tk('Blitz')],
+      ['chess_bullet', tk('Bullet')],
+      ['chess_daily', tk('Täglich')],
     ])
       if (st[key]?.last?.rating) ratings.push({ label, rating: st[key].last.rating })
-    if (st.tactics?.highest?.rating) ratings.push({ label: 'Taktik', rating: st.tactics.highest.rating })
+    if (st.tactics?.highest?.rating) ratings.push({ label: tk('Taktik'), rating: st.tactics.highest.rating })
   } catch {
     // ratings are a nice extra; the games still load without them
   }
@@ -202,17 +204,17 @@ interface LichessGame {
   pgn: string
 }
 
-const playerName = (p: LichessGame['players']['white']) => p.user?.name ?? (p.aiLevel ? `Stockfish Stufe ${p.aiLevel}` : 'Anonym')
+const playerName = (p: LichessGame['players']['white']) => p.user?.name ?? (p.aiLevel ? t('Stockfish Stufe {n}', { n: p.aiLevel }) : t('Anonym'))
 
 async function lichessProfile(name: string): Promise<RemoteProfile> {
   const p = await (await getJson(`https://lichess.org/api/user/${encodeURIComponent(name)}`)).json()
   const ratings: RemoteProfile['ratings'] = []
   for (const [key, label] of [
-    ['rapid', 'Schnellschach'],
-    ['blitz', 'Blitz'],
-    ['bullet', 'Bullet'],
-    ['classical', 'Klassisch'],
-    ['puzzle', 'Taktik'],
+    ['rapid', tk('Schnellschach')],
+    ['blitz', tk('Blitz')],
+    ['bullet', tk('Bullet')],
+    ['classical', tk('Klassisch')],
+    ['puzzle', tk('Taktik')],
   ])
     if (p.perfs?.[key]?.games) ratings.push({ label, rating: p.perfs[key].rating })
   return { site: 'lichess', name: p.username ?? name, url: `https://lichess.org/@/${p.username ?? name}`, ratings }
@@ -239,7 +241,7 @@ async function lichessGames(name: string, cursor: string | null): Promise<GamePa
       black: { name: playerName(g.players.black), rating: g.players.black.rating },
       result,
       speed: SPEED_NAME[g.speed] ?? g.speed,
-      clock: g.clock ? clockLabel(g.clock.initial, g.clock.increment) : g.daysPerTurn ? `${g.daysPerTurn} ${g.daysPerTurn === 1 ? 'Tag' : 'Tage'}` : '',
+      clock: g.clock ? clockLabel(g.clock.initial, g.clock.increment) : g.daysPerTurn ? tn(g.daysPerTurn, '1 Tag', '{n} Tage') : '',
       date: g.lastMoveAt,
       opening: g.opening?.name,
       color,

@@ -1,5 +1,9 @@
+import { translateFields } from '../i18n/i18n'
+
 // Move sounds synthesised with Web Audio, in several sets. Nothing is downloaded:
 // each set is a recipe of noise bursts, thumps and tones. "Filz" is the default.
+// Set names are read through t().
+// i18n-fields: name
 
 let ctx: AudioContext | null = null
 let noise: AudioBuffer | null = null
@@ -131,7 +135,7 @@ export const SOUND_SETS: { id: string; name: string; recipe: Recipe }[] = [
       wrong: () => tone(0, { freq: 140, to: 90, gain: 0.08, decay: 0.2, type: 'sawtooth' }),
     },
   },
-]
+].map((set) => translateFields(set, 'name'))
 
 let current = SOUND_SETS[0]
 

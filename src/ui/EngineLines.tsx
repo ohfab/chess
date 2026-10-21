@@ -1,5 +1,6 @@
 import { formatScore, whiteScore, type Analysis } from '../engine/useEngine'
 import { figurine, moveNumber, pvToSan, turnOf } from '../game/rules'
+import { t } from '../i18n/i18n'
 
 interface Props {
   fen: string
@@ -17,7 +18,7 @@ export function EngineLines({ fen, analysis, final, onPlay }: Props) {
     <div className="lines">
       <div className="lines-head">
         <span>Stockfish 19</span>
-        <span className="muted">{final ? 'Partie zu Ende' : analysis ? `Tiefe ${analysis.depth}` : 'rechnet …'}</span>
+        <span className="muted">{final ? t('Partie zu Ende') : analysis ? t('Tiefe {n}', { n: analysis.depth }) : t('rechnet …')}</span>
       </div>
       {analysis?.lines.map((line) => {
         const score = whiteScore(line.score, fen)

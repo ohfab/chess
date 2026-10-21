@@ -74,6 +74,7 @@ import { allowReview, awaitPro, openAccount, requirePro, useAccount } from './ac
 import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
 import { Welcome } from './account/Welcome'
 import { APP_NAME } from './brand'
+import { t, tk, tn } from './i18n/i18n'
 import { PlayPage } from './play/PlayPage'
 import { TacticsPage } from './puzzles/TacticsPage'
 import { SettingsDialog } from './ui/SettingsDialog'
@@ -147,7 +148,7 @@ export default function App() {
     params.delete('checkout')
     history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : '') + location.hash)
     if (result !== 'success') return
-    void awaitPro().then((ok) => flash(ok ? 'Danke! Pro ist aktiv.' : 'Danke! Pro wird gleich aktiv.'))
+    void awaitPro().then((ok) => flash(ok ? t('Danke! Pro ist aktiv.') : t('Danke! Pro wird gleich aktiv.')))
     // runs once, on the page Stripe sent the player back to
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -189,8 +190,9 @@ export default function App() {
       const b = a && live ? await evaluate(liveFen, 'depth 12 movetime 400') : null
       if (!live) return
       if (!a || !b || lossOf(a.win, b.win, s.playerColor) < 0.15) return setGuard({ fen: liveFen, status: 'ok' })
-      const why = explain('blunder', before, liveFen, ply.uci, a, b)?.replace(/\s*Besser war.*$/, '')
-      setGuard({ fen: liveFen, status: 'warn', san: ply.san, text: why || 'Damit verschenkst du viel.' })
+      // without the better move: the guard warns, it doesn't give the answer away
+      const why = explain('blunder', before, liveFen, ply.uci, { ...a, best: null }, b)
+      setGuard({ fen: liveFen, status: 'warn', san: ply.san, text: why || t('Damit verschenkst du viel.') })
     })()
     return () => {
       live = false
@@ -269,8 +271,8 @@ export default function App() {
     if (mode === 'play' && endgame) s.recordEndgame(endgame.id, outcome.kind === 'checkmate' && outcome.winner === s.playerColor)
     else if (mode === 'play') s.advanceTask(`game:${s.level}`)
     // let the final move land before the result appears
-    const t = setTimeout(() => setDialog('result'), 700)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDialog('result'), 700)
+    return () => clearTimeout(timer)
     // endgame is the trainer's position, set before the game started
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, mode])
@@ -279,7 +281,7 @@ export default function App() {
 
   const flash = (text: string) => {
     setToast(text)
-    setTimeout(() => setToast((t) => (t === text ? null : t)), 1800)
+    setTimeout(() => setToast((cur) => (cur === text ? null : cur)), 1800)
   }
 
   const nav = (to: number) => {
@@ -394,7 +396,7 @@ export default function App() {
 
   const startReview = () => {
     const s = useGame.getState()
-    if (!s.plies.length) return flash('Noch keine Züge zum Auswerten')
+    if (!s.plies.length) return flash(t('Noch keine Züge zum Auswerten'))
     if (!allowReview()) return
     s.countReview()
     const run = ++reviewRun.current
@@ -411,7 +413,7 @@ export default function App() {
     ).then((result) => {
       if (run !== reviewRun.current) return
       setProgress(null)
-      if (!result) return flash('Auswertung abgebrochen')
+      if (!result) return flash(t('Auswertung abgebrochen'))
       const st = useGame.getState()
       st.setReview(result)
       st.goTo(0)
@@ -429,16 +431,16 @@ export default function App() {
       .filter((m) => !solved.has(`${m.gameKey}:${m.ply}`))
       .slice(0, count)
       .map((m) => ({ kind: 'mistake', key: `${m.gameKey}:${m.ply}`, fen: m.fen, best: m.best, playedSan: m.san, winBefore: m.winBefore, date: m.date }))
-    if (!items.length) return flash('Alle Fehler sind schon gelöst')
-    setDrill({ title: 'Deine Fehler', items, taskId, from })
+    if (!items.length) return flash(t('Alle Fehler sind schon gelöst'))
+    setDrill({ title: t('Deine Fehler'), items, taskId, from })
     setView('drill')
   }
 
   const startPuzzles = async (theme: string | undefined, count: number, from: View, taskId?: string) => {
     const s = useGame.getState()
     const puzzles = await pickPuzzles({ theme, rating: s.puzzleRating, count, skip: new Set(s.seenPuzzles) })
-    if (!puzzles.length) return flash('Keine neuen Aufgaben zu diesem Thema')
-    setDrill({ title: theme ? themeName(theme) : 'Taktik-Mix', items: puzzles.map((puzzle) => ({ kind: 'puzzle', puzzle })), taskId, from })
+    if (!puzzles.length) return flash(t('Keine neuen Aufgaben zu diesem Thema'))
+    setDrill({ title: theme ? themeName(theme) : t('Taktik-Mix'), items: puzzles.map((puzzle) => ({ kind: 'puzzle', puzzle })), taskId, from })
     setView('drill')
   }
 
@@ -459,13 +461,13 @@ export default function App() {
     if (fresh || !s.woodpecker) s.startWoodpecker((await woodpeckerSet(s.puzzleRating)).map((p) => p.id))
     const w = useGame.getState().woodpecker!
     const items: DrillItem[] = (await puzzlesById(w.ids.slice(w.index))).map((puzzle) => ({ kind: 'puzzle', puzzle }))
-    if (!items.length) return flash('Das Set ist leer')
-    setDrill({ title: `Woodpecker · Runde ${w.cycle}`, items, taskId: 'woodpecker', from: 'tactics' })
+    if (!items.length) return flash(t('Das Set ist leer'))
+    setDrill({ title: t('Woodpecker · Runde {n}', { n: w.cycle }), items, taskId: 'woodpecker', from: 'tactics' })
     setView('drill')
   }
 
   const startDailyPuzzle = (puzzle: Puzzle) => {
-    setDrill({ title: 'Tagesaufgabe', items: [{ kind: 'puzzle', puzzle }], taskId: 'daily-puzzle', from: 'today' })
+    setDrill({ title: t('Tagesaufgabe'), items: [{ kind: 'puzzle', puzzle }], taskId: 'daily-puzzle', from: 'today' })
     setView('drill')
   }
 
@@ -490,7 +492,7 @@ export default function App() {
 
   const analyseRemote = (remote: RemoteGame) => {
     const saved = useGame.getState().importGame(remote)
-    if (!saved) return flash('Diese Partie lässt sich nicht laden')
+    if (!saved) return flash(t('Diese Partie lässt sich nicht laden'))
     openArchived(saved)
     if (!saved.review) startReview()
   }
@@ -522,15 +524,15 @@ export default function App() {
     if (!ply) return setResync((n) => n + 1)
     if (settings.sound) playSound(soundFor(ply.san))
     const shown = { fen: ply.fen, lastMove: squares(ply.uci) }
-    if (ply.uci === r.best) return setRetry({ ...r, shown, status: 'right', note: `${figurine(ply.san)} ist der beste Zug.` })
-    if (ply.uci === plies[r.ply].uci) return setRetry({ ...r, shown, status: 'wrong', note: 'Das war der Partiezug. Such einen besseren!' })
+    if (ply.uci === r.best) return setRetry({ ...r, shown, status: 'right', note: t('{san} ist der beste Zug.', { san: figurine(ply.san) }) })
+    if (ply.uci === plies[r.ply].uci) return setRetry({ ...r, shown, status: 'wrong', note: t('Das war der Partiezug. Such einen besseren!') })
     setRetry({ ...r, shown, status: 'checking' })
     const before = review.evals[r.ply].win
     void evaluate(ply.fen).then((e) =>
       setRetry((cur) => {
         if (!cur || cur.ply !== r.ply || cur.shown?.fen !== ply.fen) return cur
-        if (e && lossOf(before, e.win, turnOf(r.fen)) < 0.02) return { ...cur, status: 'right', note: `${figurine(ply.san)} ist auch stark.` }
-        return { ...cur, status: 'wrong', note: `${figurine(ply.san)} ist nicht der beste Zug. Versuch's nochmal!` }
+        if (e && lossOf(before, e.win, turnOf(r.fen)) < 0.02) return { ...cur, status: 'right', note: t('{san} ist auch stark.', { san: figurine(ply.san) }) }
+        return { ...cur, status: 'wrong', note: t("{san} ist nicht der beste Zug. Versuch's nochmal!", { san: figurine(ply.san) }) }
       }),
     )
   }
@@ -538,8 +540,8 @@ export default function App() {
   // after a miss, put the pieces back for the next try
   useEffect(() => {
     if (retry?.status !== 'wrong') return
-    const t = setTimeout(() => setRetry((r) => (r?.status === 'wrong' ? { ...r, shown: null, status: 'try' } : r)), 900)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setRetry((r) => (r?.status === 'wrong' ? { ...r, shown: null, status: 'try' } : r)), 900)
+    return () => clearTimeout(timer)
   }, [retry?.status])
 
   const onMove = (orig: Key, dest: Key, premove: boolean) => {
@@ -574,13 +576,13 @@ export default function App() {
 
   const copy = (text: string, what: string) =>
     navigator.clipboard.writeText(text).then(
-      () => flash(`${what} kopiert`),
-      () => flash('Kopieren nicht möglich'),
+      () => flash(t('{what} kopiert', { what })),
+      () => flash(t('Kopieren nicht möglich')),
     )
 
   const pgn = () => {
     const result = !outcome ? '*' : outcome.kind === 'draw' ? '1/2-1/2' : outcome.winner === 'white' ? '1-0' : '0-1'
-    const names = (c: Color) => (!vsEngine ? '?' : c === playerColor ? 'Ich' : `Stockfish (${levelOf(level).label})`)
+    const names = (c: Color) => (!vsEngine ? '?' : c === playerColor ? t('Ich') : `Stockfish (${levelOf(level).label})`)
     return toPgn(startFen, plies, {
       Event: APP_NAME,
       Date: new Date().toISOString().slice(0, 10).replaceAll('-', '.'),
@@ -667,12 +669,11 @@ export default function App() {
   let coach: ReactNode
   if (progress !== null) {
     coach = (
-      <Coach title="Partie wird ausgewertet" progress={progress}>
-        Stockfish prüft jeden Zug … {Math.round(progress * 100)} %
+      <Coach title={t('Partie wird ausgewertet')} progress={progress}>
+        {t('Stockfish prüft jeden Zug … {n} %', { n: Math.round(progress * 100) })}
       </Coach>
     )
   } else if (retry) {
-    const who = turnOf(retry.fen) === 'white' ? 'Weiß' : 'Schwarz'
     const actions = (
       <>
         {retry.status === 'right' ? (
@@ -683,31 +684,40 @@ export default function App() {
               useGame.getState().goTo(retry.ply + 2)
             }}
           >
-            Weiter
+            {t('Weiter')}
           </button>
         ) : (
           <button className="btn-secondary small" onClick={() => setRetry({ ...retry, shown: null, status: 'solution', note: undefined })}>
-            Lösung zeigen
+            {t('Lösung zeigen')}
           </button>
         )}
         <button className="btn-secondary small" onClick={() => setRetry(null)}>
-          Zurück zur Partie
+          {t('Zurück zur Partie')}
         </button>
       </>
     )
     const bestSan = retry.best ? pvToSan(retry.fen, [retry.best])[0] : null
     coach =
       retry.status === 'right' ? (
-        <Coach judgement="best" title="Richtig!" actions={actions}>
+        <Coach judgement="best" title={t('Richtig!')} actions={actions}>
           {retry.note}
         </Coach>
       ) : retry.status === 'solution' ? (
-        <Coach judgement="best" title={`Bester Zug: ${bestSan ? figurine(bestSan) : '–'}`} actions={actions}>
-          Der grüne Pfeil zeigt ihn auf dem Brett.
+        <Coach judgement="best" title={t('Bester Zug: {san}', { san: bestSan ? figurine(bestSan) : '–' })} actions={actions}>
+          {t('Der grüne Pfeil zeigt ihn auf dem Brett.')}
         </Coach>
       ) : (
-        <Coach title={retry.status === 'checking' ? 'Moment …' : `${who} am Zug – finde den besten Zug`} actions={actions}>
-          {retry.status === 'checking' ? 'Stockfish prüft deinen Zug.' : (retry.note ?? `Statt ${figurine(plies[retry.ply].san)} gab es etwas Besseres.`)}
+        <Coach
+          title={
+            retry.status === 'checking'
+              ? t('Moment …')
+              : turnOf(retry.fen) === 'white'
+                ? t('Weiß am Zug – finde den besten Zug')
+                : t('Schwarz am Zug – finde den besten Zug')
+          }
+          actions={actions}
+        >
+          {retry.status === 'checking' ? t('Stockfish prüft deinen Zug.') : (retry.note ?? t('Statt {san} gab es etwas Besseres.', { san: figurine(plies[retry.ply].san) }))}
         </Coach>
       )
   } else if (moveReview && review) {
@@ -727,7 +737,7 @@ export default function App() {
         actions={
           retryable && (
             <button className="btn-secondary small" onClick={startRetry}>
-              <RotateCcw size={16} /> Nochmal versuchen
+              <RotateCcw size={16} /> {t('Nochmal versuchen')}
             </button>
           )
         }
@@ -737,8 +747,8 @@ export default function App() {
     )
   } else if (reviewing && cursor === 0) {
     coach = (
-      <Coach title="Auswertung fertig">
-        Geh mit <ChevronRight size={14} className="inline" /> Zug für Zug durch die Partie. Bei Fehlern kannst du es nochmal versuchen.
+      <Coach title={t('Auswertung fertig')}>
+        {t('Geh mit')} <ChevronRight size={14} className="inline" /> {t('Zug für Zug durch die Partie. Bei Fehlern kannst du es nochmal versuchen.')}
       </Coach>
     )
   } else if (trainer.active && training && trainer.drill && trainer.variation) {
@@ -747,14 +757,14 @@ export default function App() {
     coach = (
       <Coach
         judgement="blunder"
-        title="Vorsicht!"
+        title={t('Vorsicht!')}
         actions={
           <>
             <button className="btn-primary small" onClick={() => (g.takeback(), setGuard(null))}>
-              <Undo2 size={15} /> Zurücknehmen
+              <Undo2 size={15} /> {t('Zurücknehmen')}
             </button>
             <button className="btn-secondary small" onClick={() => setGuard({ ...guard, status: 'ok' })}>
-              Trotzdem spielen
+              {t('Trotzdem spielen')}
             </button>
           </>
         }
@@ -765,17 +775,17 @@ export default function App() {
   } else if (mode === 'play') {
     const title = outcome
       ? outcome.kind === 'draw'
-        ? 'Remis'
+        ? t('Remis')
         : outcome.winner === playerColor
-          ? 'Du hast gewonnen!'
-          : 'Stockfish gewinnt'
+          ? t('Du hast gewonnen!')
+          : t('Stockfish gewinnt')
       : thinking
         ? guardWait
-          ? 'Patzer-Schutz prüft deinen Zug …'
-          : 'Stockfish denkt …'
+          ? t('Patzer-Schutz prüft deinen Zug …')
+          : t('Stockfish denkt …')
         : turn === playerColor
-          ? 'Du bist am Zug'
-          : 'Stockfish ist am Zug'
+          ? t('Du bist am Zug')
+          : t('Stockfish ist am Zug')
     coach = (
       <Coach title={title}>
         {endgame ? (
@@ -790,62 +800,62 @@ export default function App() {
       </Coach>
     )
   } else {
-    coach = <Coach title="Analysebrett">{named ? `${named.eco} · ${named.name}` : 'Zieh frei für beide Seiten. Stockfish rechnet mit.'}</Coach>
+    coach = <Coach title={t('Analysebrett')}>{named ? `${named.eco} · ${named.name}` : t('Zieh frei für beide Seiten. Stockfish rechnet mit.')}</Coach>
   }
 
   function trainingCoach(): ReactNode {
-    const t = training!
+    const tr = training!
     const drill = trainer.drill!
     const label = levelOf(level).label
     const last = plies[plies.length - 1]
     const opponentMoved = !!last && turnOf(liveFen) === playerColor
     const status = thinking
-      ? 'Der Gegner überlegt …'
+      ? t('Der Gegner überlegt …')
       : opponentMoved
-        ? `Gegner: ${numbered([last.san], plies.length - 1)}. Du bist dran.`
-        : 'Du bist dran.'
+        ? t('Gegner: {move}. Du bist dran.', { move: numbered([last.san], plies.length - 1) })
+        : t('Du bist dran.')
     const fresh = note && note.ply >= plies.length - 2 ? note : null
     const more = (
       <>
         <button className="btn-primary small" onClick={restartTraining}>
-          <RotateCcw size={15} /> Nochmal
+          <RotateCcw size={15} /> {t('Nochmal')}
         </button>
-        <button className="btn-secondary small" onClick={() => openSetup(t.openingId)}>
-          Andere Variante
+        <button className="btn-secondary small" onClick={() => openSetup(tr.openingId)}>
+          {t('Andere Variante')}
         </button>
       </>
     )
 
-    if (trainer.loading) return <Coach title="Theorie wird geladen …" />
+    if (trainer.loading) return <Coach title={t('Theorie wird geladen …')} />
     if (outcome) {
       const won = outcome.kind !== 'draw' && outcome.winner === playerColor
       return (
-        <Coach title={outcome.kind === 'draw' ? 'Remis' : won ? 'Du hast gewonnen!' : 'Der Gegner gewinnt'} actions={more}>
-          Werte die Partie aus, um zu sehen, wo es nach der Eröffnung gekippt ist.
+        <Coach title={outcome.kind === 'draw' ? t('Remis') : won ? t('Du hast gewonnen!') : t('Der Gegner gewinnt')} actions={more}>
+          {t('Werte die Partie aus, um zu sehen, wo es nach der Eröffnung gekippt ist.')}
         </Coach>
       )
     }
     if (trainer.bookOver) {
-      const tally = [t.mistakes && `${t.mistakes} Fehler`, t.hints && `${t.hints} Tipps`].filter(Boolean).join(' · ')
+      const tally = [tr.mistakes && tn(tr.mistakes, '1 Fehler', '{n} Fehler'), tr.hints && tn(tr.hints, '1 Tipp', '{n} Tipps')].filter(Boolean).join(' · ')
       return (
-        <Coach judgement={trainer.clean ? 'best' : 'book'} title={trainer.clean ? 'Variante gemeistert!' : 'Ende der Theorie'} actions={more}>
-          {trainer.clean ? 'Alle Züge saßen.' : `${tally || 'Du hast die Variante verlassen'}.`} Ab hier spielt der Gegner frei mit {label} weiter.
+        <Coach judgement={trainer.clean ? 'best' : 'book'} title={trainer.clean ? t('Variante gemeistert!') : t('Ende der Theorie')} actions={more}>
+          {trainer.clean ? t('Alle Züge saßen.') : `${tally || t('Du hast die Variante verlassen')}.`} {t('Ab hier spielt der Gegner frei mit {level} weiter.', { level: label })}
         </Coach>
       )
     }
     if (fresh && isWrong(fresh.verdict) && 'expected' in fresh.verdict) {
       const off = fresh.verdict.kind === 'off'
-      const answer = fresh.tries >= 2 ? ` Richtig ist ${figurine(fresh.verdict.expected)}, siehe Pfeil.` : ''
+      const answer = fresh.tries >= 2 ? ` ${t('Richtig ist {san}, siehe Pfeil.', { san: figurine(fresh.verdict.expected) })}` : ''
       return (
         <Coach
           judgement={off ? 'mistake' : 'inaccuracy'}
           title={
             <span>
-              <b className="coach-san">{figurine(fresh.san)}</b> {off ? 'ist keine Theorie' : 'gehört zu einer anderen Variante'}
+              <b className="coach-san">{figurine(fresh.san)}</b> {off ? t('ist keine Theorie') : t('gehört zu einer anderen Variante')}
             </span>
           }
         >
-          {t.strict ? `Versuch's nochmal.${answer}` : `Ab hier spielst du außerhalb der ${trainer.variation!.name}. ${status}`}
+          {tr.strict ? `${t("Versuch's nochmal.")}${answer}` : `${t('Ab hier spielst du außerhalb der {name}.', { name: trainer.variation!.name })} ${status}`}
         </Coach>
       )
     }
@@ -856,11 +866,11 @@ export default function App() {
           judgement={main ? 'best' : 'book'}
           title={
             <span>
-              <b className="coach-san">{figurine(fresh.san)}</b> {main ? 'ist der Hauptzug' : 'ist Theorie'}
+              <b className="coach-san">{figurine(fresh.san)}</b> {main ? t('ist der Hauptzug') : t('ist Theorie')}
             </span>
           }
         >
-          {share > 0 && `${Math.round(share * 100)} % der Meisterpartien. `}
+          {share > 0 && `${t('{n} % der Meisterpartien.', { n: Math.round(share * 100) })} `}
           {status}
           {named && <span className="coach-line">{named.name}</span>}
         </Coach>
@@ -869,7 +879,9 @@ export default function App() {
     return (
       <Coach title={`${drill.name} · ${trainer.variation!.name}`}>
         {plies.length === 0
-          ? `Du spielst ${playerColor === 'white' ? 'Weiß und beginnst' : 'Schwarz, der Gegner beginnt'}. Spiel die Züge der Theorie.`
+          ? playerColor === 'white'
+            ? t('Du spielst Weiß und beginnst. Spiel die Züge der Theorie.')
+            : t('Du spielst Schwarz, der Gegner beginnt. Spiel die Züge der Theorie.')
           : status}
         {named && plies.length > 0 && <span className="coach-line">{named.name}</span>}
       </Coach>
@@ -902,7 +914,7 @@ export default function App() {
       <PlayerStrip
         color={color}
         bot={engine}
-        name={vsEngine ? (engine ? (mode === 'training' ? 'Gegner' : 'Stockfish') : 'Du') : color === 'white' ? 'Weiß' : 'Schwarz'}
+        name={vsEngine ? (engine ? (mode === 'training' ? t('Gegner') : 'Stockfish') : t('Du')) : color === 'white' ? t('Weiß') : t('Schwarz')}
         detail={engine ? levelOf(level).label : undefined}
         startFen={startFen}
         fen={boardFen}
@@ -914,12 +926,12 @@ export default function App() {
   }
 
   const navLeft = (
-    <button className="nav-btn" onClick={() => nav(cursor - 1)} disabled={cursor === 0 && !retry} aria-label="Vorheriger Zug">
+    <button className="nav-btn" onClick={() => nav(cursor - 1)} disabled={cursor === 0 && !retry} aria-label={t('Vorheriger Zug')}>
       <ChevronLeft size={26} />
     </button>
   )
   const navRight = (
-    <button className="nav-btn" onClick={() => nav(cursor + 1)} disabled={atEnd} aria-label="Nächster Zug">
+    <button className="nav-btn" onClick={() => nav(cursor + 1)} disabled={atEnd} aria-label={t('Nächster Zug')}>
       <ChevronRight size={26} />
     </button>
   )
@@ -932,7 +944,7 @@ export default function App() {
   }
 
   const evalTool = (
-    <Tool label="Bewertung" icon={<Activity size={20} />} onClick={() => g.updateSettings({ evalInPlay: !settings.evalInPlay })} on={settings.evalInPlay} />
+    <Tool label={t('Bewertung')} icon={<Activity size={20} />} onClick={() => g.updateSettings({ evalInPlay: !settings.evalInPlay })} on={settings.evalInPlay} />
   )
 
   let tools: ReactNode
@@ -940,71 +952,71 @@ export default function App() {
     tools = (
       <>
         <Tool
-          label="Tipp"
+          label={t('Tipp')}
           icon={<Lightbulb size={20} />}
           onClick={() => setHintFen(hintOn ? null : fen)}
           disabled={turn !== playerColor || !atEnd}
           on={hintOn}
         />
         {evalTool}
-        <Tool label="Schutz" icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
-        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
-        <Tool label={confirmResign ? 'Sicher?' : 'Aufgeben'} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
+        <Tool label={t('Schutz')} icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
+        <Tool label={t('Zug zurück')} icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
+        <Tool label={confirmResign ? t('Sicher?') : t('Aufgeben')} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
       </>
     )
   } else if (mode === 'training' && training && !outcome) {
     tools = (
       <>
         <Tool
-          label="Tipp"
+          label={t('Tipp')}
           icon={<Lightbulb size={20} />}
           onClick={trainingHint}
           disabled={turnOf(liveFen) !== playerColor || !atEnd}
           on={trainerHint === liveFen || hintOn}
         />
- {evalTool}
-        <Tool label="Zug zurück" icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
-        <Tool label="Neustart" icon={<RotateCcw size={20} />} onClick={restartTraining} />
-        <Tool label="Varianten" icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
+        {evalTool}
+        <Tool label={t('Zug zurück')} icon={<Undo2 size={20} />} onClick={() => g.takeback()} disabled={plies.length === 0} />
+        <Tool label={t('Neustart')} icon={<RotateCcw size={20} />} onClick={restartTraining} />
+        <Tool label={t('Varianten')} icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
       </>
     )
   } else if (mode === 'training' && training) {
     tools = (
       <>
-        <Tool label="Auswertung" icon={<Star size={20} />} onClick={startReview} />
-        <Tool label="Varianten" icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
+        <Tool label={t('Auswertung')} icon={<Star size={20} />} onClick={startReview} />
+        <Tool label={t('Varianten')} icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
         <button className="btn-primary" onClick={restartTraining}>
-          Nochmal
+          {t('Nochmal')}
         </button>
       </>
     )
   } else if (mode === 'play') {
     tools = (
       <>
-        <Tool label="Auswertung" icon={<Star size={20} />} onClick={startReview} />
+        <Tool label={t('Auswertung')} icon={<Star size={20} />} onClick={startReview} />
         <button className="btn-primary" onClick={() => openNew()}>
-          Neue Partie
+          {t('Neue Partie')}
         </button>
       </>
     )
   } else if (reviewing) {
     tools = (
       <>
-        <Tool label="Engine" icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
-        <Tool label="Nochmal" icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
+        <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
+        <Tool label={t('Nochmal')} icon={<RotateCcw size={20} />} onClick={startRetry} disabled={!retryable || !!retry} />
         <button className="btn-primary" onClick={() => openNew()}>
-          Neue Partie
+          {t('Neue Partie')}
         </button>
       </>
     )
   } else {
     tools = (
       <>
-        <Tool label="Engine" icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
-        <Tool label="Auswerten" icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
-        <Tool label="Laden" icon={<Upload size={20} />} onClick={() => setDialog('import')} />
-        <Tool label="Stellung" icon={<LayoutGrid size={20} />} onClick={() => openEditor(fen)} />
-        <Tool label="Teilen" icon={<Share2 size={20} />} onClick={openShare} />
+        <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
+        <Tool label={t('Auswerten')} icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
+        <Tool label={t('Laden')} icon={<Upload size={20} />} onClick={() => setDialog('import')} />
+        <Tool label={t('Stellung')} icon={<LayoutGrid size={20} />} onClick={() => openEditor(fen)} />
+        <Tool label={t('Teilen')} icon={<Share2 size={20} />} onClick={openShare} />
       </>
     )
   }
@@ -1027,21 +1039,21 @@ export default function App() {
     if (mode !== 'analysis') g.analyse()
     setView('board')
   }
-  const navigate = (t: Tab) => setView(t === 'analysis' ? 'analyse' : t)
+  const navigate = (to: Tab) => setView(to === 'analysis' ? 'analyse' : to)
   const setupOpening = setupId ? openingById(setupId) : undefined
   const running = mode === 'play' && plies.length > 0 && !outcome
   const boardTitle =
     mode === 'play'
       ? endgame
-        ? `Endspiel: ${endgame.name}`
-        : `Gegen Stockfish ${levelOf(level).label}`
+        ? t('Endspiel: {name}', { name: endgame.name })
+        : t('Gegen Stockfish {level}', { level: levelOf(level).label })
       : mode === 'training'
-        ? (trainer.drill?.name ?? 'Eröffnungstraining')
+        ? (trainer.drill?.name ?? t('Eröffnungstraining'))
         : imported
           ? `${imported.white} – ${imported.black}`
           : reviewing
-            ? 'Partie-Auswertung'
-            : 'Analyse'
+            ? t('Partie-Auswertung')
+            : t('Analyse')
   // phones: the board views get a back button instead of the tab bar
   const back: View | null =
     view === 'board'
@@ -1058,7 +1070,7 @@ export default function App() {
             ? 'analyse'
             : null
   const headTitle =
-    view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : view === 'editor' ? 'Brett-Editor' : null
+    view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : view === 'editor' ? t('Brett-Editor') : null
 
   return (
     <div className={`app view-${view}`}>
@@ -1066,11 +1078,11 @@ export default function App() {
 
       <header className="mobile-head">
         {back ? (
-          <button className="icon-btn" onClick={() => setView(back)} aria-label="Zurück">
+          <button className="icon-btn" onClick={() => setView(back)} aria-label={t('Zurück')}>
             <ChevronLeft size={24} />
           </button>
         ) : (
-          <button className="brand" onClick={() => setView('today')} aria-label={`${APP_NAME}, zur Startseite`}>
+          <button className="brand" onClick={() => setView('today')} aria-label={t('{app}, zur Startseite', { app: APP_NAME })}>
             <Logo className="brand-mark" />
             <span className="brand-name">{APP_NAME}</span>
           </button>
@@ -1078,15 +1090,15 @@ export default function App() {
         {headTitle && <b className="mobile-title">{headTitle}</b>}
         <div className="topbar-actions">
           {view === 'board' && (
-            <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen">
+            <button className="icon-btn" onClick={() => g.flip()} aria-label={t('Brett drehen')}>
               <ArrowUpDown size={20} />
             </button>
           )}
-          <button className="icon-btn" onClick={() => setDialog('settings')} aria-label="Einstellungen">
+          <button className="icon-btn" onClick={() => setDialog('settings')} aria-label={t('Einstellungen')}>
             <SettingsIcon size={20} />
           </button>
           {account.status !== 'local' && (
-            <button className="icon-btn account-btn" onClick={openAccount} aria-label="Konto">
+            <button className="icon-btn account-btn" onClick={openAccount} aria-label={t('Konto')}>
               {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={20} />}
             </button>
           )}
@@ -1097,7 +1109,7 @@ export default function App() {
         <main className="page">
           <PlayPage
             level={level}
-            running={running ? { fen: liveFen, orientation, label: `${levelOf(level).label} · Zug ${Math.ceil(plies.length / 2)}`, onResume: () => setView('board') } : undefined}
+            running={running ? { fen: liveFen, orientation, label: t('{level} · Zug {n}', { level: levelOf(level).label, n: Math.ceil(plies.length / 2) }), onResume: () => setView('board') } : undefined}
             onStart={({ playerColor: color, level: l }) => startGame({ mode: 'play', playerColor: color, level: l })}
             onAnalysis={goAnalysis}
             onImport={() => setDialog('import')}
@@ -1204,7 +1216,7 @@ export default function App() {
         <aside className="side">
           <div className="panel-head">
             <b>{boardTitle}</b>
-            <button className="icon-btn" onClick={() => g.flip()} aria-label="Brett drehen" title="Brett drehen (F)">
+            <button className="icon-btn" onClick={() => g.flip()} aria-label={t('Brett drehen')} title={t('Brett drehen (F)')}>
               <ArrowUpDown size={18} />
             </button>
           </div>
@@ -1237,7 +1249,7 @@ export default function App() {
           opponentLevel={vsEngine && mode === 'play' ? level : undefined}
           onReview={startReview}
           onNew={openNew}
-          rematchLabel={mode === 'training' || endgame ? 'Nochmal' : 'Revanche'}
+          rematchLabel={mode === 'training' || endgame ? t('Nochmal') : t('Revanche')}
           onRematch={() =>
             mode === 'training' ? restartTraining() : endgame ? startEndgame(endgame) : startGame({ mode: 'play', playerColor: opposite(playerColor), level })
           }
@@ -1262,11 +1274,11 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
 }
 
 const ASPECT_NAME: Record<Aspect, string> = {
-  opening: 'Eröffnung',
-  middlegame: 'Mittelspiel',
-  endgame: 'Endspiel',
-  tactics: 'Taktik',
-  strategy: 'Strategie',
+  opening: tk('Eröffnung'),
+  middlegame: tk('Mittelspiel'),
+  endgame: tk('Endspiel'),
+  tactics: tk('Taktik'),
+  strategy: tk('Strategie'),
 }
 
 /** Accuracy and move-quality counts per side, as on chess.com's review summary. */
@@ -1306,18 +1318,18 @@ function Summary({
     <div className="summary">
       <div className="summary-row head">
         <span />
-        <b>Weiß</b>
+        <b>{t('Weiß')}</b>
         <span />
-        <b>Schwarz</b>
+        <b>{t('Schwarz')}</b>
       </div>
       <div className="summary-row">
-        <span>Genauigkeit</span>
+        <span>{t('Genauigkeit')}</span>
         <b className="acc white">{review.accuracy.white.toFixed(1)}</b>
         <span />
         <b className="acc black">{review.accuracy.black.toFixed(1)}</b>
       </div>
-      <div className="summary-row elo-row" title="Geschätzt aus der Genauigkeit dieser einen Partie">
-        <span>Spielstärke</span>
+      <div className="summary-row elo-row" title={t('Geschätzt aus der Genauigkeit dieser einen Partie')}>
+        <span>{t('Spielstärke')}</span>
         <b>{report.white.elo ? `≈ ${report.white.elo}` : '–'}</b>
         <span />
         <b>{report.black.elo ? `≈ ${report.black.elo}` : '–'}</b>
@@ -1331,14 +1343,14 @@ function Summary({
         </div>
       ))}
       <div className="aspects">
-        <span className="moments-title">Partie nach Phasen</span>
+        <span className="moments-title">{t('Partie nach Phasen')}</span>
         {ASPECT_ORDER.map((a) => {
           const w = report.white.aspects[a]
           const b = report.black.aspects[a]
           if (!w && !b) return null
           const cell = (x: typeof w) =>
             x ? (
-              <span className="aspect-cell" title={`${x.moves} ${x.moves === 1 ? 'Zug' : 'Züge'}`}>
+              <span className="aspect-cell" title={tn(x.moves, '1 Zug', '{n} Züge')}>
                 <Badge judgement={x.judgement} size={18} />
                 <b>{Math.round(x.accuracy)}</b>
               </span>
@@ -1347,7 +1359,7 @@ function Summary({
             )
           return (
             <div className="summary-row aspect-row" key={a}>
-              <span>{ASPECT_NAME[a]}</span>
+              <span>{t(ASPECT_NAME[a])}</span>
               {cell(w)}
               <span />
               {cell(b)}
@@ -1357,10 +1369,10 @@ function Summary({
       </div>
       {hasMoments && (
         <div className="moments">
-          <span className="moments-title">Schlüsselmomente</span>
+          <span className="moments-title">{t('Schlüsselmomente')}</span>
           {moments.map(({ color, best, worst }) => (
             <div key={color} className="moments-row">
-              <span className="muted">{color === 'white' ? 'Weiß' : 'Schwarz'}</span>
+              <span className="muted">{color === 'white' ? t('Weiß') : t('Schwarz')}</span>
               {best && (
                 <button className="moment" onClick={() => onJump(best.i + 1)}>
                   <Badge judgement={best.m.judgement} size={16} /> {moveLabel(best.i)}
@@ -1371,7 +1383,7 @@ function Summary({
                   <Badge judgement={worst.m.judgement} size={16} /> {moveLabel(worst.i)}
                 </button>
               )}
-              {!best && !worst && <span className="muted small">ohne große Fehler</span>}
+              {!best && !worst && <span className="muted small">{t('ohne große Fehler')}</span>}
             </div>
           ))}
         </div>

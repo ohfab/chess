@@ -1,5 +1,9 @@
+import { translateFields } from '../i18n/i18n'
+
 // Board colours and piece sets. Everything is applied through CSS variables and one
 // injected stylesheet, so every board on the page (game, menus, puzzles) follows along.
+// Names are read through t().
+// i18n-fields: name
 
 export interface BoardTheme {
   id: string
@@ -10,7 +14,7 @@ export interface BoardTheme {
   highlight: string
 }
 
-export const BOARDS: BoardTheme[] = [
+export const BOARDS: BoardTheme[] = ([
   { id: 'green', name: 'Grün', light: '#ebecd0', dark: '#739552', highlight: 'rgb(255 255 51 / 0.5)' },
   { id: 'brown', name: 'Braun', light: '#f0d9b5', dark: '#b58863', highlight: 'rgb(155 199 0 / 0.42)' },
   { id: 'walnut', name: 'Walnuss', light: '#e8cfa6', dark: '#a0703f', highlight: 'rgb(255 230 70 / 0.48)' },
@@ -21,7 +25,7 @@ export const BOARDS: BoardTheme[] = [
   { id: 'coral', name: 'Koralle', light: '#f3e0d6', dark: '#c97b62', highlight: 'rgb(255 236 100 / 0.5)' },
   { id: 'mint', name: 'Minze', light: '#e3efe7', dark: '#5f9e86', highlight: 'rgb(255 236 90 / 0.5)' },
   { id: 'night', name: 'Nacht', light: '#b9c0ca', dark: '#5d6778', highlight: 'rgb(130 190 255 / 0.45)' },
-]
+] as BoardTheme[]).map((b) => translateFields(b, 'name'))
 
 export interface PieceSet {
   id: string
@@ -30,7 +34,7 @@ export interface PieceSet {
   license: string
 }
 
-export const PIECE_SETS: PieceSet[] = [
+export const PIECE_SETS: PieceSet[] = ([
   { id: 'cburnett', name: 'Klassisch', author: 'Colin M.L. Burnett', license: 'GPLv2+' },
   { id: 'merida', name: 'Merida', author: 'Armando H. Marroquin', license: 'GPLv2+' },
   { id: 'celtic', name: 'Celtic', author: 'Maurizio Monge', license: 'MIT' },
@@ -41,7 +45,7 @@ export const PIECE_SETS: PieceSet[] = [
   { id: 'papercut', name: 'Papercut', author: 'Nikolay Anzarov', license: 'CC BY 4.0' },
   { id: 'rhosgfx', name: 'Kupfer', author: 'RhosGFX', license: 'CC0' },
   { id: 'pixel', name: 'Pixel', author: 'therealqtpi', license: 'AGPLv3+' },
-]
+] as PieceSet[]).map((p) => translateFields(p, 'name'))
 
 const boardImage = (dark: string) => {
   const squares: string[] = []

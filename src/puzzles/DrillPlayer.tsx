@@ -9,6 +9,7 @@ import { evaluate, lossOf } from '../review/review'
 import { Coach } from '../ui/Coach'
 import type { Puzzle } from './puzzles'
 import { themeName } from './themes'
+import { locale, t } from '../i18n/i18n'
 
 export type DrillItem =
   | { kind: 'puzzle'; puzzle: Puzzle }
@@ -84,12 +85,12 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
       return
     }
     setStatus('intro')
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       apply(item.puzzle.moves[0])
       setStep(1)
       setStatus('turn')
     }, 650)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
     // apply only reads refs and setters
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [index])
@@ -126,7 +127,7 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
       // any mate on the final move counts, as on lichess
       if (uci !== expected && !(last && ply.san.endsWith('#'))) {
         setFen(ply.fen)
-        return miss(`${figurine(ply.san)} ist es nicht.`)
+        return miss(t('{move} ist es nicht.', { move: figurine(ply.san) }))
       }
       apply(uci)
       if (last) {
@@ -149,7 +150,7 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
     if (uci === item.best) {
       apply(uci)
       setStatus('solved')
-      setNote(`${figurine(ply.san)} ist der beste Zug.`)
+      setNote(t('{move} ist der beste Zug.', { move: figurine(ply.san) }))
       finish(!failed)
       return
     }
@@ -158,9 +159,9 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
       if (e && lossOf(item.winBefore, e.win, player) < 0.03) {
         apply(uci)
         setStatus('solved')
-        setNote(`${figurine(ply.san)} ist auch stark.`)
+        setNote(t('{move} ist auch stark.', { move: figurine(ply.san) }))
         finish(!failed)
-      } else miss(`${figurine(ply.san)} reicht nicht.`)
+      } else miss(t('{move} reicht nicht.', { move: figurine(ply.san) }))
     })
   }
 
@@ -196,35 +197,43 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
   const done = status === 'solved'
   const meta =
     item.kind === 'puzzle'
-      ? `${item.puzzle.themes.map(themeName).filter((t, i, a) => a.indexOf(t) === i).slice(0, 2).join(' · ')} · ${item.puzzle.rating}`
-      : `Aus deiner Partie vom ${new Date(item.date).toLocaleDateString('de-DE')}`
+      ? `${item.puzzle.themes.map(themeName).filter((name, i, a) => a.indexOf(name) === i).slice(0, 2).join(' · ')} · ${item.puzzle.rating}`
+      : t('Aus deiner Partie vom {date}', { date: new Date(item.date).toLocaleDateString(locale()) })
 
   let coach
   if (done) {
     coach = (
-      <Coach judgement={failed ? 'good' : 'best'} title={failed ? 'Gelöst' : 'Richtig!'}>
-        {note ?? (failed ? 'Mit Hilfe geschafft. Morgen kommt sie wieder dran.' : 'Sauber gelöst.')}
+      <Coach judgement={failed ? 'good' : 'best'} title={failed ? t('Gelöst') : t('Richtig!')}>
+        {note ?? (failed ? t('Mit Hilfe geschafft. Morgen kommt sie wieder dran.') : t('Sauber gelöst.'))}
       </Coach>
     )
   } else if (status === 'shown') {
     coach = (
-      <Coach judgement="best" title={`Lösung: ${expected ? figurine(play(turnFen.current, expected)?.san ?? '') : '–'}`}>
-        Der grüne Pfeil zeigt den Zug. Spiel ihn, um weiterzumachen.
+      <Coach judgement="best" title={t('Lösung: {move}', { move: expected ? figurine(play(turnFen.current, expected)?.san ?? '') : '–' })}>
+        {t('Der grüne Pfeil zeigt den Zug. Spiel ihn, um weiterzumachen.')}
       </Coach>
     )
   } else if (status === 'wrong') {
     coach = (
-      <Coach judgement="mistake" title="Nicht ganz">
-        {note} Versuch&apos;s nochmal.
+      <Coach judgement="mistake" title={t('Nicht ganz')}>
+        {note} {t('Versuch’s nochmal.')}
       </Coach>
     )
   } else if (status === 'checking') {
-    coach = <Coach title="Moment …">Stockfish prüft deinen Zug.</Coach>
+    coach = <Coach title={t('Moment …')}>{t('Stockfish prüft deinen Zug.')}</Coach>
   } else {
-    const who = player === 'white' ? 'Weiß' : 'Schwarz'
+    const white = player === 'white'
+    const title =
+      item.kind === 'puzzle'
+        ? white
+          ? t('Weiß am Zug: finde den besten Zug')
+          : t('Schwarz am Zug: finde den besten Zug')
+        : white
+          ? t('Weiß am Zug: was wäre besser?')
+          : t('Schwarz am Zug: was wäre besser?')
     coach = (
-      <Coach title={item.kind === 'puzzle' ? `${who} am Zug: finde den besten Zug` : `${who} am Zug: was wäre besser?`}>
-        {item.kind === 'puzzle' ? meta : `In der Partie kam ${figurine(item.playedSan)}. ${meta}.`}
+      <Coach title={title}>
+        {item.kind === 'puzzle' ? meta : t('In der Partie kam {move}. {meta}.', { move: figurine(item.playedSan), meta })}
       </Coach>
     )
   }
@@ -270,22 +279,22 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
           <div className="tools">
             <button className="tool" onClick={() => onExit(results)}>
               <X size={20} />
-              <span>Beenden</span>
+              <span>{t('Beenden')}</span>
             </button>
             {!done && status !== 'shown' && (
               <button className="tool" onClick={showSolution} disabled={status !== 'turn' && status !== 'wrong'}>
                 <Eye size={20} />
-                <span>Lösung</span>
+                <span>{t('Lösung')}</span>
               </button>
             )}
             {status === 'shown' && (
               <button className="btn-primary" onClick={playSolution}>
-                Zug spielen
+                {t('Zug spielen')}
               </button>
             )}
             {done && (
               <button className="btn-primary" onClick={next}>
-                {index + 1 < items.length ? 'Weiter' : 'Fertig'} <ArrowRight size={18} className="inline" />
+                {index + 1 < items.length ? t('Weiter') : t('Fertig')} <ArrowRight size={18} className="inline" />
               </button>
             )}
           </div>

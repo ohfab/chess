@@ -32,6 +32,7 @@ import { loadPuzzles } from './puzzles'
 import { THEME_NAMES } from './themes'
 import { ENDGAMES, type Endgame } from './endgames'
 import { MiniBoard } from '../trainer/MiniBoard'
+import { locale, t, tn } from '../i18n/i18n'
 
 const THEME_ICON: Record<string, LucideIcon> = {
   hangingPiece: Hand,
@@ -92,10 +93,10 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
     <div className="tactics">
       <div className="page-head row">
         <div>
-          <h2>Taktik</h2>
-          <p className="muted">2.131 Aufgaben aus echten Partien, passend zu deiner Wertung</p>
+          <h2>{t('Taktik')}</h2>
+          <p className="muted">{t('{n} Aufgaben aus echten Partien, passend zu deiner Wertung', { n: (2131).toLocaleString(locale()) })}</p>
         </div>
-        <div className="rating-chip" title="Deine Taktik-Wertung">
+        <div className="rating-chip" title={t('Deine Taktik-Wertung')}>
           <Puzzle size={18} />
           <b>{puzzleRating}</b>
         </div>
@@ -107,21 +108,21 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
             <Flame size={26} />
           </span>
           <span className="hero-text">
-            <b>Taktik-Mix</b>
-            <span>Fünf Aufgaben quer durch alle Motive</span>
+            <b>{t('Taktik-Mix')}</b>
+            <span>{t('Fünf Aufgaben quer durch alle Motive')}</span>
           </span>
-          <span className="hero-meta">{tries ? `${Math.round((hits / tries) * 100)} % gelöst · ${seenPuzzles.length} gesehen` : 'Los geht’s'}</span>
+          <span className="hero-meta">{tries ? t('{p} % gelöst · {n} gesehen', { p: Math.round((hits / tries) * 100), n: seenPuzzles.length }) : t('Los geht’s')}</span>
         </button>
         <button className="hero-card mistakes" onClick={() => onMistakes(insights)} disabled={open === 0}>
           <span className="hero-icon">
             <RotateCcw size={26} />
           </span>
           <span className="hero-text">
-            <b>Deine Fehler</b>
-            <span>Stellungen aus deinen Partien, in denen es Besseres gab</span>
+            <b>{t('Deine Fehler')}</b>
+            <span>{t('Stellungen aus deinen Partien, in denen es Besseres gab')}</span>
           </span>
           <span className="hero-meta">
-            {open ? `${open} offen` : insights.reviewed ? 'Alles gelöst' : 'Spiel eine Partie, dann erscheinen sie hier'}
+            {open ? t('{n} offen', { n: open }) : insights.reviewed ? t('Alles gelöst') : t('Spiel eine Partie, dann erscheinen sie hier')}
           </span>
         </button>
         <div className="hero-card woodpecker">
@@ -131,16 +132,17 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
             </span>
             <span className="hero-text">
               <b>Woodpecker</b>
-              <span>Dieselben 20 Aufgaben immer wieder, bis die Muster sitzen</span>
+              <span>{t('Dieselben 20 Aufgaben immer wieder, bis die Muster sitzen')}</span>
             </span>
           </button>
           <span className="hero-meta">
             {woodpecker
-              ? `Runde ${woodpecker.cycle} · ${woodpecker.index} von ${woodpecker.ids.length}${lastCycle ? ` · zuletzt ${lastCycle.solved}/${lastCycle.total} in ${time(lastCycle.ms)}` : ''}`
-              : 'Neues Set starten'}
+              ? t('Runde {cycle} · {index} von {total}', { cycle: woodpecker.cycle, index: woodpecker.index, total: woodpecker.ids.length }) +
+                (lastCycle ? ' · ' + t('zuletzt {solved}/{total} in {time}', { solved: lastCycle.solved, total: lastCycle.total, time: time(lastCycle.ms) }) : '')
+              : t('Neues Set starten')}
             {woodpecker && (
               <button className="hero-link" onClick={() => onWoodpecker(true)}>
-                Neues Set
+                {t('Neues Set')}
               </button>
             )}
           </span>
@@ -148,10 +150,10 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
       </div>
 
       {woodpecker && woodpecker.cycles.length > 0 && (
-        <div className="cycles" aria-label="Woodpecker-Runden">
+        <div className="cycles" aria-label={t('Woodpecker-Runden')}>
           {woodpecker.cycles.map((c) => (
             <span key={c.cycle} className="cycle">
-              <b>Runde {c.cycle}</b>
+              <b>{t('Runde {n}', { n: c.cycle })}</b>
               <span>
                 {c.solved}/{c.total}
               </span>
@@ -162,8 +164,8 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
       )}
 
       <div className="section-head">
-        <h3>Endspiele</h3>
-        <span className="muted">gegen Stockfish in voller Stärke</span>
+        <h3>{t('Endspiele')}</h3>
+        <span className="muted">{t('gegen Stockfish in voller Stärke')}</span>
       </div>
       <div className="endgames">
         {ENDGAMES.map((e) => {
@@ -177,7 +179,7 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
                 <b>
                   {e.name} {st?.wins ? <Check size={15} className="inline" /> : null}
                 </b>
-                <span className="muted">{st?.tries ? `${st.wins} von ${st.tries} gewonnen` : e.goal}</span>
+                <span className="muted">{st?.tries ? t('{wins} von {tries} gewonnen', { wins: st.wins, tries: st.tries }) : e.goal}</span>
               </span>
             </button>
           )
@@ -185,8 +187,8 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
       </div>
 
       <div className="section-head">
-        <h3>Nach Motiv</h3>
-        <span className="muted">fünf Aufgaben pro Runde</span>
+        <h3>{t('Nach Motiv')}</h3>
+        <span className="muted">{t('fünf Aufgaben pro Runde')}</span>
       </div>
       <div className="themes">
         {Object.entries(THEME_NAMES).map(([theme, name]) => {
@@ -201,7 +203,7 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
               <span className="theme-text">
                 <b>{name}</b>
                 <span className="muted">
-                  {st?.tries ? `${st.solved} von ${st.tries} gelöst` : counts[theme] ? `${counts[theme]} Aufgaben` : ' '}
+                  {st?.tries ? t('{solved} von {tries} gelöst', { solved: st.solved, tries: st.tries }) : counts[theme] ? tn(counts[theme], '1 Aufgabe', '{n} Aufgaben') : ' '}
                 </span>
               </span>
               {rate !== null && (

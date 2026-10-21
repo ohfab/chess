@@ -1,3 +1,5 @@
+import { tk, translateFields } from '../i18n/i18n'
+
 export interface Level {
   level: number
   /** rough playing strength, as a player would describe an opponent */
@@ -13,7 +15,9 @@ export interface Level {
 const skill = (s: number) => ({ UCI_LimitStrength: false, 'Skill Level': s })
 const elo = (e: number) => ({ UCI_LimitStrength: true, UCI_Elo: e, 'Skill Level': 20 })
 
-export const LEVELS: Level[] = [
+// names and labels are read through t()
+// i18n-fields: name
+export const LEVELS: Level[] = ([
   { level: 1, label: '~800', name: 'Einsteiger', go: 'depth 1 movetime 50', options: skill(0) },
   { level: 2, label: '~1000', name: 'Anfänger', go: 'depth 2 movetime 100', options: skill(3) },
   { level: 3, label: '~1200', name: 'Gelegenheitsspieler', go: 'depth 4 movetime 200', options: skill(6) },
@@ -23,8 +27,8 @@ export const LEVELS: Level[] = [
   { level: 7, label: '~2000', name: 'Experte', go: 'movetime 600', options: elo(2000) },
   { level: 8, label: '~2200', name: 'Meister', go: 'movetime 800', options: elo(2200) },
   { level: 9, label: '~2500', name: 'Großmeister', go: 'movetime 1000', options: elo(2500) },
-  { level: 10, label: 'Ideal', name: 'Immer der beste Zug', go: 'depth 22 movetime 2000', options: skill(20) },
-]
+  { level: 10, label: tk('Ideal'), name: 'Immer der beste Zug', go: 'depth 22 movetime 2000', options: skill(20) },
+] as Level[]).map((l) => translateFields(l, 'name', 'label'))
 
 export const IDEAL = LEVELS.length
 

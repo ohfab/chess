@@ -1,6 +1,7 @@
 import engineJs from 'stockfish/bin/stockfish-19-lite-single.js?url'
 import engineWasm from 'stockfish/bin/stockfish-19-lite-single.wasm?url'
 import engineAsm from 'stockfish/bin/stockfish-19-asm.js?url'
+import { t } from '../i18n/i18n'
 
 /** Score from the side to move, as Stockfish reports it. */
 export type Score = { cp: number } | { mate: number }
@@ -121,7 +122,7 @@ export class Engine {
       await this.command('isready', 'readyok')
       return
     }
-    throw new Error('Stockfish konnte nicht gestartet werden')
+    throw new Error(t('Stockfish konnte nicht gestartet werden'))
   }
 
   private send(cmd: string) {

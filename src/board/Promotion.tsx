@@ -1,12 +1,13 @@
 import type { Key } from '@lichess-org/chessground/types'
 import type { Color } from '../game/rules'
+import { t, tk } from '../i18n/i18n'
 import { Piece } from './Piece'
 
 const ROLES = [
-  ['q', 'queen'],
-  ['n', 'knight'],
-  ['r', 'rook'],
-  ['b', 'bishop'],
+  ['q', 'queen', tk('Dame')],
+  ['n', 'knight', tk('Springer')],
+  ['r', 'rook', tk('Turm')],
+  ['b', 'bishop', tk('Läufer')],
 ] as const
 
 interface Props {
@@ -23,7 +24,7 @@ export function Promotion({ dest, color, orientation, onPick }: Props) {
   const fromTop = (color === 'white') === (orientation === 'white')
   return (
     <div className="promotion" onClick={() => onPick(null)}>
-      {ROLES.map(([p, role], i) => (
+      {ROLES.map(([p, role, name], i) => (
         <button
           key={p}
           className="promotion-choice"
@@ -32,7 +33,7 @@ export function Promotion({ dest, color, orientation, onPick }: Props) {
             e.stopPropagation()
             onPick(p)
           }}
-          aria-label={role}
+          aria-label={t(name)}
         >
           <Piece role={role} color={color} />
         </button>

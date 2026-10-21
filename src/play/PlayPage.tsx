@@ -4,6 +4,7 @@ import { Piece } from '../board/Piece'
 import { LEVELS, levelOf } from '../engine/levels'
 import { START_FEN, type Color } from '../game/rules'
 import { MiniBoard } from '../trainer/MiniBoard'
+import { t } from '../i18n/i18n'
 
 type Role = 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen' | 'king'
 
@@ -64,8 +65,8 @@ export function PlayPage({ level: initialLevel, running, onStart, onAnalysis, on
 
       <div className="play-panel">
         <div className="page-head">
-          <h2>Spielen</h2>
-          <p className="muted">Gegen Stockfish, von ~800 bis zur vollen Stärke</p>
+          <h2>{t('Spielen')}</h2>
+          <p className="muted">{t('Gegen Stockfish, von ~800 bis zur vollen Stärke')}</p>
         </div>
 
         {running && (
@@ -74,17 +75,17 @@ export function PlayPage({ level: initialLevel, running, onStart, onAnalysis, on
               <MiniBoard fen={running.fen} orientation={running.orientation} />
             </span>
             <span className="resume-text">
-              <b>Laufende Partie</b>
+              <b>{t('Laufende Partie')}</b>
               <span className="muted">{running.label}</span>
             </span>
             <span className="btn-primary small">
-              <Play size={15} /> Weiter
+              <Play size={15} /> {t('Weiter')}
             </span>
           </button>
         )}
 
-        <div className="field-label">Gegner</div>
-        <div className="bots" role="radiogroup" aria-label="Gegner">
+        <div className="field-label">{t('Gegner')}</div>
+        <div className="bots" role="radiogroup" aria-label={t('Gegner')}>
           {LEVELS.map((x) => (
             <button
               key={x.level}
@@ -103,33 +104,33 @@ export function PlayPage({ level: initialLevel, running, onStart, onAnalysis, on
           ))}
         </div>
 
-        <div className="field-label">Ich spiele</div>
+        <div className="field-label">{t('Ich spiele')}</div>
         <div className="sides">
           {(['white', 'random', 'black'] as const).map((s) => (
             <button key={s} className={`side-pick ${side === s ? 'on' : ''}`} onClick={() => setSide(s)}>
               {s === 'random' ? <Shuffle size={26} /> : <Piece role="king" color={s} className="side-piece" />}
-              <span>{s === 'white' ? 'Weiß' : s === 'black' ? 'Schwarz' : 'Zufall'}</span>
+              <span>{s === 'white' ? t('Weiß') : s === 'black' ? t('Schwarz') : t('Zufall')}</span>
             </button>
           ))}
         </div>
 
         <button className="btn-primary wide play-start" onClick={start}>
-          Spielen
+          {t('Spielen')}
         </button>
 
         <div className="play-links">
           <button className="link-card" onClick={onAnalysis}>
             <Microscope size={20} />
             <span>
-              <b>Analysebrett</b>
-              <span className="muted">Frei ziehen, Stockfish rechnet mit</span>
+              <b>{t('Analysebrett')}</b>
+              <span className="muted">{t('Frei ziehen, Stockfish rechnet mit')}</span>
             </span>
           </button>
           <button className="link-card" onClick={onImport}>
             <Upload size={20} />
             <span>
-              <b>Partie laden</b>
-              <span className="muted">PGN oder FEN einfügen und auswerten</span>
+              <b>{t('Partie laden')}</b>
+              <span className="muted">{t('PGN oder FEN einfügen und auswerten')}</span>
             </span>
           </button>
         </div>

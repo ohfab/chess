@@ -1,4 +1,5 @@
 import type { Color } from '../game/rules'
+import { translateFields } from '../i18n/i18n'
 
 /** Basic endgames to win against full-strength Stockfish; each position was checked as a win. */
 export interface Endgame {
@@ -11,7 +12,8 @@ export interface Endgame {
   tip: string
 }
 
-export const ENDGAMES: Endgame[] = [
+// i18n-fields: name, goal, tip
+export const ENDGAMES: Endgame[] = ([
   {
     id: 'queen',
     name: 'Dame gegen König',
@@ -52,6 +54,6 @@ export const ENDGAMES: Endgame[] = [
     goal: 'Mach aus dem Bauern eine Dame und gewinne.',
     tip: 'Den schwarzen König mit dem Turm abschneiden, dann den Turm auf die vierte Reihe bringen und eine „Brücke“ gegen die Schachs bauen.',
   },
-]
+] as Endgame[]).map((e) => translateFields(e, 'name', 'goal', 'tip'))
 
 export const endgameById = (id: string) => ENDGAMES.find((e) => e.id === id)

@@ -6,11 +6,20 @@ import { ArrowUpDown, Eraser, Hand, Microscope, RotateCcw, Swords, Trash2 } from
 import { Chess } from 'chess.js'
 import { Piece } from '../board/Piece'
 import { START_FEN, type Color } from '../game/rules'
+import { t, tk } from '../i18n/i18n'
 import '@lichess-org/chessground/assets/chessground.base.css'
 import '@lichess-org/chessground/assets/chessground.cburnett.css'
 import '../board/board.css'
 
 const ROLES: Role[] = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn']
+const ROLE_NAME: Record<Role, string> = {
+  king: tk('König'),
+  queen: tk('Dame'),
+  rook: tk('Turm'),
+  bishop: tk('Läufer'),
+  knight: tk('Springer'),
+  pawn: tk('Bauer'),
+}
 const EMPTY = '8/8/8/8/8/8/8/8'
 
 type Tool = 'move' | 'delete' | `${Color}-${Role}`
@@ -50,19 +59,19 @@ function fullFen(placement: string, turn: Color, castling: Castling) {
 function problem(fen: string): string | null {
   const placement = placementOf(fen)
   const count = (ch: string) => [...placement].filter((c) => c === ch).length
-  if (count('K') !== 1 || count('k') !== 1) return 'Jede Seite braucht genau einen König.'
+  if (count('K') !== 1 || count('k') !== 1) return t('Jede Seite braucht genau einen König.')
   const rows = placement.split('/')
-  if (/[pP]/.test(rows[0]) || /[pP]/.test(rows[7])) return 'Bauern dürfen nicht auf der ersten oder letzten Reihe stehen.'
+  if (/[pP]/.test(rows[0]) || /[pP]/.test(rows[7])) return t('Bauern dürfen nicht auf der ersten oder letzten Reihe stehen.')
   try {
     const chess = new Chess(fen)
     // the side that just moved may not have left its king in check
     const other = fen.split(' ')
     other[1] = other[1] === 'w' ? 'b' : 'w'
     other[3] = '-'
-    if (new Chess(other.join(' ')).inCheck()) return 'Der König der Seite, die nicht am Zug ist, steht im Schach.'
-    if (chess.isGameOver()) return chess.isCheckmate() ? 'Die Stellung ist schon matt.' : 'Die Stellung ist schon remis.'
+    if (new Chess(other.join(' ')).inCheck()) return t('Der König der Seite, die nicht am Zug ist, steht im Schach.')
+    if (chess.isGameOver()) return chess.isCheckmate() ? t('Die Stellung ist schon matt.') : t('Die Stellung ist schon remis.')
   } catch (e) {
-    return e instanceof Error ? e.message.replace(/^Invalid FEN: /, 'Ungültige Stellung: ') : 'Ungültige Stellung.'
+    return e instanceof Error ? t('Ungültige Stellung: {reason}', { reason: e.message.replace(/^Invalid FEN: /, '') }) : t('Ungültige Stellung.')
   }
   return null
 }
@@ -137,7 +146,7 @@ export function BoardEditor({ fen: initial, coordinates, onAnalyse, onPlay }: Pr
 
   const spare = (color: Color) => (
     <div className={`spares ${color}`}>
-      <button className={`spare-tool ${tool === 'move' ? 'on' : ''}`} onClick={() => setTool('move')} aria-label="Ziehen" title="Figuren ziehen">
+      <button className={`spare-tool ${tool === 'move' ? 'on' : ''}`} onClick={() => setTool('move')} aria-label={t('Ziehen')} title={t('Figuren ziehen')}>
         <Hand size={20} />
       </button>
       {ROLES.map((role) => {
@@ -152,13 +161,13 @@ export function BoardEditor({ fen: initial, coordinates, onAnalyse, onPlay }: Pr
               if (e.button !== 0 || !api.current) return
               api.current.dragNewPiece({ color, role } as CgPiece, e.nativeEvent as unknown as MouseEvent)
             }}
-            aria-label={`${color === 'white' ? 'Weiß' : 'Schwarz'} ${role}`}
+            aria-label={`${t(ROLE_NAME[role])} · ${color === 'white' ? t('Weiß') : t('Schwarz')}`}
           >
             <Piece role={role} color={color} className="spare-piece" />
           </button>
         )
       })}
-      <button className={`spare-tool ${tool === 'delete' ? 'on' : ''}`} onClick={() => setTool(tool === 'delete' ? 'move' : 'delete')} aria-label="Radierer" title="Figuren entfernen">
+      <button className={`spare-tool ${tool === 'delete' ? 'on' : ''}`} onClick={() => setTool(tool === 'delete' ? 'move' : 'delete')} aria-label={t('Radierer')} title={t('Figuren entfernen')}>
         <Eraser size={20} />
       </button>
     </div>
@@ -189,46 +198,46 @@ export function BoardEditor({ fen: initial, coordinates, onAnalyse, onPlay }: Pr
 
       <aside className="side editor-side">
         <div className="panel-head">
-          <b>Brett-Editor</b>
-          <button className="icon-btn" onClick={() => setOrientation(orientation === 'white' ? 'black' : 'white')} aria-label="Brett drehen">
+          <b>{t('Brett-Editor')}</b>
+          <button className="icon-btn" onClick={() => setOrientation(orientation === 'white' ? 'black' : 'white')} aria-label={t('Brett drehen')}>
             <ArrowUpDown size={18} />
           </button>
         </div>
         <div className="editor-body">
-          <p className="muted small">Figuren aus den Leisten aufs Brett ziehen oder antippen und dann aufs Feld klicken. Vom Brett ziehen entfernt eine Figur.</p>
+          <p className="muted small">{t('Figuren aus den Leisten aufs Brett ziehen oder antippen und dann aufs Feld klicken. Vom Brett ziehen entfernt eine Figur.')}</p>
 
-          <div className="field-label">Am Zug</div>
+          <div className="field-label">{t('Am Zug')}</div>
           <div className="segmented">
             {(['white', 'black'] as const).map((c) => (
               <button key={c} className={turn === c ? 'on' : ''} onClick={() => setTurn(c)}>
-                {c === 'white' ? 'Weiß' : 'Schwarz'}
+                {c === 'white' ? t('Weiß') : t('Schwarz')}
               </button>
             ))}
           </div>
 
-          <div className="field-label">Rochade</div>
+          <div className="field-label">{t('Rochade')}</div>
           <div className="castling">
             {(
               [
-                ['K', 'Weiß O-O'],
-                ['Q', 'Weiß O-O-O'],
-                ['k', 'Schwarz O-O'],
-                ['q', 'Schwarz O-O-O'],
+                ['K', 'white', 'O-O'],
+                ['Q', 'white', 'O-O-O'],
+                ['k', 'black', 'O-O'],
+                ['q', 'black', 'O-O-O'],
               ] as const
-            ).map(([c, label]) => (
+            ).map(([c, side, label]) => (
               <label key={c} className={`check ${can[c] ? '' : 'off'}`}>
                 <input type="checkbox" checked={castling[c] && can[c]} disabled={!can[c]} onChange={(e) => setCastling({ ...castling, [c]: e.target.checked })} />
-                {label}
+                {side === 'white' ? t('Weiß') : t('Schwarz')} {label}
               </label>
             ))}
           </div>
 
           <div className="editor-quick">
             <button className="btn-secondary small" onClick={() => (setPlacement(placementOf(START_FEN)), setTurn('white'), setCastling({ K: true, Q: true, k: true, q: true }))}>
-              <RotateCcw size={15} /> Startstellung
+              <RotateCcw size={15} /> {t('Startstellung')}
             </button>
             <button className="btn-secondary small" onClick={() => setPlacement(EMPTY)}>
-              <Trash2 size={15} /> Leeren
+              <Trash2 size={15} /> {t('Leeren')}
             </button>
           </div>
 
@@ -250,10 +259,10 @@ export function BoardEditor({ fen: initial, coordinates, onAnalyse, onPlay }: Pr
 
         <div className="toolbar editor-actions">
           <button className="btn-secondary" disabled={!!issue} onClick={() => onPlay(fen, turn)}>
-            <Swords size={17} className="inline" /> Gegen Stockfish
+            <Swords size={17} className="inline" /> {t('Gegen Stockfish')}
           </button>
           <button className="btn-primary" disabled={!!issue} onClick={() => onAnalyse(fen)}>
-            <Microscope size={17} className="inline" /> Analysieren
+            <Microscope size={17} className="inline" /> {t('Analysieren')}
           </button>
         </div>
       </aside>

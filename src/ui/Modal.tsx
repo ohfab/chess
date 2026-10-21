@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { t } from '../i18n/i18n'
 
 export function Modal({ title, onClose, children, className = '' }: { title: string; onClose: () => void; children: ReactNode; className?: string }) {
   useEffect(() => {
@@ -13,7 +14,7 @@ export function Modal({ title, onClose, children, className = '' }: { title: str
       <div className={`modal ${className}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Schließen">
+          <button className="icon-btn" onClick={onClose} aria-label={t('Schließen')}>
             <X size={20} />
           </button>
         </div>
