@@ -4,7 +4,7 @@ import { tk, translateFields } from '../i18n/i18n'
 // Famous games for "guess the move". The moves of a game are facts and free to use.
 // `from` and `to` mark the plies the player guesses (to: exclusive, default the end):
 // the moves before are shown, the ones after play out at the end.
-// i18n-fields: title, intro
+// i18n-fields: title, intro, place
 // `black` reads through t as well; only the opera game's pair of names needs a translation (tk).
 
 export interface FamousGame {
@@ -140,6 +140,6 @@ export const GAMES: FamousGame[] = (
       intro: 'Schwarz ist eingeschnürt, und Weiß hat eine besondere Idee: der König selbst marschiert von g1 bis g5 und hilft beim Mattnetz. Du rätst ab dem 28. Zug.',
     },
   ] as FamousGame[]
-).map((g) => translateFields(g, 'title', 'intro', 'black'))
+).map((g) => translateFields(g, 'title', 'intro', 'black', 'place'))
 
 export const gameById = (id: string) => GAMES.find((g) => g.id === id)

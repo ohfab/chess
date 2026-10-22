@@ -52,6 +52,7 @@
   "Ein Feld leuchtet auf, du wählst seinen Namen. 30 Sekunden.": "Une case s’allume, tu choisis son nom. 30 secondes.",
   "Rekord: {white} als Weiß · {black} als Schwarz": "Record : {white} avec les Blancs · {black} avec les Noirs",
   "Züge werden nur vorgelesen. Weißt du danach, wo die Figuren stehen?": "Les coups sont seulement annoncés. Sais-tu ensuite où sont les pièces ?",
-  "trainieren": "entraînement",
-  "Wer das Brett im Kopf sieht, rechnet Varianten schneller und übersieht weniger.": "Qui voit l’échiquier dans sa tête calcule plus vite et rate moins de choses."
+  "Wer das Brett im Kopf sieht, rechnet Varianten schneller und übersieht weniger.": "Qui voit l’échiquier dans sa tête calcule plus vite et rate moins de choses.",
+  "Das Brett": "L’échiquier",
+  "im Kopf": "dans la tête"
 }

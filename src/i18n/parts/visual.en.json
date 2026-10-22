@@ -52,6 +52,7 @@
   "Ein Feld leuchtet auf, du wählst seinen Namen. 30 Sekunden.": "A square lights up and you pick its name. 30 seconds.",
   "Rekord: {white} als Weiß · {black} als Schwarz": "Best: {white} as White · {black} as Black",
   "Züge werden nur vorgelesen. Weißt du danach, wo die Figuren stehen?": "Moves are only read out. Do you still know where the pieces are?",
-  "trainieren": "training",
-  "Wer das Brett im Kopf sieht, rechnet Varianten schneller und übersieht weniger.": "If you can see the board in your head, you calculate lines faster and miss less."
+  "Wer das Brett im Kopf sieht, rechnet Varianten schneller und übersieht weniger.": "If you can see the board in your head, you calculate lines faster and miss less.",
+  "Das Brett": "The board",
+  "im Kopf": "in your head"
 }

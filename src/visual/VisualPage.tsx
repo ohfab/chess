@@ -49,7 +49,7 @@ export function VisualPage({ onBack }: { onBack: () => void }) {
         <ArrowLeft size={18} /> {t('Taktik')}
       </button>
       <div className="page-head">
-        <Display first={t('Brett-Sehen')} second={t('trainieren')} />
+        <Display first={t('Das Brett')} second={t('im Kopf')} />
         <p className="muted">{t('Wer das Brett im Kopf sieht, rechnet Varianten schneller und übersieht weniger.')}</p>
       </div>
       <div className="vision-cards">
