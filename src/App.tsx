@@ -87,6 +87,7 @@ import { useBackgroundReviews } from './history/reviews'
 import { Nav, type Tab } from './ui/Nav'
 import { Logo } from './ui/Logo'
 import { awaitPro, openAccount, requirePro, useAccount } from './account/account'
+import { AI_ENABLED } from './account/plans'
 import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
 import { Welcome } from './account/Welcome'
 import { APP_NAME } from './brand'
@@ -1380,7 +1381,7 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
-        <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />
+        {AI_ENABLED && <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />}
         {g.sideline ? (
           <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />
         ) : (
@@ -1398,7 +1399,7 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
-        <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />
+        {AI_ENABLED && <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />}
         {g.sideline && <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />}
         <Tool label={t('Auswerten')} icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
         {!g.sideline && <Tool label={t('Laden')} icon={<Upload size={20} />} onClick={() => setDialog('import')} />}

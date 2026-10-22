@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BookOpen, Check, Flame, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords } from 'lucide-react'
+import { BookOpen, CalendarCheck, Check, Flame, MessageCircleQuestion, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords, TrendingUp } from 'lucide-react'
 import { levelOf } from '../engine/levels'
 import { useGame } from '../game/store'
 import type { SavedGame } from '../history/archive'
@@ -18,6 +18,7 @@ import { getLang, locale, t, tn } from '../i18n/i18n'
 import { aiError, aiPlan, coachAvailable } from './ai'
 import { openAccount, requirePro, useAccount } from '../account/account'
 import { cloudEnabled } from '../account/cloud'
+import { AI_ENABLED } from '../account/plans'
 import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
 import { useInsights } from './useInsights'
 import { candidates, localPlan, today, type DailyPlan, type PlanTask } from './plan'
@@ -47,7 +48,7 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
 
   // a fresh plan each day; until the coach is asked it follows the analysis as new games come in
   useEffect(() => {
-    if (daily && daily.date === today() && daily.byAI) return
+    if (daily && daily.date === today() && daily.byAI && AI_ENABLED) return
     const next = localPlan(insights, tasks)
     if (daily && daily.date === today()) {
       const done = new Map(daily.tasks.map((t) => [t.id, t.done]))
@@ -66,7 +67,9 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
 
   // ---------------------------------------------------------------- AI coach
   const [hasAI, setHasAI] = useState<boolean | null>(null)
-  useEffect(() => void coachAvailable().then(setHasAI), [])
+  useEffect(() => {
+    if (AI_ENABLED) void coachAvailable().then(setHasAI)
+  }, [])
   const [asking, setAsking] = useState(false)
   const [aiNote, setAiNote] = useState<string | null>(null)
 
@@ -198,6 +201,8 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
         </div>
       </section>
 
+      {!AI_ENABLED && <CoachSoon />}
+
       {reviewShare !== null && pending > 0 && (
         <p className="reviewing">{t('Stockfish wertet deine Partien aus: noch {n} … {pct} %', { n: pending, pct: Math.round(reviewShare * 100) })}</p>
       )}
@@ -231,6 +236,33 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
         </section>
       )}
     </div>
+  )
+}
+
+/** The AI coach before it launches: what it will do, and that it is on its way. */
+function CoachSoon() {
+  return (
+    <section className="coach-soon">
+      <span className="coach-soon-icon">
+        <Sparkles size={22} />
+      </span>
+      <div className="coach-soon-body">
+        <span className="coach-soon-pill">{t('Bald verfügbar')}</span>
+        <b>{t('Dein persönlicher Coach')}</b>
+        <p>{t('Er liest deine Partien, stellt dir jeden Tag einen Trainingsplan zusammen und beantwortet deine Fragen zu jeder Stellung.')}</p>
+        <ul>
+          <li>
+            <CalendarCheck size={16} /> {t('Trainingspläne aus deinen Partien')}
+          </li>
+          <li>
+            <MessageCircleQuestion size={16} /> {t('Antworten zu jeder Stellung')}
+          </li>
+          <li>
+            <TrendingUp size={16} /> {t('Tipps, die zu deinem Spiel passen')}
+          </li>
+        </ul>
+      </div>
+    </section>
   )
 }
 

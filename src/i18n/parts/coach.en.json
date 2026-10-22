@@ -229,5 +229,11 @@
   "Schach trainieren, jeden Tag ein Zug besser": "Train chess, one move better every day",
   "So gewinnt Weiß {what}.": "This way White wins {what}.",
   "So gewinnt Schwarz {what}.": "This way Black wins {what}.",
-  "So spielt Stockfish weiter:": "Stockfish continues like this:"
+  "So spielt Stockfish weiter:": "Stockfish continues like this:",
+  "Bald verfügbar": "Coming soon",
+  "Dein persönlicher Coach": "Your personal coach",
+  "Er liest deine Partien, stellt dir jeden Tag einen Trainingsplan zusammen und beantwortet deine Fragen zu jeder Stellung.": "It reads your games, puts together a training plan for you every day and answers your questions about any position.",
+  "Trainingspläne aus deinen Partien": "Training plans from your games",
+  "Antworten zu jeder Stellung": "Answers about any position",
+  "Tipps, die zu deinem Spiel passen": "Tips that fit your game"
 }

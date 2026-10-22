@@ -33,6 +33,7 @@ import type { SavedGame } from '../history/archive'
 import type { Progress } from '../game/store'
 import { ENDGAMES } from '../puzzles/endgames'
 import type { StatName } from './stats'
+import { AI_ENABLED } from '../account/plans'
 
 // XP, levels and achievements, all worked out from what the player has done: the stats the
 // features count (stats.ts) and the main store. Nothing is logged twice; only what was
@@ -150,7 +151,7 @@ export interface AchievementDef {
   xp?: number
 }
 
-export const ACHIEVEMENTS: AchievementDef[] = [
+const ALL: AchievementDef[] = [
   // play
   { id: 'games', category: 'play', icon: Swords, title: tk('Am Brett'), text: tk('Spiele {n} Partien gegen Stockfish.'), one: tk('Spiele deine erste Partie gegen Stockfish.'), tiers: [1, 25, 100], value: games },
   { id: 'wins', category: 'play', icon: Trophy, title: tk('Sieger'), text: tk('Gewinne {n} Partien gegen Stockfish.'), one: tk('Gewinne deine erste Partie gegen Stockfish.'), tiers: [1, 10, 50], value: wins },
@@ -210,6 +211,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   },
   { id: 'level', category: 'special', icon: Crown, title: tk('Aufsteiger'), text: tk('Erreiche Level {n}.'), tiers: [5, 10, 20], value: (_, level) => level, xp: 0 },
 ]
+
+/** questions to the coach count once the AI coach is out */
+export const ACHIEVEMENTS = AI_ENABLED ? ALL : ALL.filter((a) => a.id !== 'coach')
 
 /** Bronze, silver, gold: a single-target achievement is simply reached. */
 export const TIER_NAMES = [tk('Bronze'), tk('Silber'), tk('Gold')]

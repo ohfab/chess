@@ -229,5 +229,11 @@
   "Schach trainieren, jeden Tag ein Zug besser": "Entraîne-toi aux échecs, chaque jour un coup de mieux",
   "So gewinnt Weiß {what}.": "Ainsi, les Blancs gagnent {what}.",
   "So gewinnt Schwarz {what}.": "Ainsi, les Noirs gagnent {what}.",
-  "So spielt Stockfish weiter:": "Stockfish continue ainsi :"
+  "So spielt Stockfish weiter:": "Stockfish continue ainsi :",
+  "Bald verfügbar": "Bientôt disponible",
+  "Dein persönlicher Coach": "Ton coach personnel",
+  "Er liest deine Partien, stellt dir jeden Tag einen Trainingsplan zusammen und beantwortet deine Fragen zu jeder Stellung.": "Il lit tes parties, te prépare chaque jour un plan d’entraînement et répond à tes questions sur chaque position.",
+  "Trainingspläne aus deinen Partien": "Des plans d’entraînement tirés de tes parties",
+  "Antworten zu jeder Stellung": "Des réponses sur chaque position",
+  "Tipps, die zu deinem Spiel passen": "Des conseils adaptés à ton jeu"
 }

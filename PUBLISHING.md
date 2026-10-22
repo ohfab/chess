@@ -5,7 +5,7 @@ Diese Anleitung führt vom jetzigen Stand (Webseite auf GitHub Pages, alles loka
 Was du brauchst:
 - ein Konto bei [Supabase](https://supabase.com) (Gratis-Plan reicht für den Anfang)
 - ein Konto bei [Stripe](https://stripe.com) (Schweiz wird unterstützt, Auszahlung in CHF)
-- einen API-Schlüssel von [Anthropic](https://console.anthropic.com) für den KI-Coach
+- einen API-Schlüssel von [Anthropic](https://console.anthropic.com), erst wenn der KI-Coach startet (er ist vorerst ausgeschaltet, siehe Schritt 4)
 - optional eine eigene Domain, zum Beispiel `rookly.app` oder `rookly.ch` (beide waren am 21.10.2026 noch frei)
 
 ## 1. Name und Marke prüfen
@@ -59,7 +59,9 @@ supabase functions deploy delete-account
 
 `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` setzt Supabase in den Funktionen selbst.
 
-**KI-Coach:** Die Funktion `coach` nutzt standardmässig Claude Opus 5.5 (`claude-opus-5-5`). Ein Tagesplan kostet damit grob USD 0.02 bis 0.03. Bei einem Abo zu CHF 1.– kann das die Marge auffressen, wenn jemand täglich plant. Zwei Stellschrauben, beide als Secret:
+**KI-Coach (vorerst aus):** Die App baut den Coach standardmässig ohne KI: auf „Heute“ steht eine Karte „Dein persönlicher Coach · Bald verfügbar“, der Knopf „Coach fragen“ fehlt. Solange das so ist, brauchst du weder `ANTHROPIC_API_KEY` noch die Funktion `coach`. Zum Einschalten die Repo-Variable `VITE_AI` auf `on` setzen (Schritt 5), den Schlüssel als Secret setzen und `coach` deployen; die Datenschutzerklärung braucht dann wieder einen Abschnitt zu Anthropic.
+
+Die Funktion `coach` nutzt standardmässig Claude Opus 5.5 (`claude-opus-5-5`). Ein Tagesplan kostet damit grob USD 0.02 bis 0.03. Bei einem Abo zu CHF 1.– kann das die Marge auffressen, wenn jemand täglich plant. Zwei Stellschrauben, beide als Secret:
 - `COACH_DAILY_LIMIT` (Standard 3): Pläne pro Person und Tag
 - `COACH_MODEL`: ein anderes Modell, zum Beispiel `claude-haiku-5-5` (etwa 40-mal günstiger, Pläne dafür etwas einfacher)
 
@@ -109,6 +111,7 @@ Im GitHub-Repo unter **Settings → Secrets and variables → Actions → Variab
 | `VITE_APP_URL` | die öffentliche Adresse |
 | `VITE_SUPPORT_EMAIL` | deine Kontaktadresse |
 | `VITE_VAPID_PUBLIC_KEY` | öffentlicher Web-Push-Schlüssel für die tägliche Erinnerung (optional) |
+| `VITE_AI` | `on` schaltet den KI-Coach ein (Tagesplan und Coach-Fragen); leer = aus, die App kündigt ihn nur an |
 
 Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung dieselben Werte in `.env.local` (Vorlage: `.env.example`).
 
@@ -134,6 +137,6 @@ Rookly ist eine installierbare Web-App (PWA): auf dem Handy „Zum Home-Bildschi
 - [ ] Impressum, Datenschutz, AGB ausgefüllt
 - [ ] Supabase: Migration, Auth-URLs, E-Mail-Vorlagen, SMTP
 - [ ] Stripe: Produkt, zwei Preise, Zahlungsmethoden, Kundenportal, Webhook, Test-Kauf im Testmodus
-- [ ] Secrets gesetzt, sechs Funktionen deployt (mit `send-reminders`), Cron für die Erinnerung angelegt
+- [ ] Secrets gesetzt, Funktionen deployt (mit `send-reminders`; `coach` erst mit dem KI-Coach), Cron für die Erinnerung angelegt
 - [ ] Repo-Variablen gesetzt, Seite neu gebaut
 - [ ] Test: anmelden, Pro kaufen, auf zweitem Gerät anmelden (Sync), kündigen, Konto löschen
