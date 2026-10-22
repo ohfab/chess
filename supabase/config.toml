@@ -4,3 +4,7 @@ project_id = "rookly"
 # Stripe calls the webhook without a Supabase login; it checks Stripe's signature instead.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# The hourly schedule calls the reminders with its own secret (CRON_SECRET), not a user login.
+[functions.send-reminders]
+verify_jwt = false

@@ -63,6 +63,41 @@ supabase functions deploy delete-account
 - `COACH_DAILY_LIMIT` (Standard 3): Pläne pro Person und Tag
 - `COACH_MODEL`: ein anderes Modell, zum Beispiel `claude-haiku-5-5` (etwa 40-mal günstiger, Pläne dafür etwas einfacher)
 
+### Fragen an den Coach
+
+Dieselbe Funktion `coach` beantwortet auch Fragen zu einer Stellung (Knopf „Coach fragen“ auf dem Analysebrett, Pro). Sie hält sich an die Stockfish-Linien, die die App mitschickt. Eine Frage kostet grob USD 0.01. Stellschraube als Secret: `COACH_ASK_LIMIT` (Standard 30 Fragen pro Person und Tag). Die Migration `20261022000000_ask_and_reminders.sql` legt den Zähler dafür an (`supabase db push`).
+
+### Tägliche Erinnerung (Push)
+
+Wer angemeldet ist, kann in den Einstellungen eine tägliche Erinnerung einschalten. Rookly schickt dann zur gewählten Stunde eine Push-Nachricht, wenn der Tagesplan noch offen ist („Deine Serie: 5 Tage. Heute noch eine kurze Lektion?“). Auf dem iPhone geht das nur in der installierten App (Teilen-Menü → „Zum Home-Bildschirm“).
+
+1. Schlüsselpaar für Web Push erzeugen (einmalig):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. Secrets für die Funktion setzen; `CRON_SECRET` ist ein beliebiges langes Zufallswort:
+   ```bash
+   supabase secrets set \
+     VAPID_PUBLIC_KEY=BE... \
+     VAPID_PRIVATE_KEY=... \
+     VAPID_SUBJECT=mailto:hallo@rookly.app \
+     CRON_SECRET=$(openssl rand -hex 24)
+   supabase db push                          # Tabelle push_subscriptions
+   supabase functions deploy send-reminders  # läuft ohne Login (supabase/config.toml), prüft CRON_SECRET
+   ```
+3. Den öffentlichen Schlüssel auch der App geben: Repo-Variable `VITE_VAPID_PUBLIC_KEY` (Schritt 5) und in `.env.local`.
+4. Stündlich aufrufen lassen: im Supabase-Dashboard unter **Integrations → Cron** (pg_cron mit pg_net) einen Job anlegen, Zeitplan `0 * * * *`, oder per SQL:
+   ```sql
+   select cron.schedule('rookly-reminders', '0 * * * *', $$
+     select net.http_post(
+       url := 'https://<projekt-id>.supabase.co/functions/v1/send-reminders',
+       headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>', 'Content-Type', 'application/json'),
+       body := '{}'::jsonb
+     );
+   $$);
+   ```
+   Die Funktion schaut für jede Anmeldung nach, ob in deren Zeitzone gerade die gewählte Stunde ist und ob der Plan des Tages (aus dem synchronisierten Stand) schon erledigt ist. Abgelaufene Abos löscht sie.
+
 ## 5. App mit dem Backend bauen
 
 Im GitHub-Repo unter **Settings → Secrets and variables → Actions → Variables** anlegen:
@@ -73,6 +108,7 @@ Im GitHub-Repo unter **Settings → Secrets and variables → Actions → Variab
 | `VITE_SUPABASE_ANON_KEY` | der „anon public“ Schlüssel aus Supabase (darf öffentlich sein) |
 | `VITE_APP_URL` | die öffentliche Adresse |
 | `VITE_SUPPORT_EMAIL` | deine Kontaktadresse |
+| `VITE_VAPID_PUBLIC_KEY` | öffentlicher Web-Push-Schlüssel für die tägliche Erinnerung (optional) |
 
 Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung dieselben Werte in `.env.local` (Vorlage: `.env.example`).
 
@@ -98,6 +134,6 @@ Rookly ist eine installierbare Web-App (PWA): auf dem Handy „Zum Home-Bildschi
 - [ ] Impressum, Datenschutz, AGB ausgefüllt
 - [ ] Supabase: Migration, Auth-URLs, E-Mail-Vorlagen, SMTP
 - [ ] Stripe: Produkt, zwei Preise, Zahlungsmethoden, Kundenportal, Webhook, Test-Kauf im Testmodus
-- [ ] Secrets gesetzt, fünf Funktionen deployt
+- [ ] Secrets gesetzt, sechs Funktionen deployt (mit `send-reminders`), Cron für die Erinnerung angelegt
 - [ ] Repo-Variablen gesetzt, Seite neu gebaut
 - [ ] Test: anmelden, Pro kaufen, auf zweitem Gerät anmelden (Sync), kündigen, Konto löschen

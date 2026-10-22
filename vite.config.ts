@@ -24,6 +24,8 @@ export default defineConfig({
         // a new version takes over at once; src/pwa.ts then reloads into it
         skipWaiting: true,
         clientsClaim: true,
+        // the daily reminder's push handler (public/push-sw.js)
+        importScripts: ['push-sw.js'],
       },
     }),
   ],
