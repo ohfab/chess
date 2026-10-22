@@ -3699,6 +3699,41 @@ button:disabled {
 }
 .tool {
   border-radius: 14px;
+  min-width: 0;
+}
+/* the toolbar holds up to five tools, a button and the two arrows: everything gives a little */
+.tools {
+  min-width: 0;
+}
+.tools .btn-primary {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .toolbar .nav-btn {
+    width: 38px;
+  }
+  .tool {
+    font-size: 10px;
+    padding: 6px 0;
+  }
+  .tool span {
+    max-width: 100%;
+    hyphens: auto;
+    line-height: 1.15;
+  }
+  .tools .btn-primary {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 370px) {
+  .tool {
+    font-size: 9.5px;
+    letter-spacing: -0.01em;
+  }
 }
 
 /* ---------------------------------------------------------- pills: tabs, filters, chips */
