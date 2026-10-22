@@ -11,6 +11,9 @@ import { MiniBoard } from '../trainer/MiniBoard'
 import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
 import { Display } from '../ui/Display'
+import { DueCard } from '../lesson/LessonPrompt'
+import type { LessonTask } from '../lesson/lesson'
+import { LevelBadge } from '../progress/LevelBadge'
 import { getLang, locale, t, tn } from '../i18n/i18n'
 import { aiError, aiPlan, coachAvailable } from './ai'
 import { openAccount, requirePro, useAccount } from '../account/account'
@@ -23,11 +26,14 @@ interface Props {
   onStart: (task: PlanTask, insights: Insights) => void
   onOpenGame: (game: SavedGame) => void
   onDailyPuzzle: (puzzle: Puzzle) => void
+  /** a repetition or a new variation from the lesson card */
+  onLesson: (task: LessonTask) => void
+  onAchievements: () => void
 }
 
 const KIND_ICON = { mistakes: RotateCcw, puzzles: PuzzleIcon, opening: BookOpen, game: Swords }
 
-export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
+export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchievements }: Props) {
   const g = useGame()
   const { history, daily, streak, puzzleRating, progress, solvedMistakes, level, playerColor, setDaily } = g
 
@@ -102,10 +108,13 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
             <span className="muted">{t('Taktik-Wertung {n}', { n: puzzleRating })}</span>
           </div>
         </div>
-        <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title={t('Tage in Folge mit erledigtem Plan')}>
-          <Flame size={18} />
-          <b>{streak.last >= yesterdayKey() ? streak.count : 0}</b>
-          <span>{t('Tage')}</span>
+        <div className="today-badges">
+          <LevelBadge onOpen={onAchievements} />
+          <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title={t('Tage in Folge mit erledigtem Plan')}>
+            <Flame size={18} />
+            <b>{streak.last >= yesterdayKey() ? streak.count : 0}</b>
+            <span>{t('Tage')}</span>
+          </div>
         </div>
       </div>
       <div className="today-head">
@@ -156,6 +165,8 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle }: Props) {
           {aiNote && <p className="error">{aiNote}</p>}
         </div>
       </section>
+
+      <DueCard onStart={onLesson} />
 
       <section>
         <div className="section-head">

@@ -5,10 +5,12 @@ import {
   Castle,
   Crown,
   Crosshair,
+  Eye,
   Flame,
   Footprints,
   Gem,
   Hand,
+  History,
   Lock,
   Magnet,
   Moon,
@@ -21,6 +23,7 @@ import {
   Split,
   Swords,
   Target,
+  Timer,
   TrendingUp,
   Zap,
   type LucideIcon,
@@ -28,6 +31,7 @@ import {
 import type { Insights } from '../coach/insights'
 import { useInsights } from '../coach/useInsights'
 import { useGame } from '../game/store'
+import { useStats } from '../progress/stats'
 import { loadPuzzles } from './puzzles'
 import { THEME_NAMES } from './themes'
 import { ENDGAMES, type Endgame } from './endgames'
@@ -64,6 +68,11 @@ interface Props {
   /** fresh: throw the current set away and draw a new one */
   onWoodpecker: (fresh: boolean) => void
   onEndgame: (endgame: Endgame) => void
+  onRush: () => void
+  /** board vision: coordinates and blindfold */
+  onVisual: () => void
+  /** guess the move in famous games */
+  onGuess: () => void
 }
 
 const time = (ms: number) => {
@@ -72,7 +81,8 @@ const time = (ms: number) => {
 }
 
 /** Tactics hub: a mix at the player's rating, their own mistakes, or one motif at a time. */
-export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: Props) {
+export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, onRush, onVisual, onGuess }: Props) {
+  const stats = useStats()
   const insights = useInsights()
   const { puzzleRating, themeStats, seenPuzzles, solvedMistakes, woodpecker, endgames } = useGame()
   const lastCycle = woodpecker?.cycles[woodpecker.cycles.length - 1]
@@ -148,6 +158,37 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame }: 
             )}
           </span>
         </div>
+      </div>
+
+      <div className="hero-cards modes">
+        <button className="hero-card rush" onClick={onRush}>
+          <span className="hero-icon">
+            <Timer size={26} />
+          </span>
+          <span className="hero-text">
+            <b>{t('Puzzle Rush')}</b>
+            <span>{t('So viele Aufgaben wie möglich, gegen die Uhr')}</span>
+          </span>
+          <span className="hero-meta">
+            {stats.bests.rushBest3 || stats.bests.rushBest5
+              ? t('Rekord: {three} in 3 Min · {five} in 5 Min', { three: stats.bests.rushBest3 ?? 0, five: stats.bests.rushBest5 ?? 0 })
+              : t('Drei Fehler, dann ist Schluss')}
+          </span>
+        </button>
+        <button className="link-card mode-card" onClick={onVisual}>
+          <Eye size={22} />
+          <span>
+            <b>{t('Brett-Sehen')}</b>
+            <span className="muted">{t('Koordinaten und Blindschach')}</span>
+          </span>
+        </button>
+        <button className="link-card mode-card" onClick={onGuess}>
+          <History size={22} />
+          <span>
+            <b>{t('Rate den Zug')}</b>
+            <span className="muted">{t('Berühmte Partien Zug für Zug')}</span>
+          </span>
+        </button>
       </div>
 
       {woodpecker && woodpecker.cycles.length > 0 && (

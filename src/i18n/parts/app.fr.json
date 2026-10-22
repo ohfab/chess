@@ -211,5 +211,22 @@
   "Alle Züge der Variante saßen, dafür gibt es den Haken.": "Tous les coups de la variante étaient justes : tu gagnes la coche.",
   "Du kannst weiterspielen: der Gegner folgt jetzt den Meisterpartien.": "Tu peux continuer : l’adversaire suit maintenant les parties de maîtres.",
   "Variante durchgespielt": "Variante jouée",
-  "{tally}. Spiel sie einmal ohne Fehler und Tipps, dann gibt es den Haken.": "{tally}. Joue-la une fois sans erreur ni indice pour gagner la coche."
+  "{tally}. Spiel sie einmal ohne Fehler und Tipps, dann gibt es den Haken.": "{tally}. Joue-la une fois sans erreur ni indice pour gagner la coche.",
+  "11 Bretter und 10 Figurensätze": "11 échiquiers et 10 jeux de pièces",
+  "Analyse, Eröffnungen und alles Training bleiben für alle gratis": "L’analyse, les ouvertures et tout l’entraînement restent gratuits pour tous",
+  "Berühmte Partien Zug für Zug": "Des parties célèbres coup par coup",
+  "Brett-Sehen": "Vision de l’échiquier",
+  "Coach fragen": "Demander au coach",
+  "Coach-Fragen": "Questions au coach",
+  "Deine Eröffnungen aus deinen Partien: was sitzt, wo du die Theorie verlässt": "Tes ouvertures d’après tes parties : ce qui marche et où tu quittes la théorie",
+  "Drei Fehler, dann ist Schluss": "Trois erreurs et c’est fini",
+  "Frag zu jeder Stellung, warum ein Zug gut oder schlecht ist": "Demande pour chaque position pourquoi un coup est bon ou mauvais",
+  "Fragen an den KI-Coach gehören zu Pro: er erklärt dir jede Stellung, mit Stockfish im Hintergrund.": "Les questions au coach IA font partie de Pro : il t’explique chaque position, avec Stockfish en arrière-plan.",
+  "Koordinaten und Blindschach": "Coordonnées et parties à l’aveugle",
+  "Mein Repertoire": "Mon répertoire",
+  "Puzzle Rush": "Puzzle Rush",
+  "Rate den Zug": "Devine le coup",
+  "Rekord: {three} in 3 Min · {five} in 5 Min": "Record : {three} en 3 min · {five} en 5 min",
+  "Rookly unterstützen": "Soutenir Rookly",
+  "So viele Aufgaben wie möglich, gegen die Uhr": "Le plus de problèmes possible, contre la montre"
 }

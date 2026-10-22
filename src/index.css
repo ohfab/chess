@@ -4172,3 +4172,32 @@ button:disabled {
   background: var(--pill-bg);
   color: var(--pill-text);
 }
+.today-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-cards.modes {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.hero-card.rush {
+  background: #2f4f42;
+}
+.mode-card {
+  align-self: stretch;
+}
+.mode-card svg {
+  color: var(--green);
+  flex: none;
+}
+.page-stub {
+  min-height: 40vh;
+}
+.confetti {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 200;
+}

@@ -11,6 +11,7 @@ import {
   Lightbulb,
   LayoutGrid,
   ListTree,
+  MessageCircleQuestion,
   Play,
   RotateCcw,
   Settings as SettingsIcon,
@@ -57,6 +58,17 @@ import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type 
 import { OpeningBrowser } from './trainer/OpeningBrowser'
 import { OpeningSetup, type TrainingSetup } from './trainer/OpeningSetup'
 import { useTrainer } from './trainer/useTrainer'
+import { onVariationLearned, type LessonTask } from './lesson/lesson'
+import { LessonPrompt } from './lesson/LessonPrompt'
+import { RushPage } from './rush/RushPage'
+import { VisualPage } from './visual/VisualPage'
+import { GuessPage } from './guess/GuessPage'
+import { RepertoirePage } from './repertoire/RepertoirePage'
+import { AchievementsPage } from './progress/AchievementsPage'
+import { AchievementToasts } from './progress/LevelBadge'
+import { bump } from './progress/stats'
+import { AskCoachDialog } from './coach/AskCoach'
+import { cloudEnabled } from './account/cloud'
 import { explainMove, moveInstruction } from './trainer/explainMove'
 import { TodayPage } from './coach/TodayPage'
 import type { Insights } from './coach/insights'
@@ -74,7 +86,7 @@ import { BoardEditor } from './editor/BoardEditor'
 import { useBackgroundReviews } from './history/reviews'
 import { Nav, type Tab } from './ui/Nav'
 import { Logo } from './ui/Logo'
-import { allowReview, awaitPro, openAccount, requirePro, useAccount } from './account/account'
+import { awaitPro, openAccount, requirePro, useAccount } from './account/account'
 import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
 import { Welcome } from './account/Welcome'
 import { APP_NAME } from './brand'
@@ -88,7 +100,7 @@ import { EvalGraph } from './ui/EvalGraph'
 import { MoveList } from './ui/MoveList'
 import { PlayerStrip } from './ui/PlayerStrip'
 
-type Dialog = 'settings' | 'import' | 'share' | 'result'
+type Dialog = 'settings' | 'import' | 'share' | 'result' | 'ask'
 
 /** "Try again" on a reviewed move: the board goes back one ply and waits for a better move. */
 interface Retry {
@@ -103,7 +115,21 @@ interface Retry {
   note?: string
 }
 
-type View = 'today' | 'play' | 'tactics' | 'analyse' | 'editor' | 'board' | 'openings' | 'setup' | 'drill'
+type View =
+  | 'today'
+  | 'play'
+  | 'tactics'
+  | 'analyse'
+  | 'editor'
+  | 'board'
+  | 'openings'
+  | 'setup'
+  | 'drill'
+  | 'rush'
+  | 'visual'
+  | 'guess'
+  | 'repertoire'
+  | 'achievements'
 
 /** Feedback on the player's last move in an opening drill. */
 interface TrainerNote {
@@ -226,6 +252,7 @@ export default function App() {
     s.updateTraining({ recorded: true })
     s.markLearned(key)
     s.advanceTask(`opening:${key}`)
+    onVariationLearned(key)
   }, [learnDone, training, playerColor])
 
   // blunder guard: before Stockfish answers, check the player's move and warn if it throws the game
@@ -324,9 +351,13 @@ export default function App() {
     s.archive()
     if (mode === 'play' && endgame) s.recordEndgame(endgame.id, outcome.kind === 'checkmate' && outcome.winner === s.playerColor)
     else if (mode === 'play') s.advanceTask(`game:${s.level}`)
-    // let the final move land before the result appears
+    if (mode === 'play' && !endgame) {
+      bump('gamesPlayed')
+      if (outcome.kind !== 'draw' && outcome.winner === s.playerColor) bump('gamesWon')
+    }
     // a review often follows a finished game: have its engines ready
     warmReview()
+    // let the final move land before the result appears
     const timer = setTimeout(() => setDialog('result'), 700)
     return () => clearTimeout(timer)
     // endgame is the trainer's position, set before the game started
@@ -386,7 +417,6 @@ export default function App() {
   }
 
   const startEndgame = (e: Endgame) => {
-    if (!requirePro('endgames')) return
     startGame({ mode: 'play', playerColor: e.color, level: IDEAL, startFen: e.fen })
     setEndgame(e)
   }
@@ -411,10 +441,6 @@ export default function App() {
   const startTraining = (setup: TrainingSetup) => {
     const o = openingById(setup.openingId)
     if (!o) return
-    // the free plan trains each opening's main line
-    if ((setup.choice === 'random' && o.variations.length > 1) || (setup.choice !== 'random' && setup.choice > 0)) {
-      if (!requirePro('variations')) return
-    }
     let variation = setup.choice === 'random' ? Math.floor(Math.random() * o.variations.length) : setup.choice
     // in random mode, avoid the same variation twice in a row
     const prev = useGame.getState().training
@@ -440,6 +466,15 @@ export default function App() {
   const restartTraining = () => {
     if (!training) return
     startTraining({ openingId: training.openingId, choice: training.choice, side: playerColor, level, strict: training.strict, learn: training.learn })
+  }
+
+  /** A lesson from the daily prompt or the Today page: one variation, learned or repeated. */
+  const startLesson = (task: LessonTask) =>
+    startTraining({ openingId: task.openingId, choice: task.variation, side: task.side, level, strict: true, learn: task.learn })
+
+  const askCoach = () => {
+    if (cloudEnabled && !requirePro('ask')) return
+    setDialog('ask')
   }
 
   /** The same variation again, from memory or once more with arrows. */
@@ -499,7 +534,6 @@ export default function App() {
     if (useGame.getState().sideline) backToGame()
     const s = useGame.getState()
     if (!s.plies.length) return flash(t('Noch keine Züge zum Auswerten'))
-    if (!allowReview()) return
     s.countReview()
     const run = ++reviewRun.current
     setDialog(null)
@@ -540,6 +574,12 @@ export default function App() {
       // the archived copy gets the review too, so the coach can learn from it
       const archived = st.history.find((x) => x.key === st.gameKey)
       if (archived && archived.ucis.join() === result.ucis.join()) st.attachReview(st.gameKey, packReview(result))
+      bump('reviewsDone')
+      // brilliant moves of the player's own games count for the achievements
+      const own = st.vsEngine || archived?.mode === 'import'
+      const firstWhite = turnOf(st.startFen) === 'white'
+      const brilliant = result.moves.filter((m, i) => m.judgement === 'brilliant' && ((i % 2 === 0) === firstWhite ? 'white' : 'black') === st.playerColor).length
+      if (own && brilliant) bump('brilliantsFound', brilliant)
     })
   }
 
@@ -576,7 +616,6 @@ export default function App() {
   }
 
   const startWoodpecker = async (fresh: boolean) => {
-    if (!requirePro('woodpecker')) return
     const s = useGame.getState()
     if (fresh || !s.woodpecker) s.startWoodpecker((await woodpeckerSet(s.puzzleRating)).map((p) => p.id))
     const w = useGame.getState().woodpecker!
@@ -600,6 +639,7 @@ export default function App() {
       const { puzzle } = item
       s.recordPuzzle(puzzle.id, puzzle.rating, puzzle.themes, solved, rate(s.puzzleRating, puzzle.rating, solved))
     } else s.recordMistake(item.key, solved)
+    if (solved) bump('puzzlesSolved')
     if (taskId && taskId !== 'daily-puzzle') s.advanceTask(taskId)
   }
 
@@ -619,7 +659,6 @@ export default function App() {
 
   /** Files games in the archive without opening them; the background reviewer takes them from there. */
   const queueRemote = (games: RemoteGame[]) => {
-    if (!requirePro('import')) return null
     const s = useGame.getState()
     const known = new Set(s.history.map((x) => x.key))
     let added = 0
@@ -1341,6 +1380,7 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
+        <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />
         {g.sideline ? (
           <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />
         ) : (
@@ -1358,6 +1398,7 @@ export default function App() {
     tools = (
       <>
         <Tool label={t('Engine')} icon={<Activity size={20} />} onClick={toggleEngine} on={settings.analysisEngine} />
+        <Tool label={t('Coach fragen')} icon={<MessageCircleQuestion size={20} />} onClick={askCoach} />
         {g.sideline && <Tool label={t('Zur Partie')} icon={<CornerUpLeft size={20} />} onClick={backToGame} />}
         <Tool label={t('Auswerten')} icon={<Star size={20} />} onClick={startReview} disabled={plies.length === 0 || progress !== null} />
         {!g.sideline && <Tool label={t('Laden')} icon={<Upload size={20} />} onClick={() => setDialog('import')} />}
@@ -1378,9 +1419,13 @@ export default function App() {
           : mode
         : view === 'setup'
           ? 'openings'
-          : view === 'analyse' || view === 'editor'
+          : view === 'analyse' || view === 'editor' || view === 'repertoire'
             ? 'analysis'
-            : (view as Tab)
+            : view === 'rush' || view === 'visual' || view === 'guess'
+              ? 'tactics'
+              : view === 'achievements'
+                ? 'today'
+                : (view as Tab)
   const goAnalysis = () => {
     if (mode !== 'analysis') g.analyse()
     setView('board')
@@ -1470,7 +1515,37 @@ export default function App() {
             onBoard={() => (mode === 'analysis' ? setView('board') : loadGame(START_FEN, []))}
             onEditor={() => openEditor(mode === 'analysis' ? fen : START_FEN)}
             onPaste={() => setDialog('import')}
+            onRepertoire={() => setView('repertoire')}
           />
+        </main>
+      )}
+      {view === 'repertoire' && (
+        <main className="page">
+          <RepertoirePage
+            onBack={() => setView('analyse')}
+            onTrain={(openingId, variation, side) => startTraining({ openingId, choice: variation, side, level, strict: true })}
+            onImport={() => setView('analyse')}
+          />
+        </main>
+      )}
+      {view === 'rush' && (
+        <main className="page">
+          <RushPage onBack={() => setView('tactics')} />
+        </main>
+      )}
+      {view === 'visual' && (
+        <main className="page">
+          <VisualPage onBack={() => setView('tactics')} />
+        </main>
+      )}
+      {view === 'guess' && (
+        <main className="page">
+          <GuessPage onBack={() => setView('tactics')} />
+        </main>
+      )}
+      {view === 'achievements' && (
+        <main className="page">
+          <AchievementsPage onBack={() => setView('today')} />
         </main>
       )}
       {view === 'editor' && (
@@ -1489,12 +1564,21 @@ export default function App() {
             onMistakes={(ins) => startMistakes(ins, 5, 'tactics')}
             onWoodpecker={(fresh) => void startWoodpecker(fresh)}
             onEndgame={startEndgame}
+            onRush={() => setView('rush')}
+            onVisual={() => setView('visual')}
+            onGuess={() => setView('guess')}
           />
         </main>
       )}
       {view === 'today' && (
         <main className="page">
-          <TodayPage onStart={(t, ins) => void startTask(t, ins)} onOpenGame={openArchived} onDailyPuzzle={startDailyPuzzle} />
+          <TodayPage
+            onStart={(t, ins) => void startTask(t, ins)}
+            onOpenGame={openArchived}
+            onDailyPuzzle={startDailyPuzzle}
+            onLesson={startLesson}
+            onAchievements={() => setView('achievements')}
+          />
         </main>
       )}
       {view === 'drill' && drill && (
@@ -1596,6 +1680,9 @@ export default function App() {
       {dialog === 'settings' && <SettingsDialog settings={settings} onChange={g.updateSettings} onClose={() => setDialog(null)} />}
       {dialog === 'import' && <ImportDialog onLoad={loadGame} onClose={() => setDialog(null)} />}
       {dialog === 'share' && share && <ShareDialog pgn={share.pgn} fen={share.fen} onCopy={copy} onClose={() => setDialog(null)} />}
+      {dialog === 'ask' && <AskCoachDialog fen={fen} lines={analysis?.lines ?? []} moves={plies.slice(0, cursor).map((p) => p.san)} onClose={() => setDialog(null)} />}
+      <LessonPrompt active={view === 'today' && g.onboarded && !dialog && !account.upgrade && !account.accountOpen} onStart={startLesson} />
+      <AchievementToasts />
       {dialog === 'result' && outcome && (
         <ResultDialog
           outcome={outcome}

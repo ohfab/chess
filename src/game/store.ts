@@ -210,7 +210,8 @@ export const progressKey = (openingId: string, variation: number, side: Color) =
 
 // Storage can be missing or refuse writes (private windows, sandboxed frames);
 // the app then works as usual and simply forgets everything on reload.
-const safeStorage = createJSONStorage(() => ({
+// Every persisted store of the app uses this one.
+export const safeStorage = createJSONStorage(() => ({
   getItem: (key: string) => {
     try {
       // the app was called Knightly before; its saved state moves over once

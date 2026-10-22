@@ -16,7 +16,7 @@ import {
   startCheckout,
   useAccount,
 } from './account'
-import { FEATURE_TEXT, FREE_REVIEWS_PER_DAY, PRICE, PRO_BENEFITS } from './plans'
+import { FEATURE_TEXT, PRICE, PRO_BENEFITS } from './plans'
 
 // the legal pages themselves are in German, the Swiss version is the binding one
 const LEGAL = [
@@ -216,7 +216,7 @@ export function UpgradeDialog({ onClose }: { onClose: () => void }) {
   const a = useAccount()
   const [busy, setBusy] = useState<'monthly' | 'yearly' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const reason = a.upgrade && a.upgrade !== 'pro' ? t(FEATURE_TEXT[a.upgrade], { n: FREE_REVIEWS_PER_DAY }) : null
+  const reason = a.upgrade && a.upgrade !== 'pro' ? t(FEATURE_TEXT[a.upgrade]) : null
 
   const buy = async (plan: 'monthly' | 'yearly') => {
     if (a.status !== 'signed-in') return useAccount.setState({ upgrade: null, accountOpen: true })
@@ -238,7 +238,7 @@ export function UpgradeDialog({ onClose }: { onClose: () => void }) {
           <li key={b.title}>
             <Check size={17} />
             <span>
-              <b>{t(b.title)}</b> <span className="muted">{t(b.text, { n: FREE_REVIEWS_PER_DAY })}</span>
+              <b>{t(b.title)}</b> <span className="muted">{t(b.text)}</span>
             </span>
           </li>
         ))}

@@ -8,6 +8,7 @@ import type { Settings } from '../game/store'
 import { LANGS, t } from '../i18n/i18n'
 import { BOARDS, loadPreviews, PIECE_SETS } from '../theme/theme'
 import { Toggle } from './Dialogs'
+import { ReminderSettings } from '../account/ReminderSettings'
 import { Modal } from './Modal'
 
 type Tab = 'design' | 'game'
@@ -127,6 +128,7 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
             onChange={(e) => onChange({ multiPv: Number(e.target.value) })}
             aria-label={t('Engine-Linien')}
           />
+          <ReminderSettings />
         </>
       )}
       <button className="btn-secondary wide-btn" onClick={() => (onClose(), openAccount())}>

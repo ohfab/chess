@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Sparkles, Star, Upload, X } from 'lucide-react'
+import { BookMarked, ChevronDown, ExternalLink, LayoutGrid, Loader2, Microscope, Search, Sparkles, Star, Upload, X } from 'lucide-react'
 import { Piece } from '../board/Piece'
 import { APP_NAME, APP_URL } from '../brand'
 import { useGame } from '../game/store'
@@ -14,6 +14,8 @@ interface Props {
   onBoard: () => void
   onEditor: () => void
   onPaste: () => void
+  /** the player's repertoire, read from their games */
+  onRepertoire: () => void
 }
 
 interface Search {
@@ -53,7 +55,7 @@ function errorText(e: unknown, site: Site, name: string) {
 }
 
 /** Analysis hub: games from chess.com and Lichess, the free board and the position editor. */
-export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: Props) {
+export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste, onRepertoire }: Props) {
   const { accounts, history, rememberAccount, forgetAccount, updateSettings } = useGame()
   // the player's own account: its games load by themselves
   const me = useGame((s) => s.settings.myAccount)
@@ -143,6 +145,11 @@ export function AnalysePage({ onAnalyse, onQueue, onBoard, onEditor, onPaste }: 
           <Upload size={22} />
           <b>{t('PGN einfügen')}</b>
           <span>{t('Partie oder FEN aus der Zwischenablage')}</span>
+        </button>
+        <button className="tool-card" onClick={onRepertoire}>
+          <BookMarked size={22} />
+          <b>{t('Mein Repertoire')}</b>
+          <span>{t('Deine Eröffnungen aus deinen Partien: was sitzt, wo du die Theorie verlässt')}</span>
         </button>
       </div>
 

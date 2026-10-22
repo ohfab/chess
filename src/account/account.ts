@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useGame } from '../game/store'
 import { t } from '../i18n/i18n'
 import { callFunction, cloudEnabled, supabase } from './cloud'
-import { FREE_REVIEWS_PER_DAY, type ProFeature } from './plans'
+import type { ProFeature } from './plans'
 import { mergeState, snapshot, type Synced } from './sync'
 
 // Who is signed in, whether they have Pro, and the upgrade dialog. Without a backend the
@@ -47,16 +47,6 @@ export const useIsPro = () => useAccount(isProState)
 export function requirePro(feature: ProFeature) {
   if (isProState(useAccount.getState())) return true
   useAccount.setState({ upgrade: feature })
-  return false
-}
-
-/** One more full game review, if today's free allowance (or Pro) permits it. */
-export function allowReview() {
-  if (isProState(useAccount.getState())) return true
-  const r = useGame.getState().reviewsToday
-  const used = r?.date === new Date().toLocaleDateString('sv-SE') ? r.count : 0
-  if (used < FREE_REVIEWS_PER_DAY) return true
-  useAccount.setState({ upgrade: 'reviews' })
   return false
 }
 

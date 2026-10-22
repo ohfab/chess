@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, BookOpen, Check, Dumbbell, Lock, Shuffle } from 'lucide-react'
-import { useIsPro } from '../account/account'
+import { ArrowLeft, BookOpen, Check, Dumbbell, Shuffle } from 'lucide-react'
 import { Piece } from '../board/Piece'
 import { LEVELS } from '../engine/levels'
 import { numbered, type Color } from '../game/rules'
@@ -32,9 +31,7 @@ interface Props {
 export function OpeningSetup({ opening, progress, level: initialLevel, onStart, onBack }: Props) {
   const [side, setSide] = useState<Color>(opening.side)
   const [level, setLevel] = useState(initialLevel)
-  const pro = useIsPro()
-  // free plan: the main line; the shuffle over all variations is Pro
-  const [choice, setChoice] = useState<number | 'random'>(pro ? 'random' : 0)
+  const [choice, setChoice] = useState<number | 'random'>('random')
   const [strict, setStrict] = useState(true)
   const learned = (i: number) => (progress[progressKey(opening.id, i, side)]?.learned ?? 0) > 0
   const allLearned = opening.variations.every((_, i) => learned(i))
@@ -94,7 +91,6 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
               <span className="variation-icon">
                 <Shuffle size={18} />
               </span>
-              {!pro && opening.variations.length > 1 && <Lock size={15} className="variation-lock" aria-label="Pro" />}
               <span className="variation-text">
                 <b>{t('Alle Varianten')}</b>
                 <span className="muted">{t('Jede Runde eine andere, der Gegner wählt.')}</span>
@@ -105,7 +101,6 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
               return (
                 <button key={v.name} className={`variation ${choice === i ? 'on' : ''}`} onClick={() => setChoice(i)}>
                   <span className={`variation-icon ${p?.clean ? 'done' : p?.learned ? 'learned' : ''}`}>{p?.clean ? <Check size={18} /> : p?.learned ? <BookOpen size={15} /> : i + 1}</span>
-                  {!pro && i > 0 && <Lock size={15} className="variation-lock" aria-label="Pro" />}
                   <span className="variation-text">
                     <b>{v.name}</b>
                     <span className="opening-moves">{numbered(v.moves.split(' '), root.length)}</span>
