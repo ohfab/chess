@@ -47,7 +47,7 @@ import {
 } from './game/rules'
 import { playSound, setSoundSet, soundFor } from './game/sound'
 import { applyBoard, applyPieces } from './theme/theme'
-import { fenAt, useGame, type Mode } from './game/store'
+import { fenAt, progressKey, useGame, type Mode } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
 import { explain, explainBest } from './review/explain'
@@ -57,6 +57,7 @@ import { hintMove, judgeMove, lineOf, loadBook, openingById, pickBookMove, type 
 import { OpeningBrowser } from './trainer/OpeningBrowser'
 import { OpeningSetup, type TrainingSetup } from './trainer/OpeningSetup'
 import { useTrainer } from './trainer/useTrainer'
+import { explainMove, moveInstruction } from './trainer/explainMove'
 import { TodayPage } from './coach/TodayPage'
 import type { Insights } from './coach/insights'
 import type { PlanTask } from './coach/plan'
@@ -181,10 +182,51 @@ export default function App() {
 
   // Stockfish answers the latest position, even while the player looks back through the game
   const liveFen = fenAt(g, plies.length)
-  const thinking = (mode === 'play' || mode === 'training') && !outcome && turnOf(liveFen) !== playerColor
+  // a learning run waits for the player before each opponent move
+  const learning = mode === 'training' && !!training?.learn
+  const thinking = (mode === 'play' || mode === 'training') && !outcome && turnOf(liveFen) !== playerColor && !learning
   // in a drill the opponent plays theory while there is some, then Stockfish at the chosen strength
   const bookStep = trainer.step
   const bookLoading = trainer.loading
+
+  // ---------------------------------------------------------------- learning run
+
+  // The first run of a variation: an arrow shows the player's move; once it is played the
+  // coach explains why, and the opponent's reply follows on "Weiter".
+  const learnLine = learning ? training!.line : []
+  const learnDone = learning && plies.length >= learnLine.length
+  const learnSan = learning && !learnDone ? learnLine[plies.length] : null
+  const learnUci = learnSan ? sanToUci(liveFen, learnSan) : null
+  const learnMine = learning && turnOf(liveFen) === playerColor
+  const [learnIntro, setLearnIntro] = useState<number | null>(null)
+  const introOpen = learning && plies.length === 0 && learnIntro !== g.gameId
+  const [learnMiss, setLearnMiss] = useState(false)
+  // why the last move was played, and (for the opponent's first move) why the next one is
+  const lastIdea = useMemo(() => {
+    if (!learning || !plies.length) return null
+    const i = plies.length - 1
+    const before = i === 0 ? startFen : plies[i - 1].fen
+    const prev = plies[i - 1]
+    return explainMove(before, plies[i].uci, prev ? { to: prev.uci.slice(2, 4), capture: prev.san.includes('x') } : undefined)
+  }, [learning, plies, startFen])
+  const nextIdea = useMemo(() => (learning && learnUci && !plies.length ? explainMove(liveFen, learnUci) : null), [learning, learnUci, plies.length, liveFen])
+  const lastWasMine = learning && plies.length > 0 && turnOf(fenAt(g, plies.length - 1)) === playerColor
+
+  const learnNext = () => {
+    if (!learnUci || learnMine || learnDone) return
+    setLearnMiss(false)
+    useGame.getState().append(learnUci)
+  }
+
+  // a finished learning run counts for the variation and for today's plan
+  useEffect(() => {
+    if (!learnDone || !training || training.recorded) return
+    const s = useGame.getState()
+    const key = progressKey(training.openingId, training.variation, playerColor)
+    s.updateTraining({ recorded: true })
+    s.markLearned(key)
+    s.advanceTask(`opening:${key}`)
+  }, [learnDone, training, playerColor])
 
   // blunder guard: before Stockfish answers, check the player's move and warn if it throws the game
   const guardOn = settings.blunderGuard && mode === 'play' && vsEngine && plies.length > 0
@@ -378,10 +420,18 @@ export default function App() {
     const prev = useGame.getState().training
     if (setup.choice === 'random' && o.variations.length > 1 && prev?.openingId === o.id && prev.variation === variation)
       variation = (variation + 1 + Math.floor(Math.random() * (o.variations.length - 1))) % o.variations.length
+    // the first run of every variation is a learning run
+    const learned = (v: number) => (useGame.getState().progress[progressKey(o.id, v, setup.side)]?.learned ?? 0) > 0
+    if (setup.choice === 'random' && setup.learn) {
+      const fresh = o.variations.map((_, i) => i).filter((i) => !learned(i))
+      if (fresh.length) variation = fresh[Math.floor(Math.random() * fresh.length)]
+    }
+    const learn = !!setup.learn || !learned(variation)
     resetBoardState()
+    setLearnMiss(false)
     getOpponent().newGame()
     g.startTraining(
-      { openingId: o.id, choice: setup.choice, variation, line: lineOf(o, variation), strict: setup.strict, mistakes: 0, hints: 0 },
+      { openingId: o.id, choice: setup.choice, variation, line: lineOf(o, variation), strict: setup.strict, mistakes: 0, hints: 0, learn },
       setup.side,
       setup.level,
     )
@@ -389,7 +439,13 @@ export default function App() {
 
   const restartTraining = () => {
     if (!training) return
-    startTraining({ openingId: training.openingId, choice: training.choice, side: playerColor, level, strict: training.strict })
+    startTraining({ openingId: training.openingId, choice: training.choice, side: playerColor, level, strict: training.strict, learn: training.learn })
+  }
+
+  /** The same variation again, from memory or once more with arrows. */
+  const replayVariation = (learn: boolean) => {
+    if (!training) return
+    startTraining({ openingId: training.openingId, choice: training.variation, side: playerColor, level, strict: training.strict, learn })
   }
 
   /** Checks a drill move against the theory; true when it was handled here. */
@@ -604,6 +660,17 @@ export default function App() {
   const onMove = (orig: Key, dest: Key, premove: boolean) => {
     if (retry) return tryRetry(retry, orig, dest)
     setHintFen(null)
+    // a learning run takes only the move the arrow shows
+    if (learning) {
+      const uci = toUci(fen, orig, dest) + (isPromotion(fen, orig, dest) ? 'q' : '')
+      if (learnMine && learnUci && uci.slice(0, 4) === learnUci.slice(0, 4)) {
+        setLearnMiss(false)
+        return commit(learnUci)
+      }
+      if (settings.sound) playSound('wrong')
+      setLearnMiss(true)
+      return setResync((r) => r + 1)
+    }
     // drill moves are judged before they reach the game; promotions in theory are queens
     if (mode === 'training' && trainer.step && trainerMove(toUci(fen, orig, dest) + (isPromotion(fen, orig, dest) ? 'q' : ''))) return
     if (isPromotion(fen, orig, dest)) {
@@ -655,6 +722,13 @@ export default function App() {
       if (dialog || view !== 'board' || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const s = useGame.getState()
       const to: Record<string, number> = { ArrowLeft: s.cursor - 1, ArrowRight: s.cursor + 1, ArrowUp: 0, Home: 0, ArrowDown: s.plies.length, End: s.plies.length }
+      // in a learning run, Enter, space and → step on to the opponent's move
+      if (learning && atEnd && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight')) {
+        e.preventDefault()
+        if (introOpen) setLearnIntro(g.gameId)
+        else learnNext()
+        return
+      }
       if (e.key in to) {
         e.preventDefault()
         nav(to[e.key])
@@ -668,13 +742,16 @@ export default function App() {
 
   const boardFen = retry ? (retry.shown?.fen ?? retry.fen) : fen
   const retryFen = retry?.fen
-  const dests = useMemo(() => legalDests(retryFen ?? fen), [retryFen, fen])
+  const dests = useMemo(
+    () => (learning && learnMine && learnUci && !introOpen ? new Map([[learnUci.slice(0, 2) as Key, [learnUci.slice(2, 4) as Key]]]) : legalDests(retryFen ?? fen)),
+    [retryFen, fen, learning, learnMine, learnUci, introOpen],
+  )
   const movableColor = retry
     ? retry.status === 'try'
       ? turnOf(retry.fen)
       : undefined
     : mode !== 'analysis'
-      ? atEnd && !outcome
+      ? atEnd && !outcome && !(learning && (introOpen || learnDone || !learnMine))
         ? playerColor
         : undefined
       : turn
@@ -692,6 +769,16 @@ export default function App() {
     }
     if (retry) {
       if (retry.status === 'solution' && retry.best) arrow(retry.best, 'best')
+      return out
+    }
+    if (learning) {
+      if (introOpen) return out
+      // the move to play now, or the idea of the move just played while the opponent waits
+      if (learnMine && learnUci) arrow(learnUci, 'best')
+      const idea = learnMine ? null : lastWasMine || learnDone ? lastIdea : nextIdea
+      if (!learnMine && !lastWasMine && learnUci) arrow(learnUci, 'opponent')
+      idea?.arrows.forEach(([orig, dest]) => out.push({ orig, dest, brush: 'idea' }))
+      idea?.squares.forEach((orig) => out.push({ orig, brush: 'control' }))
       return out
     }
     if (shownLine) {
@@ -716,7 +803,7 @@ export default function App() {
       if (uci) arrow(uci, 'hint')
     }
     return out
-  }, [retry, shownLine, moveReview, review, plies, cursor, showLines, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
+  }, [retry, learning, introOpen, learnMine, learnUci, lastWasMine, learnDone, lastIdea, nextIdea, shownLine, moveReview, review, plies, cursor, showLines, analysis, hintOn, bookStep, atEnd, liveFen, playerColor, note, trainerHint])
 
   // ---------------------------------------------------------------- coach
 
@@ -883,6 +970,8 @@ export default function App() {
         {t('Geh mit')} <ChevronRight size={14} className="inline" /> {t('Zug für Zug durch die Partie. Bei Fehlern kannst du es nochmal versuchen.')}
       </Coach>
     )
+  } else if (learning && trainer.drill && trainer.variation) {
+    coach = learnCoach()
   } else if (trainer.active && training && trainer.drill && trainer.variation) {
     coach = trainingCoach()
   } else if (mode === 'play' && guard && guard.fen === liveFen && guard.status === 'warn' && !outcome) {
@@ -933,6 +1022,83 @@ export default function App() {
     )
   } else {
     coach = <Coach title={t('Analysebrett')}>{named ? `${named.eco} · ${named.name}` : t('Zieh frei für beide Seiten. Stockfish rechnet mit.')}</Coach>
+  }
+
+  function learnCoach(): ReactNode {
+    const drill = trainer.drill!
+    const variation = trainer.variation!
+    const total = learnLine.length
+    // the move being shown: the player's next one, else the one just played (or White's first)
+    const shown = learnMine ? plies.length + 1 : Math.max(plies.length, 1)
+    const counter = <span className="coach-line">{t('Lernen · Zug {n} von {total}', { n: Math.min(shown, total), total })}</span>
+    const last = plies[plies.length - 1]
+    const lastSide = last && turnOf(fenAt(g, plies.length - 1)) === 'white'
+    if (introOpen)
+      return (
+        <Coach
+          title={`${drill.name} · ${variation.name}`}
+          actions={
+            <button className="btn-primary small" onClick={() => setLearnIntro(g.gameId)}>
+              {t('Los geht’s')} <ChevronRight size={15} />
+            </button>
+          }
+        >
+          {variation.note ?? drill.about} {t('Beim ersten Durchgang zeigt ein Pfeil jeden Zug, und der Coach erklärt, warum er gespielt wird.')}
+        </Coach>
+      )
+    if (learnDone)
+      return (
+        <Coach
+          judgement="best"
+          title={t('Variante gelernt!')}
+          actions={
+            <>
+              <button className="btn-primary small" onClick={() => replayVariation(false)}>
+                {t('Jetzt aus dem Kopf üben')}
+              </button>
+              <button className="btn-secondary small" onClick={() => replayVariation(true)}>
+                <RotateCcw size={15} /> {t('Nochmal ansehen')}
+              </button>
+            </>
+          }
+        >
+          {last && lastIdea && (
+            <span className="learn-why">
+              <b className="coach-san">{figurine(last.san)}</b> {lastIdea.text}
+            </span>
+          )}
+          {t('Du hast alle Züge der Variante gesehen. Jetzt spielst du sie ohne Pfeile.')}
+        </Coach>
+      )
+    const san = figurine(learnSan!)
+    if (learnMine)
+      return (
+        <Coach title={t('Dein Zug: {san}', { san })}>
+          {last && lastIdea && (
+            <span className="learn-why">
+              {lastSide ? t('Weiß spielte {san}:', { san: figurine(last.san) }) : t('Schwarz spielte {san}:', { san: figurine(last.san) })} {lastIdea.text}
+            </span>
+          )}
+          {moveInstruction(liveFen, learnUci!)} {learnMiss && <b>{t('Zieh die Figur, die der grüne Pfeil zeigt.')}</b>}
+          {counter}
+        </Coach>
+      )
+    // the opponent is next: first why the player's move was good, then their reply on "Weiter"
+    const nextLabel = turnOf(liveFen) === 'white' ? t('Weiter: Weiß zieht') : t('Weiter: Schwarz zieht')
+    return (
+      <Coach
+        judgement={lastWasMine ? 'best' : undefined}
+        title={lastWasMine && last ? t('Warum {san}?', { san: figurine(last.san) }) : turnOf(liveFen) === 'white' ? t('Weiß beginnt mit {san}', { san }) : t('Schwarz spielt {san}', { san })}
+        actions={
+          <button className="btn-primary small" onClick={learnNext}>
+            {nextLabel} <ChevronRight size={15} />
+          </button>
+        }
+      >
+        {(lastWasMine ? lastIdea : nextIdea)?.text}
+        {counter}
+      </Coach>
+    )
   }
 
   function trainingCoach(): ReactNode {
@@ -1094,6 +1260,18 @@ export default function App() {
         <Tool label={t('Schutz')} icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
         <Tool label={t('Zug zurück')} icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
         <Tool label={confirmResign ? t('Sicher?') : t('Aufgeben')} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
+      </>
+    )
+  } else if (learning && training) {
+    tools = (
+      <>
+        <Tool label={t('Neustart')} icon={<RotateCcw size={20} />} onClick={() => replayVariation(true)} />
+        <Tool label={t('Varianten')} icon={<ListTree size={20} />} onClick={() => openSetup(training.openingId)} />
+        {!learnMine && !learnDone && !introOpen && (
+          <button className="btn-primary" onClick={learnNext}>
+            {t('Weiter')}
+          </button>
+        )}
       </>
     )
   } else if (mode === 'training' && training && !outcome) {

@@ -4159,3 +4159,16 @@ button:disabled {
 :root:not([data-theme='dark']) :is(.evalgraph, .evalbar) {
   background: #34403b;
 }
+
+/* ------------------------------------------------------------------ opening learning run */
+.learn-why {
+  display: block;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bubble-soft);
+  color: var(--bubble-faint);
+}
+.variation-icon.learned {
+  background: var(--pill-bg);
+  color: var(--pill-text);
+}

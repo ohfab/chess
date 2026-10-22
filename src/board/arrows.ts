@@ -23,6 +23,10 @@ const STYLES: Record<string, Style> = {
   engine2: { color: '#3d8af7', opacity: 0.42, size: 0.72 },
   hint: { color: '#a46cff', opacity: 0.85, size: 1 },
   best: { color: '#7fbf3f', opacity: 0.88, size: 1 },
+  // learning runs: the opponent's next move, the idea behind a move, the squares it covers
+  opponent: { color: '#e8796a', opacity: 0.85, size: 1 },
+  idea: { color: '#3d8af7', opacity: 0.55, size: 0.72 },
+  control: { color: '#f08a7a', opacity: 0.95, size: 1 },
 }
 
 type Point = [number, number]

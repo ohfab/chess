@@ -31,9 +31,9 @@ export function useTrainer() {
   const offLine = !!line && played.some((m, i) => i < line.length && m !== line[i])
   const clean = !!training && training.mistakes === 0 && training.hints === 0 && !offLine
 
-  // count each run once, when its theory is done
+  // count each run once, when its theory is done (learning runs are counted on their own)
   useEffect(() => {
-    if (!bookOver || !training || !drill || training.recorded) return
+    if (!bookOver || !training || !drill || training.recorded || training.learn) return
     updateTraining({ recorded: true })
     recordProgress(progressKey(drill.id, training.variation, playerColor), clean)
   }, [bookOver, training, drill, playerColor, clean, updateTraining, recordProgress])

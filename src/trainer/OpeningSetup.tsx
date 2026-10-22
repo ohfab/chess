@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Check, Lock, Shuffle } from 'lucide-react'
+import { ArrowLeft, BookOpen, Check, Dumbbell, Lock, Shuffle } from 'lucide-react'
 import { useIsPro } from '../account/account'
 import { Piece } from '../board/Piece'
 import { LEVELS } from '../engine/levels'
@@ -17,6 +17,8 @@ export interface TrainingSetup {
   side: Color
   level: number
   strict: boolean
+  /** with arrows and explanations; the first run of a variation always is */
+  learn?: boolean
 }
 
 interface Props {
@@ -34,6 +36,12 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
   // free plan: the main line; the shuffle over all variations is Pro
   const [choice, setChoice] = useState<number | 'random'>(pro ? 'random' : 0)
   const [strict, setStrict] = useState(true)
+  const learned = (i: number) => (progress[progressKey(opening.id, i, side)]?.learned ?? 0) > 0
+  const allLearned = opening.variations.every((_, i) => learned(i))
+  // learning first, until the chosen variation has been seen with arrows once
+  const fresh = choice === 'random' ? !allLearned : !learned(choice)
+  const [mode, setMode] = useState<'learn' | 'practice' | null>(null)
+  const learn = (mode ?? (fresh ? 'learn' : 'practice')) === 'learn'
 
   const root = rootOf(opening)
   const line = choice === 'random' ? root : lineOf(opening, choice)
@@ -96,7 +104,7 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
               const p = progress[progressKey(opening.id, i, side)]
               return (
                 <button key={v.name} className={`variation ${choice === i ? 'on' : ''}`} onClick={() => setChoice(i)}>
-                  <span className={`variation-icon ${p?.clean ? 'done' : ''}`}>{p?.clean ? <Check size={18} /> : i + 1}</span>
+                  <span className={`variation-icon ${p?.clean ? 'done' : p?.learned ? 'learned' : ''}`}>{p?.clean ? <Check size={18} /> : p?.learned ? <BookOpen size={15} /> : i + 1}</span>
                   {!pro && i > 0 && <Lock size={15} className="variation-lock" aria-label="Pro" />}
                   <span className="variation-text">
                     <b>{v.name}</b>
@@ -112,15 +120,34 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
             })}
           </div>
 
-          <Toggle
-            label={t('Fehler zurücknehmen')}
-            hint={t('Züge abseits der Theorie springen zurück, bis du den richtigen findest')}
-            value={strict}
-            onChange={setStrict}
-          />
+          <div className="field-label">{t('Modus')}</div>
+          <div className="segmented">
+            <button className={learn ? 'on' : ''} onClick={() => setMode('learn')}>
+              <BookOpen size={16} /> {t('Lernen')}
+            </button>
+            <button className={!learn ? 'on' : ''} onClick={() => setMode('practice')}>
+              <Dumbbell size={16} /> {t('Üben')}
+            </button>
+          </div>
+          <p className="hint-text">
+            {learn
+              ? t('Pfeile zeigen jeden Zug, und der Coach erklärt, warum er gespielt wird.')
+              : fresh
+                ? t('Neue Varianten zeigt Rookly beim ersten Mal trotzdem mit Pfeilen.')
+                : t('Ohne Pfeile: du spielst die Züge aus dem Kopf.')}
+          </p>
 
-          <button className="btn-primary wide" onClick={() => onStart({ openingId: opening.id, choice, side, level, strict })}>
-            {t('Training starten')}
+          {!learn && (
+            <Toggle
+              label={t('Fehler zurücknehmen')}
+              hint={t('Züge abseits der Theorie springen zurück, bis du den richtigen findest')}
+              value={strict}
+              onChange={setStrict}
+            />
+          )}
+
+          <button className="btn-primary wide" onClick={() => onStart({ openingId: opening.id, choice, side, level, strict, learn })}>
+            {learn ? t('Lernen starten') : t('Training starten')}
           </button>
         </div>
       </div>

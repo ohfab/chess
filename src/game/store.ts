@@ -23,12 +23,16 @@ export interface Training {
   hints: number
   /** this run is already counted in the progress */
   recorded?: boolean
+  /** a learning run: arrows show every move and the coach explains it */
+  learn?: boolean
 }
 
 export interface Progress {
   runs: number
   /** runs through the whole theory without a mistake or hint */
   clean: number
+  /** learning runs finished (with arrows and explanations) */
+  learned?: number
 }
 
 export interface Settings {
@@ -139,6 +143,8 @@ interface GameState {
   startTraining: (training: Training, playerColor: Color, level: number) => void
   updateTraining: (patch: Partial<Training>) => void
   recordProgress: (key: string, clean: boolean) => void
+  /** a learning run of this variation and side was finished */
+  markLearned: (key: string) => void
   /** files the current game in the history (again, if it changed) */
   archive: () => void
   attachReview: (key: string, review: SavedReview) => void
@@ -536,11 +542,17 @@ export const useGame = create<GameState>()(
       recordProgress: (key, clean) => {
         set((s) => {
           const p = s.progress[key] ?? { runs: 0, clean: 0 }
-          return { progress: { ...s.progress, [key]: { runs: p.runs + 1, clean: p.clean + (clean ? 1 : 0) } } }
+          return { progress: { ...s.progress, [key]: { ...p, runs: p.runs + 1, clean: p.clean + (clean ? 1 : 0) } } }
         })
         // a finished run of the variation the plan asked for
         get().advanceTask(`opening:${key}`)
       },
+
+      markLearned: (key) =>
+        set((s) => {
+          const p = s.progress[key] ?? { runs: 0, clean: 0 }
+          return { progress: { ...s.progress, [key]: { ...p, learned: (p.learned ?? 0) + 1 } } }
+        }),
     }),
     {
       name: 'rookly',
