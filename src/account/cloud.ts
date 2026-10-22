@@ -1,11 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isNativeApp } from '../native/native'
 
 // The backend is optional: without these variables the app runs fully local (as in the
 // claude.ai artifact or a self-hosted copy) and every feature is unlocked.
 const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-export const cloudEnabled = !!(URL && KEY)
+// The apps stay local for now: their sign-in links would open the website, not the app,
+// until deep links bring them back (see PUBLISHING.md, "App-Stores").
+export const cloudEnabled = !!(URL && KEY) && !isNativeApp
 
 let client: Promise<SupabaseClient> | null = null
 

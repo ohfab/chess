@@ -4584,3 +4584,20 @@ button:disabled {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------- the apps: under the status bar */
+/* the apps draw edge to edge; the header grows by the status bar and the page starts below it
+   (in a browser the insets are 0, so nothing changes there) */
+.mobile-head {
+  top: 0;
+  height: calc(var(--topbar) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+@media (min-width: 900px) {
+  .app {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav {
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+}

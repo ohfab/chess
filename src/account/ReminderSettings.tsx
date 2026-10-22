@@ -3,12 +3,70 @@ import { BellRing } from 'lucide-react'
 import { t } from '../i18n/i18n'
 import { openAccount, useAccount } from './account'
 import { disableReminder, enableReminder, ReminderError, reminderHour, reminderProblem } from './push'
+import { isNativeApp } from '../native/native'
+import { useReminder } from '../native/reminderStore'
 import './reminders.css'
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6)
 
-/** Settings: a daily reminder as a push notification, so the streak is not lost. */
+/** Settings: a daily reminder, so the streak is not lost. */
 export function ReminderSettings() {
+  return isNativeApp ? <AppReminders /> : <PushReminders />
+}
+
+/** In the apps: a notification planned on the phone, no account needed (native/reminders.ts). */
+function AppReminders() {
+  const { on, hour } = useReminder()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const save = async (next: boolean, at = hour) => {
+    setBusy(true)
+    setError(null)
+    try {
+      const reminders = await import('../native/reminders')
+      if (!next) await reminders.disableReminder()
+      else if ((await reminders.enableReminder(at)) === 'denied') setError(t('Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen deines Handys.'))
+    } catch {
+      setError(t('Das hat nicht geklappt. Versuch es gleich nochmal.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="reminders">
+      <label className="toggle">
+        <span>
+          <BellRing size={16} className="inline" /> {t('Tägliche Erinnerung')}
+          <small>{on ? t('Jeden Tag um {time}, wenn dein Plan noch offen ist.', { time: `${hour}:00` }) : t('Eine Nachricht am Tag, wenn dein Plan noch offen ist.')}</small>
+        </span>
+        <input type="checkbox" checked={on} disabled={busy} onChange={(e) => void save(e.target.checked)} />
+        <i />
+      </label>
+      {on && <HourPicker hour={hour} disabled={busy} onChange={(h) => void save(true, h)} />}
+      {error && <p className="error">{error}</p>}
+    </div>
+  )
+}
+
+function HourPicker({ hour, disabled, onChange }: { hour: number; disabled: boolean; onChange: (hour: number) => void }) {
+  return (
+    <div className="reminders-time">
+      <span>{t('Uhrzeit')}</span>
+      <select value={hour} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} aria-label={t('Uhrzeit der Erinnerung')}>
+        {HOURS.map((h) => (
+          <option key={h} value={h}>
+            {`${h}:00`}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+/** On the website: a web push from the server, for signed-in players (account/push.ts). */
+function PushReminders() {
   const status = useAccount((a) => a.status)
   const [problem, setProblem] = useState(reminderProblem)
   const [hour, setHour] = useState(18)
@@ -90,25 +148,14 @@ export function ReminderSettings() {
         <i />
       </label>
       {usable && on && (
-        <div className="reminders-time">
-          <span>{t('Uhrzeit')}</span>
-          <select
-            value={hour}
-            disabled={busy}
-            onChange={(e) => {
-              const h = Number(e.target.value)
-              setHour(h)
-              void save(true, h)
-            }}
-            aria-label={t('Uhrzeit der Erinnerung')}
-          >
-            {HOURS.map((h) => (
-              <option key={h} value={h}>
-                {`${h}:00`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <HourPicker
+          hour={hour}
+          disabled={busy}
+          onChange={(h) => {
+            setHour(h)
+            void save(true, h)
+          }}
+        />
       )}
       {error && <p className="error">{error}</p>}
     </div>

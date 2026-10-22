@@ -1,18 +1,27 @@
 # Rookly veröffentlichen
 
-Diese Anleitung führt vom jetzigen Stand (Webseite auf GitHub Pages, alles lokal) zu einer öffentlichen App mit Konten, Sync und dem Abo Rookly Pro. Ohne Schritt 2 bis 5 läuft Rookly einfach weiter im lokalen Modus: keine Konten, alle Funktionen frei.
+Rookly startet **gratis, ohne Konto und ohne Abo**, als Website und als App für Android und iPhone. Dafür braucht es nur Schritt 1, 6 und 7; die Website läuft schon auf GitHub Pages.
 
-Was du brauchst:
+Schritt 2 bis 5 sind für später: Konten mit Sync (Supabase), das Abo Rookly Pro (Stripe, `VITE_PRO=on`), der KI-Coach (Anthropic, `VITE_AI=on`) und die Erinnerung per Web-Push auf der Website. Ohne sie läuft Rookly im lokalen Modus: alles auf dem Gerät, alles frei.
+
+Was du für den Start brauchst:
+- optional eine eigene Domain (siehe Schritt 1 zum Namen)
+- für Android ein Google-Play-Konto (USD 25 einmalig), für iPhone das Apple Developer Program (USD 99 pro Jahr) und einen Mac mit Xcode oder einen Mac-Builddienst
+
+Für später:
 - ein Konto bei [Supabase](https://supabase.com) (Gratis-Plan reicht für den Anfang)
 - ein Konto bei [Stripe](https://stripe.com) (Schweiz wird unterstützt, Auszahlung in CHF)
-- einen API-Schlüssel von [Anthropic](https://console.anthropic.com), erst wenn der KI-Coach startet (er ist vorerst ausgeschaltet, siehe Schritt 4)
-- optional eine eigene Domain, zum Beispiel `rookly.app` oder `rookly.ch` (beide waren am 21.10.2026 noch frei)
+- einen API-Schlüssel von [Anthropic](https://console.anthropic.com) für den KI-Coach
 
 ## 1. Name und Marke prüfen
 
-`rookly.app` und `rookly.ch` waren noch nicht registriert, im Netz gab es keine App mit dem Namen. Vor dem Start trotzdem im Markenregister nachsehen: [Swissreg](https://www.swissreg.ch) für die Schweiz und [EUIPO eSearch](https://euipo.europa.eu/eSearch/) für die EU, Klassen 9 (Software) und 41 (Unterricht, Spiele). Dann die Domain sichern.
+**Achtung (Stand 22.10.2026):** `rookly.com` gehört Rookly, Inc., einer Schach-Liga für Schulen in den USA („Rookly | Chess Esports League“). Laut einer Markendatenbank hat die Firma im März 2026 die Marke ROOKLY in den USA angemeldet (Anmeldung 99694234, Schachturniere, Schachunterricht, Software). Eine Schach-App mit demselben Namen riskiert Verwechslung und Markenstreit, auch unter einer anderen Domain-Endung; die Stores reagieren auf Markenbeschwerden. Vor Domain und Store-Eintrag darum: [Swissreg](https://www.swissreg.ch), [EUIPO eSearch](https://euipo.europa.eu/eSearch/) und [WIPO Brand Database](https://branddb.wipo.int) prüfen (Klassen 9, 41, 42) und im Zweifel einen anderen Namen wählen.
 
-## 2. Supabase einrichten
+Der Name steht an wenigen Stellen: `APP_NAME` in `src/brand.ts`, `public/manifest.webmanifest`, `index.html`, `capacitor.config.ts` (mit der App-ID), `android/app/src/main/res/values/strings.xml`, `ios/App/App/Info.plist` und die Seiten in `public/legal/`.
+
+Frei waren am 22.10.2026 unter anderem `rookly.app`, `rookly.ch`, `rookly.net`, `rookly.ai`, `rookly.to` und `rooklyapp.com`. `.eu` können nur Personen aus der EU/dem EWR oder mit EU-Bürgerschaft registrieren.
+
+## 2. Supabase einrichten (später: Konten und Sync)
 
 1. Neues Projekt anlegen, Region **Frankfurt (eu-central-1)** oder **Zürich**, falls verfügbar.
 2. Supabase CLI installieren (`npm i -g supabase`), dann im Repo:
@@ -25,7 +34,7 @@ Was du brauchst:
 4. **Authentication → URL Configuration**: Site URL = deine App-Adresse (z. B. `https://rookly.app/` oder `https://ohfab.github.io/chess/`), dieselbe Adresse auch unter Redirect URLs.
 5. **Authentication → Emails**: die Vorlage für den Magic Link anpassen. Supabase verschickt pro Projekt eine Vorlage für alle; weil Rookly vier Sprachen hat, am besten kurz zweisprachig (Deutsch und Englisch). Für mehr als ein paar Mails pro Stunde einen eigenen SMTP-Versand einrichten (z. B. Resend, Postmark).
 
-## 3. Stripe einrichten
+## 3. Stripe einrichten (später: Rookly Pro)
 
 1. **Produktkatalog → Produkt anlegen**: „Rookly Pro“ mit zwei wiederkehrenden Preisen in CHF, monatlich und jährlich. Die Preis-IDs (`price_...`) notieren.
 2. **Einstellungen → Zahlungsmethoden**: Karten, TWINT, Apple Pay und Google Pay einschalten. TWINT kann seit Mai 2026 auch Abos ([Stripe-Doku](https://docs.stripe.com/billing/subscriptions/twint)).
@@ -120,22 +129,61 @@ Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung
 
 ## 6. Rechtliches
 
-- `public/legal/impressum.html`, `datenschutz.html` und `agb.html` sind Vorlagen. Alles in Gelb ersetzen (Name, Adresse, E-Mail, Gerichtsstand, MWST) und am besten kurz von einer Fachperson prüfen lassen.
+- `public/legal/impressum.html`, `datenschutz.html` und `agb.html` (Nutzungsbedingungen, ohne Abo) sind Vorlagen. Alles in Gelb ersetzen (Name, Adresse, E-Mail, Gerichtsstand, MWST) und am besten kurz von einer Fachperson prüfen lassen.
 - Ab CHF 100'000 Umsatz pro Jahr wirst du in der Schweiz mehrwertsteuerpflichtig. Stripe Tax kann die Steuern für Kundschaft im Ausland berechnen.
 - **Sounds:** Alle Sounds werden in der App selbst erzeugt (Web Audio), es gibt keine fremden Aufnahmen. Standard ist „Filz“.
 - **Open Source:** Rookly steht wegen Stockfish und chessground unter der GPL-3.0. Verkaufen ist erlaubt. Der Quelltext muss für alle, die die App bekommen, verfügbar bleiben; das öffentliche Repo erfüllt das.
 
-## 7. App-Stores (später)
+## 7. Apps für Android und iPhone
 
-Rookly ist eine installierbare Web-App (PWA): auf dem Handy „Zum Home-Bildschirm“, läuft offline. Für die Stores:
-- **Android:** als Trusted Web Activity mit [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) verpacken. Für digitale Abos innerhalb der Play-Store-App verlangt Google die Play-Abrechnung (oder das User-Choice-Billing-Programm).
-- **iOS:** mit [Capacitor](https://capacitorjs.com) verpacken. Apple verlangt für digitale Abos In-App-Käufe (StoreKit), ausser in Regionen mit Ausnahmen für externe Links (USA, EU). Zwei Abrechnungswege (Stripe im Web, StoreKit in der App) brauchen einen gemeinsamen Pro-Status, zum Beispiel über RevenueCat.
-- Achtung GPL: Der Apple App Store und die GPL vertragen sich schlecht (Zusatzbedingungen des Stores). Viele Schach-Apps mit Stockfish lösen das, indem der komplette Quelltext öffentlich bleibt; vorher klären.
+Die Apps sind mit [Capacitor](https://capacitorjs.com) eingerichtet: `android/` und `ios/` sind die nativen Projekte, beide zeigen denselben Web-Build. `npm run app` baut ihn und kopiert ihn in beide Projekte (`npm run app:android` bzw. `npm run app:ios` öffnet danach Android Studio bzw. Xcode). In den Apps
+- läuft alles offline, mit Stockfish auf dem Gerät,
+- kommt die tägliche Erinnerung als lokale Benachrichtigung vom Handy selbst, ohne Konto und ohne Server (`src/native/reminders.ts`),
+- führt die Zurück-Taste von Android durch die Seiten, und die Statusleiste passt sich an Hell/Dunkel an (`src/native/native.ts`),
+- gibt es vorerst keine Konten: die Anmelde-Links würden die Website öffnen statt der App (siehe „Später“ unten).
+
+**Testen:** Der GitHub-Workflow „Apps“ baut bei jedem Push eine Android-Testversion. Unter *Actions → Apps → letzter Lauf → Artifacts* `rookly-android-debug` laden, die APK aufs Android-Handy kopieren und öffnen (Installation aus unbekannten Quellen erlauben). Für iOS prüft der Workflow nur, dass das Projekt baut; auf dem iPhone testest du über Xcode oder TestFlight.
+
+**Vor dem ersten Upload festlegen** (danach nicht mehr änderbar):
+- App-ID: `appId` in `capacitor.config.ts` (jetzt `app.rookly`), dazu `namespace` und `applicationId` in `android/app/build.gradle` und den Bundle Identifier in Xcode. Am besten passend zur Domain, zum Beispiel `ch.deinname.rookly`.
+- Version: `versionCode`/`versionName` in `android/app/build.gradle`, in Xcode „Version“ und „Build“. Jede Store-Version braucht eine höhere Nummer.
+- Icons und Startbild: Quellen in `assets/`, neu erzeugen mit
+  `npx @capacitor/assets generate --android --ios --iconBackgroundColor '#416b59' --iconBackgroundColorDark '#416b59' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#312e2b'`
+
+### Google Play
+
+1. Konto in der [Play Console](https://play.google.com/console) anlegen (USD 25 einmalig) und die Identität bestätigen. Neue private Konten müssen die App vor der Veröffentlichung 14 Tage lang mit mindestens 12 Personen geschlossen testen.
+2. Upload-Schlüssel erzeugen und sicher aufbewahren (nie ins Repo):
+   `keytool -genkey -v -keystore rookly-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+3. In Android Studio *Build → Generate Signed App Bundle* mit diesem Schlüssel; die `.aab`-Datei hochladen und „Play App Signing“ annehmen.
+4. Store-Eintrag: Kurz- und Langbeschreibung, Icon 512×512, Feature-Grafik 1024×500, mindestens zwei Handy-Screenshots, Link zur Datenschutzerklärung, Fragebogen „Datensicherheit“ (ohne Konten sammelt die App keine Daten), Altersfreigabe, Zielgruppe.
+
+### App Store
+
+1. [Apple Developer Program](https://developer.apple.com/programs/) (USD 99 pro Jahr). Als Privatperson stehst du mit deinem Namen im Store; für die EU verlangt Apple öffentlich Adresse, Telefon und E-Mail.
+2. Bauen braucht einen Mac mit Xcode 26 oder neuer (oder einen Builddienst wie Codemagic): `npm run app:ios`, in Xcode unter *Signing & Capabilities* dein Team wählen, dann *Product → Archive → Distribute App*. Mit TestFlight zuerst auf dem eigenen iPhone testen.
+3. In App Store Connect: Beschreibung, Screenshots für 6,9-Zoll-iPhones, Datenschutz-Angaben („Data Not Collected“), Altersfreigabe.
+4. Apple lehnt Apps ab, die nur eine Website verpacken (Richtlinie 4.2). Im Review-Hinweis erwähnen, was Rookly als App mitbringt: läuft komplett offline mit Stockfish auf dem Gerät, eigene Erinnerungen als Benachrichtigung, Navigation und Zurück-Geste wie eine App.
+
+### GPL
+
+Rookly steht wegen Stockfish und chessground unter der GPL-3.0. Der Apple App Store und die GPL vertragen sich schlecht (Zusatzbedingungen des Stores). Viele Schach-Apps mit Stockfish lösen das, indem der komplette Quelltext öffentlich bleibt, wie hier; vorher klären.
+
+### Später: Konten und Abos in den Apps
+
+- **Konten:** Die Anmelde-Links müssen zurück in die App führen. Das geht mit eigener Domain und Deep Links: für Android `https://<domain>/.well-known/assetlinks.json` (App Links), für iOS `https://<domain>/.well-known/apple-app-site-association` (Associated Domains), dazu die App-URLs in Supabase unter *Redirect URLs*. Danach in `src/account/cloud.ts` das `!isNativeApp` entfernen.
+- **Abos:** In den Store-Apps verlangt Google die Play-Abrechnung und Apple In-App-Käufe (StoreKit), mit Ausnahmen für externe Links in den USA und der EU. In der Schweiz darf die App nicht auf die Bezahlseite im Web verweisen. Zwei Abrechnungswege (Stripe im Web, Stores in der App) brauchen einen gemeinsamen Pro-Status, zum Beispiel über RevenueCat. Die Stores nehmen 15 % (Programme für kleine Anbieter).
 
 ## Checkliste vor dem Start
 
-- [ ] Marke geprüft, Domain registriert
-- [ ] Impressum, Datenschutz, AGB ausgefüllt
+Gratis-Start:
+- [ ] Name und Marke geprüft (Schritt 1), Domain registriert
+- [ ] Impressum, Datenschutz, Nutzungsbedingungen ausgefüllt
+- [ ] App-ID und Version festgelegt, Android-Testversion auf dem eigenen Handy ausprobiert
+- [ ] Google Play: Konto, geschlossener Test (12 Personen, 14 Tage), Store-Eintrag, signiertes App Bundle
+- [ ] App Store: Developer Program, TestFlight-Test, Store-Eintrag, Review
+
+Später, mit Konten und Pro:
 - [ ] Supabase: Migration, Auth-URLs, E-Mail-Vorlagen, SMTP
 - [ ] Stripe: Produkt, zwei Preise, Zahlungsmethoden, Kundenportal, Webhook, Test-Kauf im Testmodus
 - [ ] Secrets gesetzt, Funktionen deployt (mit `send-reminders`; `coach` erst mit dem KI-Coach), Cron für die Erinnerung angelegt

@@ -88,6 +88,7 @@ import { Nav, type Tab } from './ui/Nav'
 import { Logo } from './ui/Logo'
 import { awaitPro, openAccount, requirePro, useAccount } from './account/account'
 import { AI_ENABLED } from './account/plans'
+import { copyText, onBackButton } from './native/native'
 import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
 import { Welcome } from './account/Welcome'
 import { APP_NAME } from './brand'
@@ -755,7 +756,7 @@ export default function App() {
   }
 
   const copy = (text: string, what: string) =>
-    navigator.clipboard.writeText(text).then(
+    copyText(text).then(
       () => flash(t('{what} kopiert', { what })),
       () => flash(t('Kopieren nicht möglich')),
     )
@@ -1464,6 +1465,22 @@ export default function App() {
   const headTitle =
     view === 'board' ? boardTitle : view === 'drill' ? drill?.title : view === 'setup' ? setupOpening?.name : view === 'editor' ? t('Brett-Editor') : null
 
+  // Android's back button: closes what lies on top, else goes one page back, else leaves the app
+  useEffect(
+    () =>
+      onBackButton(() => {
+        if (document.querySelector('.modal-backdrop, .lesson-sheet')) {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+          return true
+        }
+        const parent = back ?? SUB_PAGE_PARENT[view] ?? (view !== 'today' ? 'today' : null)
+        if (!parent) return false
+        setView(parent)
+        return true
+      }),
+    [back, view],
+  )
+
   return (
     <div className={`app view-${view}`}>
       <Nav tab={tab} onNavigate={navigate} onSettings={() => setDialog('settings')} onAccount={openAccount} />
@@ -1715,6 +1732,9 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
     </button>
   )
 }
+
+/** Where Android's back button leads from the pages that have their own way back. */
+const SUB_PAGE_PARENT: Partial<Record<View, View>> = { rush: 'tactics', visual: 'tactics', guess: 'tactics', repertoire: 'analyse', achievements: 'today' }
 
 const ASPECT_NAME: Record<Aspect, string> = {
   opening: tk('Eröffnung'),
