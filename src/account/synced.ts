@@ -1,7 +1,9 @@
+import { useGuess } from '../guess/store'
 import { useLessons, type Card } from '../lesson/srs'
 import { useProgressStore } from '../progress/progressStore'
 import { useStats } from '../progress/stats'
 import { useRush, type RushRun } from '../rush/rush'
+import { useVisual } from '../visual/store'
 import { laterDay, maxPerKey, syncStore } from './sync'
 
 // The feature stores that travel with the account, and how two copies combine.
@@ -56,4 +58,18 @@ syncStore(
     bestStreak: Math.max(local.bestStreak, remote.bestStreak ?? 0),
     bestRating: Math.max(local.bestRating, remote.bestRating ?? 0),
   }),
+)
+
+syncStore(
+  'visual',
+  useVisual,
+  (s) => ({ best: s.best, runs: s.runs }),
+  (local, remote) => ({ best: maxPerKey(local.best as Record<string, number>, (remote.best ?? {}) as Record<string, number>), runs: Math.max(local.runs, remote.runs ?? 0) }),
+)
+
+syncStore(
+  'guess',
+  useGuess,
+  (s) => ({ best: s.best, plays: s.plays }),
+  (local, remote) => ({ best: maxPerKey(local.best, remote.best), plays: maxPerKey(local.plays, remote.plays) }),
 )

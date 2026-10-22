@@ -1,0 +1,493 @@
+/* Board vision: hub, timed square exercises, blindfold questions. */
+
+.vision,
+.vision-run {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.vision .back,
+.vision-run .back {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+
+.vision-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.vision-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  text-align: left;
+  animation: vision-rise 0.35s ease both;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.vision-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1.5px var(--green),
+    var(--shadow-md);
+}
+.vision-card:active {
+  transform: translateY(0) scale(0.99);
+}
+.vision-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  color: #fff;
+}
+.vision-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vision-card-text b {
+  font-size: 17px;
+  color: var(--heading);
+}
+.vision-card-text .muted {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.vision-card-record {
+  margin-top: auto;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--pill-bg);
+  color: var(--pill-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------- run layout */
+.vision-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.vision-board-wrap {
+  width: 100%;
+}
+.vision-board {
+  position: relative;
+  border-radius: 10px;
+}
+.vision-board.flash-ok {
+  animation: vision-ok 0.35s ease;
+}
+.vision-board.flash-miss {
+  animation: vision-shake 0.32s ease;
+}
+.vision-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.vision-side .muted {
+  margin: 0;
+  line-height: 1.45;
+}
+.vision-side .field-label {
+  margin: 4px 0 0;
+}
+.vision-side .btn-primary.wide {
+  margin-top: 4px;
+}
+.vision-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--heading);
+}
+
+/* ---------------------------------------------------------- the empty board */
+.square-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.square-board .sq {
+  position: relative;
+  border-radius: 0;
+  aspect-ratio: 1;
+  transition: background-color 0.18s;
+}
+.square-board .sq.light {
+  background: var(--sq-light);
+}
+.square-board .sq.dark {
+  background: var(--sq-dark);
+}
+.square-board.pickable .sq {
+  cursor: pointer;
+}
+.square-board.pickable .sq:hover {
+  box-shadow: inset 0 0 0 3px var(--tint-strong);
+}
+.square-board .sq.target {
+  background: var(--accent);
+  animation: sq-pulse 1.1s ease-in-out infinite;
+}
+.square-board .sq.hit {
+  background: var(--green-hi);
+  animation: sq-pop 0.35s ease;
+}
+.square-board .sq.miss {
+  background: var(--danger-text);
+  animation: sq-pop 0.35s ease;
+}
+.square-board .sq.answer {
+  box-shadow: inset 0 0 0 4px var(--green-hi);
+}
+.sq-icon {
+  position: absolute;
+  inset: 22%;
+  width: 56%;
+  height: 56%;
+  color: #fff;
+  animation: vision-pop-in 0.25s ease;
+}
+.sq-rank,
+.sq-file {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgb(0 0 0 / 0.45);
+}
+.sq-rank {
+  top: 3px;
+  left: 4px;
+}
+.sq-file {
+  right: 4px;
+  bottom: 2px;
+}
+
+.vision-veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: 8px;
+  background: var(--backdrop);
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  backdrop-filter: blur(1.5px);
+  animation: vision-fade 0.25s ease;
+}
+.vision-veil.soft {
+  background: var(--backdrop);
+  font-size: 18px;
+  line-height: 1.35;
+}
+.vision-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: vision-rise 0.4s ease both;
+}
+.vision-score {
+  font-size: 84px;
+  line-height: 1;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------- clock, target, answers */
+.vision-clock {
+  position: relative;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.vision-clock-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+.vision-clock b {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  color: var(--strong);
+}
+.vision-target {
+  font-size: clamp(64px, 14vw, 120px);
+  line-height: 1;
+  font-weight: 400;
+  text-align: center;
+  color: var(--heading);
+  letter-spacing: -0.02em;
+  animation: vision-pop-in 0.22s ease;
+}
+.vision-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.vision-option {
+  position: relative;
+  padding: 14px 12px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--outline);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--strong);
+  font-variant-emoji: text;
+  transition:
+    background 0.15s,
+    transform 0.1s,
+    box-shadow 0.15s;
+}
+.vision-option:not(:disabled):hover {
+  background: var(--tint);
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
+.vision-option:not(:disabled):active {
+  transform: scale(0.97);
+}
+.vision-option:disabled {
+  opacity: 1;
+}
+.vision-option.right {
+  background: var(--green-hi);
+  color: #fff;
+  box-shadow: none;
+  animation: sq-pop 0.35s ease;
+}
+.vision-option.wrong {
+  background: var(--danger-text);
+  color: #fff;
+  box-shadow: none;
+  animation: vision-shake 0.32s ease;
+}
+.vision-option-key {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--muted);
+}
+.vision-tally {
+  display: flex;
+  gap: 16px;
+  font-weight: 700;
+}
+.vision-tally .ok {
+  color: var(--green);
+}
+.vision-tally .miss {
+  color: var(--danger-text);
+}
+
+/* ---------------------------------------------------------- blindfold */
+.blind-board .miniboard,
+.blind-reveal,
+.blind-start {
+  position: relative;
+  width: 100%;
+}
+.blind-reveal {
+  animation: vision-fade 0.3s ease;
+}
+.blind-ring {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px var(--accent);
+  animation: sq-pop 0.4s ease;
+  pointer-events: none;
+}
+.blind-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.blind-lives {
+  display: inline-flex;
+  gap: 3px;
+  color: var(--outline);
+}
+.blind-lives .full {
+  color: var(--danger-text);
+  fill: var(--danger-text);
+}
+.blind-tape {
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-emoji: text;
+  min-height: 52px;
+}
+.blind-tape li {
+  display: inline-flex;
+  gap: 3px;
+  color: var(--muted);
+}
+.blind-tape li.on {
+  color: var(--strong);
+  animation: vision-pop-in 0.25s ease both;
+}
+.blind-num {
+  color: var(--muted);
+  font-weight: 500;
+}
+.blind-question {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: vision-rise 0.3s ease both;
+}
+.blind-ask {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--heading);
+}
+.blind-question .vision-option {
+  font-size: 15px;
+}
+.blind-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  animation: vision-rise 0.3s ease both;
+}
+.blind-verdict.ok {
+  background: color-mix(in srgb, var(--green-hi) 16%, transparent);
+}
+.blind-verdict.miss {
+  background: color-mix(in srgb, var(--danger-text) 13%, transparent);
+}
+.blind-verdict .btn-primary {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------------------------------------------------------- motion */
+@keyframes vision-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes vision-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vision-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes sq-pop {
+  40% {
+    transform: scale(1.08);
+  }
+}
+@keyframes sq-pulse {
+  50% {
+    filter: brightness(1.12);
+  }
+}
+@keyframes vision-ok {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--green-hi) 45%, transparent);
+  }
+}
+@keyframes vision-shake {
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vision *,
+  .vision-run * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .vision-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 14px;
+    padding: 14px;
+  }
+  .vision-card-icon {
+    grid-row: span 2;
+  }
+  .vision-card-record {
+    justify-self: start;
+    margin-top: 0;
+  }
+  .vision-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .vision-side {
+    order: -1;
+  }
+  .vision-title {
+    font-size: 22px;
+  }
+  .vision-target {
+    font-size: 72px;
+  }
+}
