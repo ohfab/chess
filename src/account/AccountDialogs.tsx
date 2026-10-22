@@ -16,7 +16,7 @@ import {
   startCheckout,
   useAccount,
 } from './account'
-import { FEATURE_TEXT, PRICE, PRO_BENEFITS } from './plans'
+import { FEATURE_TEXT, PRICE, PRO_BENEFITS, PRO_ENABLED } from './plans'
 
 // the legal pages themselves are in German, the Swiss version is the binding one
 const LEGAL = [
@@ -125,7 +125,11 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <>
-            <p className="muted">{t('Mit einem Konto ist dein Training auf allen Geräten gleich, und du kannst {app} Pro holen.', { app: APP_NAME })}</p>
+            <p className="muted">
+              {PRO_ENABLED
+                ? t('Mit einem Konto ist dein Training auf allen Geräten gleich, und du kannst {app} Pro holen.', { app: APP_NAME })
+                : t('Mit einem Konto ist dein Training auf allen Geräten gleich.')}
+            </p>
             <button className="btn-secondary wide-btn" onClick={() => void run(signInWithGoogle)} disabled={busy}>
               <GoogleMark /> {t('Mit Google anmelden')}
             </button>
@@ -155,10 +159,10 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
             <span className="account-avatar">{(a.email ?? '?').slice(0, 1).toUpperCase()}</span>
             <div>
               <b>{a.email}</b>
-              <span className={`plan-badge ${pro ? 'pro' : ''}`}>{pro ? `${APP_NAME} Pro` : t('Gratis')}</span>
+              {PRO_ENABLED && <span className={`plan-badge ${pro ? 'pro' : ''}`}>{pro ? `${APP_NAME} Pro` : t('Gratis')}</span>}
             </div>
           </div>
-          {pro ? (
+          {!PRO_ENABLED ? null : pro ? (
             <p className="muted small">
               {a.subscriptionStatus === 'canceled' || a.subscriptionStatus === null
                 ? t('Pro bis {date}.', { date: new Date(a.proUntil!).toLocaleDateString(locale()) })
@@ -171,7 +175,7 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
               <Crown size={17} /> {t('{app} Pro holen', { app: APP_NAME })}
             </button>
           )}
-          {(pro || a.subscriptionStatus) && (
+          {PRO_ENABLED && (pro || a.subscriptionStatus) && (
             <button className="btn-secondary wide-btn" onClick={() => void run(openBillingPortal)} disabled={busy}>
               {t('Abo und Zahlung verwalten')}
             </button>

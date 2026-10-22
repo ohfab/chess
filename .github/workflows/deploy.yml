@@ -33,6 +33,7 @@ jobs:
           VITE_SUPPORT_EMAIL: ${{ vars.VITE_SUPPORT_EMAIL }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
           VITE_AI: ${{ vars.VITE_AI }}
+          VITE_PRO: ${{ vars.VITE_PRO }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

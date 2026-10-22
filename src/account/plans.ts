@@ -11,6 +11,12 @@ import { tk } from '../i18n/i18n'
  */
 export const AI_ENABLED = import.meta.env.VITE_AI === 'on'
 
+/**
+ * Rookly starts free: no subscription, every design open, nothing locked. VITE_PRO=on at build
+ * time brings Pro back (with Stripe set up as in PUBLISHING.md); the AI coach needs it on.
+ */
+export const PRO_ENABLED = import.meta.env.VITE_PRO === 'on'
+
 export const PRICE = { monthly: 'CHF 1.–', yearly: 'CHF 10.–' }
 
 /** the first boards and piece sets are free, the rest come with Pro */

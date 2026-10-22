@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useGame } from '../game/store'
 import { t } from '../i18n/i18n'
 import { callFunction, cloudEnabled, supabase } from './cloud'
-import type { ProFeature } from './plans'
+import { PRO_ENABLED, type ProFeature } from './plans'
 import { applyExtras, mergeState, snapshot, snapshotExtras, subscribeExtras, type Synced } from './sync'
 
 // Who is signed in, whether they have Pro, and the upgrade dialog. Without a backend the
@@ -38,9 +38,9 @@ export const useAccount = create<AccountState>(() => ({
 }))
 
 export const isProState = (a: Pick<AccountState, 'status' | 'proUntil'>) =>
-  a.status === 'local' || (!!a.proUntil && new Date(a.proUntil) > new Date())
+  !PRO_ENABLED || a.status === 'local' || (!!a.proUntil && new Date(a.proUntil) > new Date())
 
-/** Pro, or local mode where nothing is locked. */
+/** Pro, or a build without Pro or in local mode, where nothing is locked. */
 export const useIsPro = () => useAccount(isProState)
 
 /** Checks a Pro feature; without Pro it opens the upgrade dialog and returns false. */

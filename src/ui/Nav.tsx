@@ -1,5 +1,6 @@
 import { BookOpen, Microscope, Puzzle, Settings as SettingsIcon, Swords, Target, UserRound, type LucideIcon } from 'lucide-react'
 import { useAccount, useIsPro } from '../account/account'
+import { PRO_ENABLED } from '../account/plans'
 import { APP_NAME } from '../brand'
 import { t, tk } from '../i18n/i18n'
 import { Logo } from './Logo'
@@ -47,7 +48,7 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
             <span className="nav-icon">
               {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={21} />}
             </span>
-            <span className="nav-label">{account.status === 'signed-in' ? (pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
+            <span className="nav-label">{account.status === 'signed-in' ? (PRO_ENABLED && pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
           </button>
         )}
         <button className="nav-item nav-settings" onClick={onSettings}>

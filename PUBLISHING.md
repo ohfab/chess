@@ -111,7 +111,8 @@ Im GitHub-Repo unter **Settings → Secrets and variables → Actions → Variab
 | `VITE_APP_URL` | die öffentliche Adresse |
 | `VITE_SUPPORT_EMAIL` | deine Kontaktadresse |
 | `VITE_VAPID_PUBLIC_KEY` | öffentlicher Web-Push-Schlüssel für die tägliche Erinnerung (optional) |
-| `VITE_AI` | `on` schaltet den KI-Coach ein (Tagesplan und Coach-Fragen); leer = aus, die App kündigt ihn nur an |
+| `VITE_AI` | `on` schaltet den KI-Coach ein (Tagesplan und Coach-Fragen); leer = aus, die App kündigt ihn nur an. Braucht `VITE_PRO=on` |
+| `VITE_PRO` | `on` bietet Rookly Pro an (Stripe eingerichtet, Schritt 3); leer = alles gratis, kein Abo, keine Schlösser |
 
 Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung dieselben Werte in `.env.local` (Vorlage: `.env.example`).
 
