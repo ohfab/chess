@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { progressKey, useGame } from '../game/store'
 import { bookAt, loadBook, openingById, type BookNode } from './book'
+import { onVariationRun } from '../lesson/lesson'
 
 function useBook(id: string | undefined) {
   const [loaded, setLoaded] = useState<{ id: string; tree: BookNode[] } | null>(null)
@@ -38,7 +39,10 @@ export function useTrainer() {
   useEffect(() => {
     if (!(lineDone || bookOver) || !training || !drill || training.recorded || training.learn) return
     updateTraining({ recorded: true, cleanRun: clean })
-    recordProgress(progressKey(drill.id, training.variation, playerColor), clean)
+    const key = progressKey(drill.id, training.variation, playerColor)
+    recordProgress(key, clean)
+    // spaced repetition: a clean run that is due moves the variation a step towards mastery
+    onVariationRun(key, clean)
   }, [lineDone, bookOver, training, drill, playerColor, clean, updateTraining, recordProgress])
 
   return {

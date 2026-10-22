@@ -8,8 +8,8 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Konto und Rookly Pro** (optional, siehe [PUBLISHING.md](PUBLISHING.md))
 - Ohne Backend läuft alles lokal und frei; mit Supabase gibt es Konten (Magic Link per E-Mail oder Google), Sync zwischen Geräten und das Abo Rookly Pro über Stripe (Karte, TWINT, Apple Pay, Google Pay)
-- Gratis: Spielen, Analyse, Brett-Editor, Import, Taktik, Tagesaufgabe, Hauptvarianten der 60 Eröffnungen, 3 Partie-Auswertungen pro Tag, 3 Bretter und 3 Figurensätze
-- Pro (CHF 1.– im Monat oder CHF 10.– im Jahr): unbegrenzte Auswertungen, KI-Coach auf dem Server (Claude), alle Eröffnungsvarianten, Woodpecker, Endspieltrainer, Serien-Import für den Coach, alle Designs
+- Gratis: Spielen, Analyse und unbegrenzte Partie-Auswertungen, Brett-Editor, Import, alle 60 Eröffnungen mit allen Varianten, Lernplan, Repertoire, Taktik, Puzzle Rush, Woodpecker, Endspiele, Brett-Sehen, Rate den Zug, Erfolge, 3 Bretter und 3 Figurensätze
+- Pro (CHF 1.– im Monat oder CHF 10.– im Jahr): die KI-Funktionen (KI-Coach mit Tagesplan, Fragen an den Coach zu jeder Stellung) und alle Designs
 - Konto-Seite mit Abo-Verwaltung (Stripe-Kundenportal), Daten-Export und -Import, Konto löschen
 - Willkommensbildschirm beim ersten Start: Spielstärke wählen, danach passen Bots und Taktik
 - Installierbar und offline nutzbar (Service Worker), Impressum, Datenschutz und AGB als Vorlagen unter `public/legal/`

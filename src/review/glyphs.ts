@@ -42,7 +42,26 @@ const GLOSS =
 export const circle = (j: Judgement) =>
   `${GLOSS}<circle cx="50" cy="50" r="50" fill="${JUDGEMENT[j].color}"/><circle cx="50" cy="50" r="50" fill="url(#kn-gloss)"/>`
 
+/** Rays and a ring that burst out of the badge: brilliant and great moves get a moment. */
+function burst(j: Judgement) {
+  if (j !== 'brilliant' && j !== 'great') return ''
+  const color = JUDGEMENT[j].color
+  const rays = j === 'brilliant' ? 10 : 0
+  const lines = Array.from({ length: rays }, (_, i) => {
+    const a = (i / rays) * Math.PI * 2
+    const [x1, y1, x2, y2] = [Math.cos(a) * 16, Math.sin(a) * 16, Math.cos(a) * 30, Math.sin(a) * 30].map((v) => v.toFixed(1))
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`
+  }).join('')
+  return (
+    `<rect class="kn-glow" x="0" y="0" width="100" height="100" fill="${color}"/>` +
+    `<g transform="translate(85 11)"><circle class="kn-ring" r="14" fill="none" stroke="${color}" stroke-width="4"/>` +
+    (lines ? `<g class="kn-rays">${lines}</g>` : '') +
+    `</g>`
+  )
+}
+
 /** Badge for chessground's custom svg layer: sits on the top-right corner of the square. */
 export const boardBadge = (j: Judgement) =>
   `<defs><filter id="kn-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" flood-opacity=".4" stdDeviation="3"/></filter></defs>` +
+  burst(j) +
   `<g class="kn-badge"><g transform="translate(62 -12) scale(.46)"><g filter="url(#kn-shadow)">${circle(j)}</g>${GLYPH[j]}</g></g>`

@@ -9,6 +9,8 @@ import { Toggle } from '../ui/Dialogs'
 import { fenAfter, lineOf, OPENING_STATS, rootOf } from './book'
 import type { OpeningDef } from './catalog'
 import { MiniBoard } from './MiniBoard'
+import { MasteryRow } from '../lesson/Mastery'
+import { cardFor, useLessons } from '../lesson/srs'
 
 export interface TrainingSetup {
   openingId: string
@@ -33,6 +35,7 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
   const [level, setLevel] = useState(initialLevel)
   const [choice, setChoice] = useState<number | 'random'>('random')
   const [strict, setStrict] = useState(true)
+  const cards = useLessons((s) => s.cards)
   const learned = (i: number) => (progress[progressKey(opening.id, i, side)]?.learned ?? 0) > 0
   const allLearned = opening.variations.every((_, i) => learned(i))
   // learning first, until the chosen variation has been seen with arrows once
@@ -105,6 +108,7 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
                     <b>{v.name}</b>
                     <span className="opening-moves">{numbered(v.moves.split(' '), root.length)}</span>
                     {v.note && <span className="muted">{v.note}</span>}
+                    <MasteryRow card={cardFor(progressKey(opening.id, i, side), cards, progress)} />
                   </span>
                   <span className="variation-stats">
                     {stats.variations[i] > 0 && <span>{tn(stats.variations[i], '1 Partie', '{n} Partien', { n: games.format(stats.variations[i]) })}</span>}

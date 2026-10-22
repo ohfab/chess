@@ -1650,7 +1650,8 @@ export default function App() {
               <ArrowUpDown size={18} />
             </button>
           </div>
-          <div className="coach-slot">
+          {/* a new key with each move, so the coach's bubble slides in again */}
+          <div className="coach-slot" key={`${cursor}:${plies.length}:${retry?.status ?? ''}:${learnIntro}`}>
             {coach}
             {refining !== null && reviewing && (
               <div className="refining" title={t('Stockfish rechnet jede Stellung nochmal tiefer durch, die Bewertungen können sich noch leicht ändern')}>

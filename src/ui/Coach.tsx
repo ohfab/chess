@@ -25,7 +25,18 @@ export function Coach({ judgement, title, children, progress, actions, score }: 
         {(judgement || title) && (
           <div className="coach-title">
             {progress !== undefined && <Loader size={30} />}
-            {judgement && <Badge judgement={judgement} size={28} />}
+            {judgement && (
+              <span className={`coach-badge ${judgement === 'brilliant' || judgement === 'great' ? `special ${judgement}` : ''}`}>
+                <Badge judgement={judgement} size={28} />
+                {judgement === 'brilliant' && (
+                  <span className="sparkles" aria-hidden>
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <i key={i} />
+                    ))}
+                  </span>
+                )}
+              </span>
+            )}
             {title}
             {score && (
               <span className={`coach-eval ${('mate' in score ? score.mate : score.cp) < 0 ? 'neg' : ''}`}>{formatScore(score)}</span>

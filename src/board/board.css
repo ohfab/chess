@@ -107,10 +107,62 @@
     transform: scale(0.2);
   }
 }
+/* brilliant and great moves: the square lights up, a ring and rays burst out of the badge */
+.board .kn-glow {
+  opacity: 0;
+  animation: kn-glow 1.1s ease-out both;
+}
+.board .kn-ring {
+  opacity: 0;
+  animation: kn-ring 0.9s 0.12s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.board .kn-rays {
+  opacity: 0;
+  animation: kn-rays 0.8s 0.1s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+@keyframes kn-glow {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes kn-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+@keyframes kn-rays {
+  0% {
+    opacity: 1;
+    transform: scale(0.4) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9) rotate(25deg);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .board .kn-arrow,
   .board .kn-circle,
-  .board .kn-badge {
+  .board .kn-badge,
+  .board .kn-glow,
+  .board .kn-ring,
+  .board .kn-rays {
     animation: none;
+  }
+  .board .kn-glow,
+  .board .kn-ring,
+  .board .kn-rays {
+    display: none;
   }
 }

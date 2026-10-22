@@ -7,6 +7,8 @@ import { fenAfter, rootOf } from './book'
 import { CATALOG, type OpeningDef } from './catalog'
 import { MiniBoard } from './MiniBoard'
 import { Display } from '../ui/Display'
+import { cardFor, STEPS, useLessons, type Card } from '../lesson/srs'
+import '../lesson/lesson.css'
 
 const GROUPS: { title: string; match: (o: OpeningDef) => boolean }[] = [
   { title: tk('Mit Weiß · 1.e4'), match: (o) => o.side === 'white' && o.group === 'e4' },
@@ -102,8 +104,15 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
 function OpeningCard({ opening, progress, onPick }: { opening: OpeningDef; progress: Record<string, Progress>; onPick: () => void }) {
   const root = rootOf(opening)
   const fen = useMemo(() => fenAfter(opening.moves.split(' ')), [opening.moves])
-  const practised = opening.variations.filter((_, i) => progress[progressKey(opening.id, i, opening.side)]?.runs).length
-  const mastered = opening.variations.filter((_, i) => progress[progressKey(opening.id, i, opening.side)]?.clean).length
+  const stored = useLessons((s) => s.cards)
+  // the side the player trains it with: the opening's own, unless only the other one is begun
+  const cardsOf = (side: typeof opening.side) => opening.variations.map((_, i) => cardFor(progressKey(opening.id, i, side), stored, progress))
+  const own = cardsOf(opening.side)
+  const other = cardsOf(opening.side === 'white' ? 'black' : 'white')
+  const cards: (Card | null)[] = own.some(Boolean) || !other.some(Boolean) ? own : other
+  const learned = cards.filter(Boolean).length
+  const mastered = cards.filter((c) => c && c.step >= STEPS).length
+  const share = cards.reduce((sum, c) => sum + (c?.step ?? 0), 0) / (cards.length * STEPS)
   return (
     <button className="opening-card" onClick={onPick}>
       <MiniBoard fen={fen} orientation={opening.side} />
@@ -113,8 +122,14 @@ function OpeningCard({ opening, progress, onPick }: { opening: OpeningDef; progr
         <span className="opening-moves">{numbered(root)}</span>
         <span className="opening-meta">
           {tn(opening.variations.length, '1 Variante', '{n} Varianten')}
-          {practised > 0 && <span className="pill">{t('{done}/{total} gemeistert', { done: mastered, total: opening.variations.length })}</span>}
+          {learned > 0 && <span className="pill">{t('{done}/{total} gelernt', { done: learned, total: opening.variations.length })}</span>}
+          {mastered > 0 && <span className="pill">{t('{done}/{total} gemeistert', { done: mastered, total: opening.variations.length })}</span>}
         </span>
+        {learned > 0 && (
+          <span className="mastery-thin" title={t('Fortschritt bis alle Varianten sitzen')}>
+            <i style={{ width: `${Math.max(4, share * 100)}%` }} />
+          </span>
+        )}
       </span>
     </button>
   )

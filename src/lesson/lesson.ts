@@ -1,4 +1,5 @@
 import type { Color } from '../game/rules'
+import { learned, practised } from './srs'
 
 /** A short lesson: learn a new variation or repeat one that is due. */
 export interface LessonTask {
@@ -12,11 +13,10 @@ export interface LessonTask {
 
 /** Called when a learning run of a variation ends (progressKey). */
 export function onVariationLearned(key: string) {
-  void key
+  learned(key)
 }
 
 /** Called when a practice run of a variation ends; `clean` without mistakes or hints. */
 export function onVariationRun(key: string, clean: boolean) {
-  void key
-  void clean
+  practised(key, clean)
 }

@@ -3652,6 +3652,16 @@ button:disabled {
   background: var(--tint);
   box-shadow: inset 0 0 0 1.5px var(--green);
 }
+/* the small size keeps its outline (the older rule above gave it the dark palette's edge) */
+.btn-secondary.small {
+  box-shadow: inset 0 0 0 1.5px var(--outline);
+}
+.btn-secondary.small:hover {
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
+.btn-primary.small {
+  box-shadow: var(--edge-green);
+}
 .coach .btn-secondary,
 .coach-card .btn-secondary {
   background: transparent;
@@ -4200,4 +4210,240 @@ button:disabled {
   height: 100vh;
   pointer-events: none;
   z-index: 200;
+}
+
+/* ==================================================================
+   Motion: presses that give, cards that lift, pages that settle in.
+   Short and springy; nothing moves for people who ask for less motion.
+   ================================================================== */
+:root {
+  --spring: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+:is(.btn-primary, .btn-secondary, .btn-danger, .chip, .segmented button, .icon-btn, .nav-btn, .tool, .nav-icon, .swatch, .move, .line-move, .mine-btn) {
+  transition:
+    transform 0.14s var(--ease-out),
+    background 0.15s,
+    box-shadow 0.15s,
+    color 0.15s;
+}
+:is(.btn-primary, .btn-secondary, .btn-danger, .chip, .segmented button, .icon-btn, .nav-btn, .tool, .swatch, .mine-btn):not(:disabled):active,
+.nav-item:active .nav-icon {
+  transform: scale(0.95);
+}
+.nav-item.on .nav-icon {
+  animation: nav-pop 0.35s var(--spring);
+}
+@keyframes nav-pop {
+  from {
+    transform: scale(0.82);
+  }
+}
+
+/* cards lift a little under the pointer */
+:is(.task, .opening-card, .theme-card, .tool-card, .bot, .endgame-card, .link-card, .archive-row, .hero-card, .variation, .welcome-level, .price-card, .remote-game) {
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out),
+    background 0.15s;
+}
+@media (hover: hover) {
+  :is(.task, .opening-card, .theme-card, .tool-card, .bot, .endgame-card, .link-card, .archive-row, .hero-card, .welcome-level, .price-card):not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 0 0 1px var(--line),
+      0 10px 24px rgb(22 48 38 / 0.1);
+  }
+  :root[data-theme='dark'] :is(.task, .opening-card, .theme-card, .tool-card, .bot, .endgame-card, .link-card, .archive-row, .hero-card, .welcome-level, .price-card):not(:disabled):hover {
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+  }
+}
+:is(.task, .opening-card, .theme-card, .tool-card, .bot, .endgame-card, .link-card, .archive-row, .welcome-level):not(:disabled):active {
+  transform: scale(0.985);
+}
+
+/* pages settle in: the first blocks rise one after the other */
+.page > * > :nth-child(-n + 8) {
+  animation: rise 0.42s var(--ease-out) both;
+}
+.page > * > :nth-child(2) {
+  animation-delay: 0.04s;
+}
+.page > * > :nth-child(3) {
+  animation-delay: 0.08s;
+}
+.page > * > :nth-child(4) {
+  animation-delay: 0.12s;
+}
+.page > * > :nth-child(5) {
+  animation-delay: 0.16s;
+}
+.page > * > :nth-child(6) {
+  animation-delay: 0.2s;
+}
+.page > * > :nth-child(7) {
+  animation-delay: 0.24s;
+}
+.page > * > :nth-child(8) {
+  animation-delay: 0.28s;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* dialogs spring open, the coach's bubble slides in with each new message */
+.modal {
+  animation: modal-in 0.32s var(--spring);
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+.coach-bubble {
+  animation: bubble-in 0.24s var(--ease-out);
+  transform-origin: 0 20px;
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0.4;
+    transform: translateX(-6px) scale(0.985);
+  }
+}
+.toast {
+  animation: toast-in 0.3s var(--spring);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.94);
+  }
+}
+
+/* brilliant and great moves in the coach's bubble */
+.coach-badge {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+.coach-badge.special .badge {
+  animation: badge-pop 0.6s var(--spring);
+}
+.coach-badge.special::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  opacity: 0;
+  animation: badge-ring 0.9s 0.1s var(--ease-out);
+}
+.coach-badge.brilliant {
+  color: #26c2a3;
+}
+.coach-badge.great {
+  color: #749bbf;
+}
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.3) rotate(-25deg);
+  }
+  60% {
+    transform: scale(1.18) rotate(6deg);
+  }
+}
+@keyframes badge-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sparkles i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 1px;
+  background: #26c2a3;
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: sparkle 0.9s var(--ease-out) both;
+}
+.sparkles i:nth-child(2n) {
+  background: var(--accent);
+}
+.sparkles i:nth-child(3n) {
+  background: #e8a23a;
+}
+.sparkles i:nth-child(1) {
+  --dx: -26px;
+  --dy: -18px;
+}
+.sparkles i:nth-child(2) {
+  --dx: 24px;
+  --dy: -22px;
+  animation-delay: 0.05s;
+}
+.sparkles i:nth-child(3) {
+  --dx: 30px;
+  --dy: 8px;
+  animation-delay: 0.1s;
+}
+.sparkles i:nth-child(4) {
+  --dx: -30px;
+  --dy: 10px;
+  animation-delay: 0.08s;
+}
+.sparkles i:nth-child(5) {
+  --dx: -6px;
+  --dy: -32px;
+  animation-delay: 0.12s;
+}
+.sparkles i:nth-child(6) {
+  --dx: 8px;
+  --dy: 30px;
+  animation-delay: 0.04s;
+}
+@keyframes sparkle {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(45deg) scale(0.4);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(225deg) scale(1);
+  }
+}
+
+/* the progress bars fill smoothly */
+:is(.progress div, .task-progress i, .bar-track i, .winbar i, .refining-bar) {
+  transition: width 0.5s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
