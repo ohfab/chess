@@ -61,13 +61,13 @@ supabase functions deploy delete-account
 
 **KI-Coach (vorerst aus):** Die App baut den Coach standardmässig ohne KI: auf „Heute“ steht eine Karte „Dein persönlicher Coach · Bald verfügbar“, der Knopf „Coach fragen“ fehlt. Solange das so ist, brauchst du weder `ANTHROPIC_API_KEY` noch die Funktion `coach`. Zum Einschalten die Repo-Variable `VITE_AI` auf `on` setzen (Schritt 5), den Schlüssel als Secret setzen und `coach` deployen; die Datenschutzerklärung braucht dann wieder einen Abschnitt zu Anthropic.
 
-Die Funktion `coach` nutzt standardmässig Claude Opus 5.5 (`claude-opus-5-5`). Ein Tagesplan kostet damit grob USD 0.02 bis 0.03. Bei einem Abo zu CHF 1.– kann das die Marge auffressen, wenn jemand täglich plant. Zwei Stellschrauben, beide als Secret:
+Die Funktion `coach` nutzt standardmässig Claude Opus 5.5 (`claude-opus-5-5`). Ein Tagesplan kostet damit grob USD 0.03 bis 0.06 (Denkzeit eingerechnet), mit Claude Haiku 5.5 rund USD 0.001. Von CHF 1.– im Monat bleiben nach den Stripe-Gebühren etwa CHF 0.66; mit Opus reicht das nicht, wenn jemand täglich plant. Für den Start ist `COACH_MODEL=claude-haiku-5-5` die sichere Wahl. Zwei Stellschrauben, beide als Secret:
 - `COACH_DAILY_LIMIT` (Standard 3): Pläne pro Person und Tag
 - `COACH_MODEL`: ein anderes Modell, zum Beispiel `claude-haiku-5-5` (etwa 40-mal günstiger, Pläne dafür etwas einfacher)
 
 ### Fragen an den Coach
 
-Dieselbe Funktion `coach` beantwortet auch Fragen zu einer Stellung (Knopf „Coach fragen“ auf dem Analysebrett, Pro). Sie hält sich an die Stockfish-Linien, die die App mitschickt. Eine Frage kostet grob USD 0.01. Stellschraube als Secret: `COACH_ASK_LIMIT` (Standard 30 Fragen pro Person und Tag). Die Migration `20261022000000_ask_and_reminders.sql` legt den Zähler dafür an (`supabase db push`).
+Dieselbe Funktion `coach` beantwortet auch Fragen zu einer Stellung (Knopf „Coach fragen“ auf dem Analysebrett, Pro). Sie hält sich an die Stockfish-Linien, die die App mitschickt. Eine Frage kostet grob USD 0.01 bis 0.03 mit Opus, mit Haiku 5.5 unter USD 0.001. Stellschraube als Secret: `COACH_ASK_LIMIT` (Standard 30 Fragen pro Person und Tag). Die Migration `20261022000000_ask_and_reminders.sql` legt den Zähler dafür an (`supabase db push`).
 
 ### Tägliche Erinnerung (Push)
 
