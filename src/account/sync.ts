@@ -81,3 +81,54 @@ export function mergeState(local: Synced, remote: Partial<Synced>, preferRemoteS
     reviewsToday: later(local.reviewsToday, r.reviewsToday),
   }
 }
+
+// ---------------------------------------------------------------- other stores
+
+// Feature stores with their own localStorage key (stats, lessons, records…) travel with the
+// account too. Each registers how to cut out its synced part and how to merge two copies.
+
+interface Store<T> {
+  getState(): T
+  setState(patch: Partial<T>): void
+  subscribe(listener: (state: T, prev: T) => void): () => void
+}
+
+interface Extra {
+  pick(): unknown
+  apply(remote: unknown): void
+  subscribe(listener: () => void): () => void
+}
+
+const extras = new Map<string, Extra>()
+
+/** Puts a feature store into the account sync under `key`. */
+export function syncStore<T, D>(key: string, store: Store<T>, pick: (s: T) => D, merge: (local: D, remote: D) => Partial<T>) {
+  extras.set(key, {
+    pick: () => pick(store.getState()),
+    apply: (remote) => remote && typeof remote === 'object' && store.setState(merge(pick(store.getState()), remote as D)),
+    subscribe: (listener) => store.subscribe((s, prev) => pick(s) !== pick(prev) && listener()),
+  })
+}
+
+/** The synced part of every registered store, by key. */
+export const snapshotExtras = () => Object.fromEntries([...extras].map(([key, e]) => [key, e.pick()]))
+
+/** Merges what the account holds into the registered stores. */
+export function applyExtras(remote: unknown) {
+  if (!remote || typeof remote !== 'object') return
+  for (const [key, e] of extras) e.apply((remote as Record<string, unknown>)[key])
+}
+
+/** Calls `listener` whenever a registered store changes its synced part. */
+export function subscribeExtras(listener: () => void) {
+  const offs = [...extras.values()].map((e) => e.subscribe(listener))
+  return () => offs.forEach((off) => off())
+}
+
+/** Helpers for merges: the larger number per key, the later of two ISO dates. */
+export const maxPerKey = (a: Record<string, number> = {}, b: Record<string, number> = {}) => {
+  const out = { ...a }
+  for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] ?? 0, typeof v === 'number' ? v : 0)
+  return out
+}
+export const laterDay = (a?: string | null, b?: string | null) => (!a ? (b ?? null) : !b ? a : a > b ? a : b)
