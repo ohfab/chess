@@ -1,0 +1,416 @@
+/* ------------------------------------------------------------------ levels and achievements */
+
+.pg-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+.pg-ring svg {
+  position: absolute;
+  inset: 0;
+}
+.pg-ring-track {
+  fill: none;
+  stroke: var(--panel-2);
+}
+.pg-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pg-ring-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the pill in the Today header */
+.pg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 12px 3px 3px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--outline);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.pg-badge:hover {
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
+.pg-badge:active {
+  transform: scale(0.97);
+}
+@media (max-width: 380px) {
+  .pg-badge-name {
+    display: none;
+  }
+  .pg-badge {
+    padding-right: 3px;
+  }
+}
+
+/* ------------------------------------------------------------------ the page */
+
+.pg-page {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.pg-page .back {
+  align-self: flex-start;
+  margin-bottom: -10px;
+}
+.pg-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 22px;
+  padding: 22px;
+  border-radius: 26px;
+  background: var(--card);
+  color: #fff;
+  animation: pg-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pg-level .pg-ring-track {
+  stroke: rgb(255 255 255 / 0.16);
+}
+.pg-level .pg-ring-label {
+  color: #fff;
+}
+.pg-level .pg-ring-label b {
+  font-size: 38px;
+  font-weight: 500;
+}
+.pg-level-small {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+.pg-level-text {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.pg-level-text b {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.pg-level-next {
+  font-size: 13px;
+  color: rgb(255 255 255 / 0.8);
+}
+.pg-level-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pg-level-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pg-level .pg-eyebrow {
+  color: var(--accent);
+}
+
+.pg-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.pg-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.pg-bar.light {
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.16);
+}
+.pg-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: pg-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: left;
+}
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 10px;
+}
+.pg-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--panel);
+  animation: pg-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+:root:not([data-theme='dark']) .pg-card {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.pg-card:not(.on) .pg-card-text b {
+  color: var(--text-2);
+}
+.pg-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pg-card-text b {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--heading);
+}
+.pg-card-text .muted {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.pg-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pg-card.done .pg-card-meta {
+  color: var(--green);
+}
+.pg-tiers {
+  display: inline-flex;
+  gap: 4px;
+}
+.pg-tiers i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--panel-2);
+}
+.pg-tiers i.tier-1.on {
+  background: #c98a52;
+}
+.pg-tiers i.tier-2.on {
+  background: #9fb0a9;
+}
+.pg-tiers i.tier-3.on {
+  background: var(--star);
+}
+
+/* round medal with the achievement's icon, coloured by tier */
+.pg-medal {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--panel-2);
+}
+.pg-medal.tier-one {
+  color: #fff;
+  background: var(--green);
+}
+.pg-medal.tier-1 {
+  color: #fff;
+  background: linear-gradient(150deg, #e0a676, #b8733e);
+}
+.pg-medal.tier-2 {
+  color: #fff;
+  background: linear-gradient(150deg, #c7d2ce, #8b9a94);
+}
+.pg-medal.tier-3 {
+  color: #3d2c06;
+  background: linear-gradient(150deg, #ffd978, #e0a030);
+}
+.pg-card.on .pg-medal {
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+}
+
+/* ------------------------------------------------------------------ toasts */
+
+.pg-toast {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100% - 24px));
+  padding: 10px 14px 10px 10px;
+  border-radius: 999px;
+  background: var(--bubble);
+  color: var(--bubble-text);
+  box-shadow: var(--shadow-md), inset 0 0 0 1px var(--line);
+  cursor: pointer;
+  animation: pg-toast-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+.pg-toast .pg-medal {
+  width: 42px;
+  height: 42px;
+  animation: pg-medal-spin 0.7s 0.15s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+.pg-toast-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pg-toast-text b {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-tier {
+  font-weight: 600;
+  color: var(--bubble-faint);
+}
+.pg-xp {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pg-levelup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--backdrop);
+  animation: fade 0.2s ease;
+  cursor: pointer;
+}
+.pg-levelup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(320px, 100%);
+  padding: 28px 22px 24px;
+  border-radius: 30px;
+  background: var(--card);
+  color: #fff;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: pg-levelup-in 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+.pg-levelup .pg-ring-track {
+  stroke: rgb(255 255 255 / 0.16);
+}
+.pg-levelup .pg-ring-label b {
+  font-size: 46px;
+  font-weight: 500;
+  color: #fff;
+}
+.pg-levelup .pg-eyebrow {
+  margin-top: 10px;
+  color: var(--accent);
+}
+.pg-levelup-title {
+  font-size: 26px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+.pg-levelup .muted {
+  color: rgb(255 255 255 / 0.8);
+}
+
+@keyframes pg-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes pg-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes pg-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.92);
+  }
+  to {
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes pg-medal-spin {
+  from {
+    transform: scale(0.4) rotate(-120deg);
+  }
+}
+@keyframes pg-levelup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-toast,
+  .pg-toast .pg-medal,
+  .pg-levelup,
+  .pg-level,
+  .pg-card,
+  .pg-bar i {
+    animation: none;
+  }
+  .pg-toast {
+    transform: translateX(-50%);
+  }
+  .pg-ring-fill {
+    transition: none;
+  }
+}

@@ -1,4 +1,5 @@
 import { useLessons, type Card } from '../lesson/srs'
+import { useProgressStore } from '../progress/progressStore'
 import { useStats } from '../progress/stats'
 import { useRush, type RushRun } from '../rush/rush'
 import { laterDay, maxPerKey, syncStore } from './sync'
@@ -41,4 +42,18 @@ syncStore(
     const runs: RushRun[] = [...local.runs, ...(remote.runs ?? []).filter((r) => !seen.has(r.date))].sort((a, b) => b.date - a.date).slice(0, 20)
     return { runs, best: maxPerKey(local.best as Record<string, number>, (remote.best ?? {}) as Record<string, number>) }
   },
+)
+
+// tiers already reached count as announced on the other device too
+syncStore(
+  'progress',
+  useProgressStore,
+  (s) => ({ reached: s.reached, unlockedAt: s.unlockedAt, levelSeen: s.levelSeen, bestStreak: s.bestStreak, bestRating: s.bestRating }),
+  (local, remote) => ({
+    reached: maxPerKey(local.reached, remote.reached),
+    unlockedAt: maxPerKey(local.unlockedAt, remote.unlockedAt),
+    levelSeen: Math.max(local.levelSeen, remote.levelSeen ?? 1),
+    bestStreak: Math.max(local.bestStreak, remote.bestStreak ?? 0),
+    bestRating: Math.max(local.bestRating, remote.bestRating ?? 0),
+  }),
 )
