@@ -23,6 +23,8 @@ export interface Training {
   hints: number
   /** this run is already counted in the progress */
   recorded?: boolean
+  /** how it was counted: the line without mistakes or hints */
+  cleanRun?: boolean
   /** a learning run: arrows show every move and the coach explains it */
   learn?: boolean
 }

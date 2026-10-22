@@ -27,16 +27,19 @@ export function useTrainer() {
 
   const loading = active && !tree
   const bookOver = active && tree !== null && step === null
+  // the chosen line itself is on the board: what the run is about; later moves are free practice
+  const lineDone = active && !!line && played.length >= line.length && line.every((m, i) => played[i] === m)
   // the game has left the chosen line (possible when wrong moves are allowed)
   const offLine = !!line && played.some((m, i) => i < line.length && m !== line[i])
   const clean = !!training && training.mistakes === 0 && training.hints === 0 && !offLine
 
-  // count each run once, when its theory is done (learning runs are counted on their own)
+  // count each run once: when the line is played out, or when the theory ends after leaving it
+  // (learning runs are counted on their own)
   useEffect(() => {
-    if (!bookOver || !training || !drill || training.recorded || training.learn) return
-    updateTraining({ recorded: true })
+    if (!(lineDone || bookOver) || !training || !drill || training.recorded || training.learn) return
+    updateTraining({ recorded: true, cleanRun: clean })
     recordProgress(progressKey(drill.id, training.variation, playerColor), clean)
-  }, [bookOver, training, drill, playerColor, clean, updateTraining, recordProgress])
+  }, [lineDone, bookOver, training, drill, playerColor, clean, updateTraining, recordProgress])
 
   return {
     active,
@@ -45,6 +48,7 @@ export function useTrainer() {
     step,
     loading,
     bookOver,
+    lineDone,
     offLine,
     clean,
   }

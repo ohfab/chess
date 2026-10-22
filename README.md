@@ -39,7 +39,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Der Gegner spielt die gewählte Variante und danach die Züge, die starke Spieler wirklich wählen (aus rund 200.000 Turnierpartien, beide Spieler 1800+). „Ideal“ nimmt immer den Hauptzug, die anderen Stufen streuen wie die Meister
 - Deine Züge werden geprüft: Hauptzug, Theorie (mit Anteil an den Meisterpartien), andere Variante oder keine Theorie. Fehler springen zurück, nach zwei Versuchen zeigt ein Pfeil den richtigen Zug
 - Wenn die Theorie endet, spielt der Gegner mit der gewählten Stärke weiter; danach Partie-Auswertung wie gewohnt
-- Fortschritt pro Variante und Farbe (fehlerfreie Durchgänge), Häkchen im Menü
+- Fortschritt pro Variante und Farbe: das Häkchen gibt es, sobald die Züge der Variante ohne Fehler und Tipps gespielt sind (danach geht es frei mit Meisterzügen weiter); bei „Alle Varianten“ übernimmt das Training die Variante, deren Zug du spielst
 
 **Spielen gegen Stockfish**
 - Gegnerauswahl wie bei den chess.com-Bots: 10 Stärkestufen von ~800 bis „Ideal“, jede mit eigenem Avatar, Farbe wählbar (Weiß, Schwarz, Zufall); eine laufende Partie lässt sich dort fortsetzen

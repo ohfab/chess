@@ -453,9 +453,25 @@ export default function App() {
     if (!training || !trainer.step || !atEnd || outcome) return false
     const ply = play(fen, uci)
     if (!ply) return false
-    const verdict = judgeMove(trainer.step, ply.san)
+    let verdict = judgeMove(trainer.step, ply.san)
     const here = plies.length
     setTrainerHint(null)
+    // "all variations": the player cannot know which one was drawn, so a move that starts
+    // another variation of this opening switches the run to that one instead of counting
+    if (verdict.kind === 'other-line' && training.choice === 'random') {
+      const o = openingById(training.openingId)
+      const played = [...plies.map((p) => p.san), ply.san]
+      const other = o?.variations.findIndex((_, i) => {
+        const l = lineOf(o, i)
+        return l.length >= played.length && played.every((m, k) => l[k] === m)
+      })
+      if (o && other !== undefined && other >= 0) {
+        g.updateTraining({ variation: other, line: lineOf(o, other) })
+        const games = trainer.step.moves.reduce((sum, [, n]) => sum + n, 0)
+        const hit = trainer.step.moves.find(([m]) => m === ply.san)
+        verdict = { kind: 'line', share: hit && games ? hit[1] / games : 0, main: hit === trainer.step.moves[0] }
+      }
+    }
     if (isWrong(verdict)) {
       const again = note !== null && note.ply === here && isWrong(note.verdict)
       if (!again) g.updateTraining({ mistakes: training.mistakes + 1 })
@@ -1133,11 +1149,23 @@ export default function App() {
         </Coach>
       )
     }
-    if (trainer.bookOver) {
+    // the line is played out: say so until the player's next move
+    const afterLine = plies.slice(tr.line.length)
+    const movedSince = afterLine.some((_, j) => turnOf(fenAt(g, tr.line.length + j)) === playerColor)
+    if (trainer.lineDone && tr.recorded && !movedSince) {
       const tally = [tr.mistakes && tn(tr.mistakes, '1 Fehler', '{n} Fehler'), tr.hints && tn(tr.hints, '1 Tipp', '{n} Tipps')].filter(Boolean).join(' · ')
       return (
-        <Coach judgement={trainer.clean ? 'best' : 'book'} title={trainer.clean ? t('Variante gemeistert!') : t('Ende der Theorie')} actions={more}>
-          {trainer.clean ? t('Alle Züge saßen.') : `${tally || t('Du hast die Variante verlassen')}.`} {t('Ab hier spielt der Gegner frei mit {level} weiter.', { level: label })}
+        <Coach judgement={tr.cleanRun ? 'best' : 'book'} title={tr.cleanRun ? t('Variante gemeistert!') : t('Variante durchgespielt')} actions={more}>
+          {tr.cleanRun ? t('Alle Züge der Variante saßen, dafür gibt es den Haken.') : t('{tally}. Spiel sie einmal ohne Fehler und Tipps, dann gibt es den Haken.', { tally })}{' '}
+          {trainer.bookOver ? t('Ab hier spielt der Gegner frei mit {level} weiter.', { level: label }) : t('Du kannst weiterspielen: der Gegner folgt jetzt den Meisterpartien.')}
+        </Coach>
+      )
+    }
+    if (trainer.bookOver) {
+      return (
+        <Coach judgement="book" title={t('Ende der Theorie')} actions={more}>
+          {!trainer.lineDone && `${t('Du hast die Variante verlassen')}. `}
+          {t('Ab hier spielt der Gegner frei mit {level} weiter.', { level: label })}
         </Coach>
       )
     }

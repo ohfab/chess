@@ -207,5 +207,9 @@
   "Lädt …": "Caricamento …",
   "Erscheinungsbild": "Aspetto",
   "Hell": "Chiaro",
-  "Dunkel": "Scuro"
+  "Dunkel": "Scuro",
+  "Alle Züge der Variante saßen, dafür gibt es den Haken.": "Tutte le mosse della variante erano giuste: ecco la spunta.",
+  "Du kannst weiterspielen: der Gegner folgt jetzt den Meisterpartien.": "Puoi continuare: l’avversario ora segue le partite dei maestri.",
+  "Variante durchgespielt": "Variante completata",
+  "{tally}. Spiel sie einmal ohne Fehler und Tipps, dann gibt es den Haken.": "{tally}. Giocala una volta senza errori né suggerimenti per avere la spunta."
 }
