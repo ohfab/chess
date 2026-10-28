@@ -22,6 +22,11 @@ export type StatName =
   | 'gamesWon'
   | 'lessonsDone'
   | 'coachQuestions'
+  | 'questsDone'
+  | 'questDays'
+  | 'coursesRead'
+  | 'timedGames'
+  | 'blindGames'
 
 interface Stats {
   counts: Partial<Record<StatName, number>>
