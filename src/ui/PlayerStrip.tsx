@@ -2,6 +2,8 @@ import { Bot, User } from 'lucide-react'
 import { Piece } from '../board/Piece'
 import type { Color } from '../game/rules'
 import { t } from '../i18n/i18n'
+import { BotAvatar } from '../play/BotAvatar'
+import { ClockFace } from '../play/PlayTools'
 
 const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 }
 const ROLE: Record<string, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen' }
@@ -31,14 +33,26 @@ interface Props {
   thinking?: boolean
   active?: boolean
   accuracy?: number
+  /** a Stockfish character from the play page: its pixel face instead of the robot icon */
+  botLevel?: number
+  /** a game with a clock: this side's time, running while `since` is set */
+  clock?: { left: number; since: number | null }
+  /** what the opponent says right now (a German key for t), in a bubble over the board */
+  say?: { text: string; n: number } | null
+  /** where the bubble goes: under a strip above the board, over a strip below it */
+  sayAt?: 'below' | 'above'
 }
 
-export function PlayerStrip({ name, detail, color, bot, startFen, fen, thinking, active, accuracy }: Props) {
+export function PlayerStrip({ name, detail, color, bot, startFen, fen, thinking, active, accuracy, botLevel, clock, say, sayAt = 'below' }: Props) {
   const { taken, balance } = material(startFen, fen)
   const lead = color === 'white' ? balance : -balance
   return (
-    <div className={`player ${active ? 'active' : ''}`}>
-      <div className={`avatar ${color}`}>{bot ? <Bot size={22} /> : <User size={22} />}</div>
+    <div className={`player ${active ? 'active' : ''} ${clock ? 'timed' : ''}`}>
+      {botLevel ? (
+        <BotAvatar level={botLevel} className="avatar strip-bot" />
+      ) : (
+        <div className={`avatar ${color}`}>{bot ? <Bot size={22} /> : <User size={22} />}</div>
+      )}
       <div className="player-text">
         <div className="player-name">
           {name}
@@ -59,6 +73,12 @@ export function PlayerStrip({ name, detail, color, bot, startFen, fen, thinking,
         </div>
       )}
       {accuracy !== undefined && <div className={`accuracy ${color}`}>{accuracy.toFixed(1)}</div>}
+      {clock && <ClockFace left={clock.left} since={clock.since} />}
+      {say && (
+        <div key={say.n} className={`bot-say ${sayAt}`} role="status">
+          {t(say.text)}
+        </div>
+      )}
     </div>
   )
 }

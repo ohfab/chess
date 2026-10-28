@@ -46,9 +46,9 @@ import {
   type Color,
   type Ply,
 } from './game/rules'
-import { playSound, setSoundSet, soundFor } from './game/sound'
+import { playSound, resultSound, setSoundSet, soundFor } from './game/sound'
 import { applyBoard, applyPieces } from './theme/theme'
-import { fenAt, progressKey, useGame, type Mode } from './game/store'
+import { fenAt, progressKey, useGame, type NewGame } from './game/store'
 import { Badge } from './review/Badge'
 import { boardBadge } from './review/glyphs'
 import { explain, explainBest } from './review/explain'
@@ -73,7 +73,7 @@ import { explainMove, moveInstruction } from './trainer/explainMove'
 import { TodayPage } from './coach/TodayPage'
 import type { Insights } from './coach/insights'
 import type { PlanTask } from './coach/plan'
-import { packReview, type SavedGame } from './history/archive'
+import { packReview, scoreFor, type SavedGame } from './history/archive'
 import { DrillPlayer, type DrillItem, type DrillResult } from './puzzles/DrillPlayer'
 import { pickPuzzles, puzzlesById, rate, woodpeckerSet, type Puzzle } from './puzzles/puzzles'
 import type { Endgame } from './puzzles/endgames'
@@ -95,6 +95,10 @@ import { Welcome } from './account/Welcome'
 import { APP_NAME } from './brand'
 import { t, tk, tn } from './i18n/i18n'
 import { PlayPage } from './play/PlayPage'
+import { timedOpponentMove } from './play/botMove'
+import { controlId, newClock, remaining } from './play/clock'
+import { PeekTool } from './play/PlayTools'
+import { useBotTalk } from './play/talk'
 import { TacticsPage } from './puzzles/TacticsPage'
 import { SettingsDialog } from './ui/SettingsDialog'
 import { EngineLines } from './ui/EngineLines'
@@ -260,7 +264,8 @@ export default function App() {
   }, [learnDone, training, playerColor])
 
   // blunder guard: before Stockfish answers, check the player's move and warn if it throws the game
-  const guardOn = settings.blunderGuard && mode === 'play' && vsEngine && plies.length > 0
+  // not with a clock: the check would run on the bot's time, and there is no takeback
+  const guardOn = settings.blunderGuard && mode === 'play' && vsEngine && plies.length > 0 && !g.clock
   const guardWait = guardOn && thinking && (guard?.fen !== liveFen || guard.status !== 'ok')
   useEffect(() => {
     if (!guardOn || !thinking) return
@@ -291,9 +296,14 @@ export default function App() {
     const id = useGame.getState().gameId
     let live = true
     const san = bookStep ? pickBookMove(bookStep, level === IDEAL) : null
+    // with a clock, Stockfish thinks no longer than its time allows
+    const clock = mode === 'play' ? useGame.getState().clock : null
+    const side = turnOf(liveFen)
     const reply = san
       ? new Promise<string | null>((resolve) => setTimeout(() => resolve(sanToUci(liveFen, san)), 550))
-      : opponentMove(liveFen, level)
+      : clock
+        ? timedOpponentMove(liveFen, level, remaining(clock, side, side), clock.inc)
+        : opponentMove(liveFen, level)
     void reply.then((uci) => {
       const s = useGame.getState()
       if (live && uci && s.gameId === id && fenAt(s, s.plies.length) === liveFen) s.append(uci)
@@ -302,12 +312,13 @@ export default function App() {
       live = false
       getOpponent().cancel()
     }
-  }, [thinking, liveFen, level, g.gameId, bookStep, bookLoading, guardWait])
+  }, [thinking, liveFen, level, g.gameId, bookStep, bookLoading, guardWait, mode])
 
   // ---------------------------------------------------------------- live engine
 
   // the bar can be shown everywhere; engine lines and arrows only on the analysis board
-  const showBar = !retry && progress === null && (mode === 'analysis' ? settings.analysisEngine : settings.evalInPlay)
+  // a blindfold game has no eval bar: it would give the position away
+  const showBar = !retry && progress === null && (mode === 'analysis' ? settings.analysisEngine : settings.evalInPlay && !(mode === 'play' && g.blind && !outcome))
   const showLines = showBar && mode === 'analysis'
   const hintOn = hintFen === fen && !retry
   const final = useMemo(() => isFinal(fen), [fen])
@@ -342,9 +353,11 @@ export default function App() {
     const prev = last.current
     last.current = { cursor, id: g.gameId, outcome }
     if (!settings.sound) return
+    if (prev.id !== g.gameId && mode === 'play' && !plies.length) playSound('start')
     if (prev.id === g.gameId && cursor === prev.cursor + 1 && plies[cursor - 1]) playSound(soundFor(plies[cursor - 1].san))
-    if (outcome && !prev.outcome) playSound('end')
-  }, [cursor, g.gameId, plies, outcome, settings.sound])
+    // against Stockfish the end sounds like the result: a win, a loss or a draw
+    if (outcome && !prev.outcome) playSound(mode === 'play' && vsEngine ? resultSound(scoreFor(outcome, playerColor)) : 'end')
+  }, [cursor, g.gameId, plies, outcome, settings.sound, mode, vsEngine, playerColor])
 
   const prevOutcome = useRef(outcome)
   useEffect(() => {
@@ -358,6 +371,8 @@ export default function App() {
     if (mode === 'play' && !endgame) {
       bump('gamesPlayed')
       if (outcome.kind !== 'draw' && outcome.winner === s.playerColor) bump('gamesWon')
+      if (s.clock) bump('timedGames')
+      if (s.blind) bump('blindGames')
     }
     // a review often follows a finished game: have its engines ready
     warmReview()
@@ -367,6 +382,49 @@ export default function App() {
     // endgame is the trainer's position, set before the game started
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, mode])
+
+  // ---------------------------------------------------------------- clock
+
+  // The clock of a timed game runs only while the player sees the board: it stops while the
+  // app is hidden (another tab, the phone locked) or another page of the app is open, and
+  // goes on from there on return. It starts after the first move.
+  const clock = mode === 'play' ? g.clock : null
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== 'hidden')
+  useEffect(() => {
+    const onChange = () => {
+      const visible = document.visibilityState !== 'hidden'
+      // stop at once: a hidden page may not render again before it is frozen or closed
+      if (!visible) useGame.getState().runClock(false)
+      setPageVisible(visible)
+    }
+    const onHide = () => useGame.getState().runClock(false)
+    document.addEventListener('visibilitychange', onChange)
+    window.addEventListener('pagehide', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onChange)
+      window.removeEventListener('pagehide', onHide)
+    }
+  }, [])
+  const clockOn = !!clock && !outcome && pageVisible && view === 'board' && plies.length > 0
+  useEffect(() => useGame.getState().runClock(clockOn), [clockOn, plies.length])
+
+  // the side to move loses when its time is up
+  useEffect(() => {
+    if (!clock || clock.since === null || outcome) return
+    const side = turnOf(liveFen)
+    const timer = setTimeout(() => useGame.getState().flag(), Math.max(0, remaining(clock, side, side)) + 30)
+    return () => clearTimeout(timer)
+  }, [clock, outcome, liveFen])
+
+  // ---------------------------------------------------------------- bot character
+
+  // the play page's opponents are characters; the endgame trainer's is plain Stockfish
+  const character = mode === 'play' && vsEngine && !endgame
+  const bot = levelOf(level)
+  const talk = useBotTalk({ on: character && view === 'board', gameKey: g.gameKey, level, startFen, plies, playerColor, outcome })
+  // blindfold: the pieces are hidden until the game is over, or while "Kurz zeigen" is held
+  const [peek, setPeek] = useState(false)
+  const blind = mode === 'play' && g.blind && !outcome && !peek
 
   // the analysis page leads to reviews: boot their engines while the player looks around
   useEffect(() => {
@@ -412,7 +470,7 @@ export default function App() {
     setView('board')
   }
 
-  const startGame = (opts: { mode: Mode; playerColor: Color; level: number; startFen?: string }) => {
+  const startGame = (opts: NewGame) => {
     resetBoardState()
     getOpponent().newGame()
     setEndgame(null)
@@ -1058,16 +1116,23 @@ export default function App() {
         ? t('Remis')
         : outcome.winner === playerColor
           ? t('Du hast gewonnen!')
-          : t('Stockfish gewinnt')
+          : character
+            ? t('{name} gewinnt', { name: bot.name })
+            : t('Stockfish gewinnt')
       : thinking
         ? guardWait
           ? t('Patzer-Schutz prüft deinen Zug …')
-          : t('Stockfish denkt …')
+          : character
+            ? t('{name} denkt …', { name: bot.name })
+            : t('Stockfish denkt …')
         : turn === playerColor
           ? t('Du bist am Zug')
-          : t('Stockfish ist am Zug')
+          : character
+            ? t('{name} ist am Zug', { name: bot.name })
+            : t('Stockfish ist am Zug')
     coach = (
       <Coach title={title}>
+        {outcome?.kind === 'timeout' && <b>{outcome.winner === playerColor ? t('Die Zeit des Gegners ist abgelaufen.') : t('Deine Zeit ist abgelaufen.')} </b>}
         {endgame ? (
           <>
             <b>{endgame.goal}</b> {plies.length < 4 && endgame.tip}
@@ -1075,8 +1140,9 @@ export default function App() {
         ) : named ? (
           `${named.eco} · ${named.name}`
         ) : (
-          `${levelOf(level).label} · ${levelOf(level).name}`
+          `${bot.name} · ${bot.label} · ${bot.kind}`
         )}
+        {g.blind && !outcome && <span className="coach-line">{t('Blind: die Figuren sind versteckt, bis die Partie vorbei ist.')}</span>}
       </Coach>
     )
   } else {
@@ -1279,17 +1345,22 @@ export default function App() {
         />
       )
     }
+    const own = character && engine
     return (
       <PlayerStrip
         color={color}
         bot={engine}
-        name={vsEngine ? (engine ? (mode === 'training' ? t('Gegner') : 'Stockfish') : t('Du')) : color === 'white' ? t('Weiß') : t('Schwarz')}
+        name={vsEngine ? (engine ? (mode === 'training' ? t('Gegner') : own ? bot.name : 'Stockfish') : t('Du')) : color === 'white' ? t('Weiß') : t('Schwarz')}
         detail={engine ? levelOf(level).label : undefined}
         startFen={startFen}
         fen={boardFen}
         thinking={thinking && engine}
         active={!outcome && turnOf(boardFen) === color}
         accuracy={reviewing && progress === null ? review.accuracy[color] : undefined}
+        botLevel={own ? level : undefined}
+        clock={clock ? { left: clock.left[color], since: turnOf(liveFen) === color ? clock.since : null } : undefined}
+        say={own ? talk : null}
+        sayAt={color === topColor ? 'below' : 'above'}
       />
     )
   }
@@ -1327,9 +1398,15 @@ export default function App() {
           disabled={turn !== playerColor || !atEnd}
           on={hintOn}
         />
-        {evalTool}
-        <Tool label={t('Schutz')} icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
-        <Tool label={t('Zug zurück')} icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
+        {/* blindfold: "Kurz zeigen" takes the eval bar's place */}
+        {g.blind ? <PeekTool onPeek={setPeek} /> : evalTool}
+        {/* with a clock: no blunder guard and no takebacks */}
+        {!clock && (
+          <>
+            <Tool label={t('Schutz')} icon={<ShieldCheck size={20} />} onClick={() => g.updateSettings({ blunderGuard: !settings.blunderGuard })} on={settings.blunderGuard} />
+            <Tool label={t('Zug zurück')} icon={<Undo2 size={20} />} onClick={() => (g.takeback(), setGuard(null))} disabled={plies.length === 0} />
+          </>
+        )}
         <Tool label={confirmResign ? t('Sicher?') : t('Aufgeben')} icon={<Flag size={20} />} onClick={resign} disabled={plies.length < 2} on={confirmResign} />
       </>
     )
@@ -1441,7 +1518,9 @@ export default function App() {
     mode === 'play'
       ? endgame
         ? t('Endspiel: {name}', { name: endgame.name })
-        : t('Gegen Stockfish {level}', { level: levelOf(level).label })
+        : character
+          ? t('Gegen {name} · {level}', { name: bot.name, level: bot.label })
+          : t('Gegen Stockfish {level}', { level: levelOf(level).label })
       : mode === 'training'
         ? (trainer.drill?.name ?? t('Eröffnungstraining'))
         : imported
@@ -1520,8 +1599,20 @@ export default function App() {
         <main className="page">
           <PlayPage
             level={level}
-            running={running ? { fen: liveFen, orientation, label: t('{level} · Zug {n}', { level: levelOf(level).label, n: Math.ceil(plies.length / 2) }), onResume: () => setView('board') } : undefined}
-            onStart={({ playerColor: color, level: l }) => startGame({ mode: 'play', playerColor: color, level: l })}
+            timeControl={controlId(g.clock)}
+            blind={g.blind}
+            running={
+              running
+                ? {
+                    fen: liveFen,
+                    orientation,
+                    blind: g.blind,
+                    label: [t('{name} · {level} · Zug {n}', { name: bot.name, level: bot.label, n: Math.ceil(plies.length / 2) }), g.clock && controlId(g.clock)].filter(Boolean).join(' · '),
+                    onResume: () => setView('board'),
+                  }
+                : undefined
+            }
+            onStart={({ playerColor: color, level: l, timeControl, blind: b }) => startGame({ mode: 'play', playerColor: color, level: l, clock: newClock(timeControl), blind: b })}
             onAnalysis={goAnalysis}
             onImport={() => setDialog('import')}
           />
@@ -1648,7 +1739,7 @@ export default function App() {
           {strip(topColor)}
           <div className="board-row">
             {(showBar || reviewing) && <EvalBar share={bar?.share ?? null} label={bar?.label} orientation={orientation} />}
-            <div className="board-wrap">
+            <div className={`board-wrap ${blind ? 'blind' : ''}`}>
               <Board
                 fen={boardFen}
                 orientation={orientation}

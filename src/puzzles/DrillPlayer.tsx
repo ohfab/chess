@@ -96,6 +96,7 @@ export function DrillPlayer({ title, items, coordinates, sound, onResult, onExit
   }, [index])
 
   const finish = (solved: boolean) => {
+    if (sound) playSound(solved ? 'solved' : 'failed')
     const result = { item, solved, ms: startedAt.current ? Math.round(performance.now() - startedAt.current) : 0 }
     setResults((r) => [...r, result])
     onResult(result)

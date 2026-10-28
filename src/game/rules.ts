@@ -16,6 +16,8 @@ export interface Ply {
 export type Outcome =
   | { kind: 'checkmate'; winner: Color }
   | { kind: 'resign'; winner: Color }
+  /** the loser's clock ran out (games with a clock against Stockfish) */
+  | { kind: 'timeout'; winner: Color }
   | { kind: 'draw'; reason: 'stalemate' | 'repetition' | 'fifty' | 'material' }
 
 export const turnOf = (fen: string): Color => (fen.split(' ')[1] === 'b' ? 'black' : 'white')

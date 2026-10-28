@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { create } from 'zustand'
+import { playJingle } from '../game/sound'
 import { t, tn } from '../i18n/i18n'
 import { celebrate } from '../ui/confetti'
 import { TIER_NAMES, tierXp, type AchievementDef } from './achievements'
@@ -106,6 +107,7 @@ export function AchievementToasts() {
     if (!shown) return
     const box = card.current?.getBoundingClientRect()
     celebrate(shown.kind === 'level' ? { count: 140 } : { count: 60, origin: box ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : undefined })
+    playJingle(shown.kind === 'level' ? 'levelUp' : 'achievement')
     const timer = setTimeout(dequeue, shown.kind === 'level' ? 4500 : 3500)
     return () => clearTimeout(timer)
   }, [shown])

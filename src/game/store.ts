@@ -6,6 +6,7 @@ import { MAX_GAMES, pliesOf, scoreFor, unpackReview, type SavedGame, type SavedR
 import { remoteKey, type RemoteGame, type Site } from '../import/remote'
 import { today, type DailyPlan } from '../coach/plan'
 import { detectLang, type Lang } from '../i18n/i18n'
+import { charge, remaining, stopped, timeoutOutcome, type Clock } from '../play/clock'
 
 export type Mode = 'play' | 'analysis' | 'training'
 
@@ -58,6 +59,18 @@ export interface Settings {
   theme: 'light' | 'dark'
   /** the player's own chess.com or Lichess account: the analysis page loads its games */
   myAccount: { site: Site; name: string } | null
+}
+
+/** A game against Stockfish: who plays which side, how strong, and with what clock. */
+export interface NewGame {
+  mode: Mode
+  playerColor: Color
+  level: number
+  startFen?: string
+  /** a game with a clock (play mode only) */
+  clock?: Clock | null
+  /** blindfold: the pieces stay hidden until the game is over */
+  blind?: boolean
 }
 
 /** The game's own moves while the analysis board shows a side line. */
@@ -125,8 +138,12 @@ interface GameState {
   reviewsToday: { date: string; count: number } | null
   /** the welcome screen was shown */
   onboarded: boolean
+  /** the chess clock of the game against Stockfish, null for a game without one */
+  clock: Clock | null
+  /** the game against Stockfish is played blindfold */
+  blind: boolean
 
-  newGame: (opts: { mode: Mode; playerColor: Color; level: number; startFen?: string }) => void
+  newGame: (opts: NewGame) => void
   load: (startFen: string, plies: Ply[]) => void
   move: (uci: string) => Ply | null
   /** the opponent's move: always played on the latest position, and the view jumps there */
@@ -138,6 +155,10 @@ interface GameState {
   backToGame: () => void
   takeback: () => void
   resign: () => void
+  /** starts or stops the clock: it runs only while the board is in view (and never before the first move) */
+  runClock: (on: boolean) => void
+  /** the side to move ran out of time: ends the game, if its clock really shows zero */
+  flag: () => void
   analyse: () => void
   flip: () => void
   updateSettings: (patch: Partial<Settings>) => void
@@ -239,6 +260,19 @@ export const safeStorage = createJSONStorage(() => ({
 export const fenAt = (s: Pick<GameState, 'startFen' | 'plies'>, cursor: number) =>
   cursor === 0 ? s.startFen : s.plies[cursor - 1].fen
 
+/**
+ * A move on the latest position with the clock: the mover's time is charged (the first move
+ * of a game is free, as the clock only starts after it). Returns the clock after the move, or
+ * the timeout when the mover's time was already gone.
+ */
+function clocked(s: GameState, fen: string): { clock: Clock | null; outcome?: Outcome } {
+  const c = s.clock
+  if (!c || s.mode !== 'play' || !s.plies.length) return { clock: c }
+  const mover = turnOf(fen)
+  if (remaining(c, mover, mover) <= 0) return { clock: { ...c, since: null, left: { ...c.left, [mover]: 0 } }, outcome: timeoutOutcome(fen, mover) }
+  return { clock: charge(c, mover) }
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
@@ -285,8 +319,10 @@ export const useGame = create<GameState>()(
       endgames: {},
       reviewsToday: null,
       onboarded: false,
+      clock: null,
+      blind: false,
 
-      newGame: ({ mode, playerColor, level, startFen = START_FEN }) =>
+      newGame: ({ mode, playerColor, level, startFen = START_FEN, clock = null, blind = false }) =>
         set((s) => ({
           history: filed(s),
           gameKey: newKey(),
@@ -303,6 +339,8 @@ export const useGame = create<GameState>()(
           orientation: playerColor,
           review: null,
           training: null,
+          clock: mode === 'play' ? clock : null,
+          blind: mode === 'play' && blind,
         })),
 
       load: (startFen, plies) =>
@@ -319,6 +357,8 @@ export const useGame = create<GameState>()(
           outcome: outcomeOf(startFen, plies),
           review: null,
           training: null,
+          clock: null,
+          blind: false,
         })),
 
       move: (uci) => {
@@ -332,6 +372,12 @@ export const useGame = create<GameState>()(
           set({ cursor: s.cursor + 1 })
           return ply
         }
+        // with a clock: the mover pays for the time, or has already lost on time
+        const timed = clocked(s, fenAt(s, s.cursor))
+        if (timed.outcome) {
+          set({ clock: timed.clock, outcome: timed.outcome })
+          return null
+        }
         const plies = [...s.plies.slice(0, s.cursor), ply]
         // in analysis a different move starts a side line: the game itself stays
         let sideline = s.sideline ? { ...s.sideline, at: Math.min(s.sideline.at, s.cursor) } : null
@@ -341,7 +387,10 @@ export const useGame = create<GameState>()(
           set({ plies: sideline.plies, cursor: plies.length, sideline: null, outcome: outcomeOf(s.startFen, sideline.plies) })
           return ply
         }
-        set({ plies, cursor: plies.length, sideline, outcome: outcomeOf(s.startFen, plies) })
+        const outcome = outcomeOf(s.startFen, plies)
+        // the clock stops with the game
+        const clock = timed.clock && outcome ? { ...timed.clock, since: null } : timed.clock
+        set({ plies, cursor: plies.length, sideline, outcome, clock })
         return ply
       },
 
@@ -365,16 +414,24 @@ export const useGame = create<GameState>()(
 
       append: (uci) => {
         const s = get()
+        // a finished game takes no late reply (after a resignation or a flag)
+        if (s.mode === 'play' && s.outcome) return
         const ply = play(fenAt(s, s.plies.length), uci)
         if (!ply) return
+        const timed = clocked(s, fenAt(s, s.plies.length))
+        if (timed.outcome) return set({ clock: timed.clock, outcome: timed.outcome })
         const plies = [...s.plies, ply]
-        set({ plies, cursor: plies.length, outcome: outcomeOf(s.startFen, plies) })
+        const outcome = outcomeOf(s.startFen, plies)
+        const clock = timed.clock && outcome ? { ...timed.clock, since: null } : timed.clock
+        set({ plies, cursor: plies.length, outcome, clock })
       },
 
       goTo: (cursor) => set((s) => ({ cursor: Math.max(0, Math.min(cursor, s.plies.length)) })),
 
       takeback: () =>
         set((s) => {
+          // with a clock there are no takebacks: the time spent could not be given back fairly
+          if (s.clock && s.mode === 'play') return {}
           // back to the last earlier position where it is the player's move
           let n = s.plies.length - 1
           while (n > 0 && turnOf(fenAt(s, n)) !== s.playerColor) n--
@@ -383,10 +440,44 @@ export const useGame = create<GameState>()(
           return { gameId: s.gameId + 1, plies: s.plies.slice(0, n), cursor: n, outcome: null }
         }),
 
-      resign: () => set((s) => ({ outcome: { kind: 'resign', winner: opposite(s.playerColor) } })),
+      resign: () =>
+        set((s) => ({
+          outcome: { kind: 'resign', winner: opposite(s.playerColor) },
+          clock: s.clock && stopped(s.clock, turnOf(fenAt(s, s.plies.length))),
+        })),
+
+      runClock: (on) =>
+        set((s) => {
+          const c = s.clock
+          if (!c || (c.since !== null) === on) return {}
+          if (on) return s.mode === 'play' && !s.outcome && s.plies.length > 0 ? { clock: { ...c, since: Date.now() } } : {}
+          const turn = turnOf(fenAt(s, s.plies.length))
+          const clock = stopped(c, turn)
+          // the time ran out before the clock was stopped
+          if (s.mode === 'play' && !s.outcome && clock.left[turn] <= 0) return { clock, outcome: timeoutOutcome(fenAt(s, s.plies.length), turn) }
+          return { clock }
+        }),
+
+      flag: () =>
+        set((s) => {
+          const c = s.clock
+          if (!c || c.since === null || s.outcome || s.mode !== 'play') return {}
+          const fen = fenAt(s, s.plies.length)
+          const turn = turnOf(fen)
+          if (remaining(c, turn, turn) > 0) return {}
+          return { clock: { ...c, since: null, left: { ...c.left, [turn]: 0 } }, outcome: timeoutOutcome(fen, turn) }
+        }),
 
       analyse: () =>
-        set((s) => ({ history: filed(s), mode: 'analysis', training: null, vsEngine: s.vsEngine && s.plies.length > 0 })),
+        set((s) => ({
+          history: filed(s),
+          mode: 'analysis',
+          training: null,
+          vsEngine: s.vsEngine && s.plies.length > 0,
+          // the game is over for the clock; the analysis board shows the pieces
+          clock: s.clock && { ...s.clock, since: null },
+          blind: false,
+        })),
 
       flip: () => set((s) => ({ orientation: opposite(s.orientation) })),
 
@@ -411,6 +502,8 @@ export const useGame = create<GameState>()(
           orientation: playerColor,
           review: null,
           training,
+          clock: null,
+          blind: false,
         })),
 
       updateTraining: (patch) => set((s) => (s.training ? { training: { ...s.training, ...patch } } : {})),
@@ -509,6 +602,8 @@ export const useGame = create<GameState>()(
             orientation: game.playerColor,
             review: unpackReview(game),
             training: null,
+            clock: null,
+            blind: false,
           }
         }),
 
@@ -606,9 +701,13 @@ export const useGame = create<GameState>()(
         endgames,
         reviewsToday,
         onboarded,
+        clock,
+        blind,
       }) => ({
         reviewsToday,
         onboarded,
+        clock,
+        blind,
         accounts,
         dailyPuzzle,
         woodpecker,
@@ -640,7 +739,10 @@ export const useGame = create<GameState>()(
       // settings added in later versions get their defaults
       merge: (persisted, current) => {
         const p = persisted as Partial<GameState>
-        return { ...current, ...p, settings: { ...current.settings, ...p.settings } }
+        // a clock saved while running (the page closed without stopping it) comes back
+        // stopped where it last started: the time while the page was gone does not count
+        const clock = p.clock ? { ...p.clock, since: null } : null
+        return { ...current, ...p, settings: { ...current.settings, ...p.settings }, clock }
       },
     },
   ),

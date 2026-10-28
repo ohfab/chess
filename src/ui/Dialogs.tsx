@@ -10,6 +10,7 @@ import { Piece } from '../board/Piece'
 const REASONS: Record<string, string> = {
   checkmate: tk('durch Schachmatt'),
   resign: tk('durch Aufgabe'),
+  timeout: tk('durch Zeitüberschreitung'),
   stalemate: tk('durch Patt'),
   repetition: tk('durch dreifache Wiederholung'),
   fifty: tk('durch die 50-Züge-Regel'),
@@ -52,7 +53,7 @@ export function ResultDialog({
   const them = (
     <div className={`result-side ${state === 'lost' ? 'winner' : ''}`}>
       {opponentLevel ? <BotAvatar level={opponentLevel} className="result-face" /> : <span className="result-face"><Piece role="king" color={playerColor === 'white' ? 'black' : 'white'} className="result-piece" /></span>}
-      <b>{opponentLevel ? `Stockfish ${levelOf(opponentLevel).label}` : t('Gegner')}</b>
+      <b>{opponentLevel ? `${levelOf(opponentLevel).name} ${levelOf(opponentLevel).label}` : t('Gegner')}</b>
     </div>
   )
   return (
