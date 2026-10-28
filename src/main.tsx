@@ -10,9 +10,8 @@ import { startAutoSync } from './import/autosync'
 import { setLang, t } from './i18n/i18n'
 import { startUpdates, useUpdate } from './pwa'
 import { isNativeApp, startNative, styleSystemBars } from './native/native'
-// pixel fonts: Press Start 2P for the big titles, Pixelify Sans for everything else
+// Press Start 2P for titles and numbers; the text font (VT323) is set up in index.css
 import '@fontsource/press-start-2p'
-import '@fontsource-variable/pixelify-sans'
 import './index.css'
 
 // paint the saved board and pieces before the first frame

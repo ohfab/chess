@@ -88,8 +88,8 @@
 .rush-mode-text b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
 }
 .rush-mode-text .muted {
@@ -135,7 +135,8 @@
 }
 .rush-past b {
   font-family: var(--font-pixel);
-  font-size: 18px;
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--heading);
@@ -156,7 +157,8 @@
 .rush-clock {
   justify-self: start;
   font-family: var(--font-pixel);
-  font-size: clamp(20px, 6vw, 32px);
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 400;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
@@ -181,7 +183,7 @@
 .rush-score-n {
   font-family: var(--font-pixel);
   font-size: 24px;
-  line-height: 1.2;
+  line-height: 32px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   animation: rush-pop 0.24s steps(3);
@@ -251,7 +253,8 @@
 }
 .rush-countdown span {
   font-family: var(--font-pixel);
-  font-size: clamp(56px, 16vw, 96px);
+  font-size: 64px;
+  line-height: 72px;
   font-weight: 400;
   color: var(--heading);
   text-shadow: 6px 6px 0 var(--tint-strong);
@@ -352,8 +355,8 @@
 .rush-end-score {
   margin: 10px 0 4px;
   font-family: var(--font-pixel);
-  font-size: clamp(48px, 14vw, 80px);
-  line-height: 1.1;
+  font-size: 48px;
+  line-height: 56px;
   text-shadow: 6px 6px 0 rgb(0 0 0 / 0.3);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
@@ -489,6 +492,18 @@
     justify-content: center;
     align-items: start;
     gap: 24px;
+  }
+  .rush-clock {
+    font-size: 32px;
+    line-height: 40px;
+  }
+  .rush-countdown span {
+    font-size: 96px;
+    line-height: 104px;
+  }
+  .rush-end-score {
+    font-size: 80px;
+    line-height: 88px;
   }
   .rush-hud {
     max-width: calc(min(calc(100dvh - 190px), 640px) + 324px);

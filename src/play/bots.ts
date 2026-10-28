@@ -1,11 +1,8 @@
 import { tk } from '../i18n/i18n'
 
-// The ten Stockfish levels as retro arcade characters: a 16×16 sprite, a one-line
-// personality and a few lines they say during a game. Names live in engine/levels.ts.
-// Lines are German keys, shown with t().
-//
-// Sprites: 16 rows of 16 cells. "." is the tile's background (the light tone),
-// k ink, d dark, m mid, l light.
+// The ten Stockfish levels as retro arcade characters: a one-line personality and a few
+// lines they say during a game. Names live in engine/levels.ts, faces in bot-faces.data.ts
+// (pixelated emoji, see scripts/build-bot-faces.mjs). Lines are German keys, shown with t().
 
 export interface BotLines {
   greet: string
@@ -22,33 +19,13 @@ export interface BotLines {
 export interface BotCharacter {
   level: number
   about: string
-  sprite: string[]
   lines: BotLines
 }
 
 export const BOTS: BotCharacter[] = [
   {
     level: 1,
-    about: tk('Ein frischer Schleimklecks. Lernt gerade, wie die Figuren ziehen.'),
-    // a slime blob
-    sprite: [
-      '................',
-      '................',
-      '................',
-      '.....kkkkkk.....',
-      '....kmmmmmmk....',
-      '...kmllmmmmmk...',
-      '..kmmlmmmmmmmk..',
-      '..kmmmmmmmmmmk..',
-      '.kmmmkkmmkkmmmk.',
-      '.kmmmkkmmkkmmmk.',
-      '.kmmmmmmmmmmmmk.',
-      '.kmdmmkmmkmmdmk.',
-      '.kmmmmmkkmmmmmk.',
-      '..kddmmmmmmddk..',
-      '...kkkkkkkkkk...',
-      '................',
-    ],
+    about: tk('Gerade erst geschlüpft. Lernt noch, wie die Figuren ziehen.'),
     lines: {
       greet: tk('Hallo! Ich bin Pip. Sei nett zu mir!'),
       capture: [tk('Oh, die darf ich nehmen?'), tk('Hihi, meins!')],
@@ -62,25 +39,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 2,
     about: tk('Ein kleiner Roboter mit Wackelkontakt. Rechnet meist nur einen Zug weit.'),
-    // a little robot with an antenna
-    sprite: [
-      '.......kk.......',
-      '......kmmk......',
-      '.......kk.......',
-      '....kkkkkkkk....',
-      '...kmmmmmmmmk...',
-      '...kmkkmmkkmk...',
-      '..dkmklmmlkmkd..',
-      '...kmkkmmkkmk...',
-      '...kmmmmmmmmk...',
-      '...kmkdkdkdmk...',
-      '...kmmmmmmmmk...',
-      '....kkkkkkkk....',
-      '......kddk......',
-      '...kkkkkkkkkk...',
-      '..kmmmmkkmmmmk..',
-      '..kmmmmkkmmmmk..',
-    ],
     lines: {
       greet: tk('BIEP BOOP. Partie wird geladen …'),
       capture: [tk('Figur eingesammelt.'), tk('Material +1. Biep!')],
@@ -94,25 +52,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 3,
     about: tk('Spielt aus dem Bauch heraus und schlägt zu, sobald du nicht aufpasst.'),
-    // a cat
-    sprite: [
-      '................',
-      '..kk........kk..',
-      '..kmk......kmk..',
-      '..kdmk....kmdk..',
-      '..kmmmkkkkmmmk..',
-      '..kmmmmmmmmmmk..',
-      '.kmmmmmmmmmmmmk.',
-      '.kmmkkmmmmkkmmk.',
-      '.kmmklmmmmlkmmk.',
-      '.kmmkkmmmmkkmmk.',
-      '.kmmmmmddmmmmmk.',
-      'dkmmmmkmmkmmmmkd',
-      '.kmmmmmkkmmmmmk.',
-      '..kmmmmmmmmmmk..',
-      '...kkkkkkkkkk...',
-      '................',
-    ],
     lines: {
       greet: tk('Miau! Lass uns spielen.'),
       capture: [tk('Schnapp!'), tk('Die hat gewackelt. Meins!')],
@@ -126,25 +65,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 4,
     about: tk('Ein Turm von einem Spieler: solide, geduldig, liebt offene Linien.'),
-    // a rook with a stern face
-    sprite: [
-      '................',
-      '..kkk.kkkk.kkk..',
-      '..kmk.kmmk.kmk..',
-      '..kmkkkmmkkkmk..',
-      '..kmmmmmmmmmmk..',
-      '...kkkkkkkkkk...',
-      '...kmddmmddmk...',
-      '...kmkkmmkkmk...',
-      '...kmklmmlkmk...',
-      '...kmmmmmmmmk...',
-      '...kmmkkkkmmk...',
-      '...kmmmmmmmmk...',
-      '...kddddddddk...',
-      '..kkkkkkkkkkkk..',
-      '..kmmmmmmmmmmk..',
-      '..kkkkkkkkkkkk..',
-    ],
     lines: {
       greet: tk('Stein auf Stein. Fangen wir an.'),
       capture: [tk('Abgeräumt.'), tk('Die stand im Weg.')],
@@ -158,25 +78,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 5,
     about: tk('Raumpilotin mit Plan. Greift gern früh am Königsflügel an.'),
-    // an astronaut with a mirrored visor
-    sprite: [
-      '................',
-      '.....kkkkkk.....',
-      '...kkmmmmmmkk...',
-      '..kmmlmmmmmmmk..',
-      '.kmmlmmmmmmmmmk.',
-      '.kmkkkkkkkkkkmk.',
-      '.kmkddddddllkmk.',
-      '.kmkdddddddlkmk.',
-      '.kmkddddddddkmk.',
-      '.kmkdlddddddkmk.',
-      '.kmkkkkkkkkkkmk.',
-      '.kmmmmmmmmmmmmk.',
-      '..kmmmdmmdmmmk..',
-      '...kkkkkkkkkk...',
-      '..kmmmkmmkmmmk..',
-      '.kmmmmkddkmmmmk.',
-    ],
     lines: {
       greet: tk('Countdown läuft. Bereit zum Start?'),
       capture: [tk('Ziel erfasst.'), tk('Treffer!')],
@@ -190,25 +91,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 6,
     about: tk('Ein lautloser Taktiker. Seine Kombinationen kommen aus dem Nichts.'),
-    // a ninja with a headband
-    sprite: [
-      '................',
-      '....kkkkkkkk....',
-      '...kddddddddk...',
-      '..kddddddddddk..',
-      '..kmmmmmmmmmmkk.',
-      '..kddddddddddkmk',
-      '..kllllllllllk.m',
-      '..klkkllllkklk..',
-      '..kllllllllllk..',
-      '..kddddddddddk..',
-      '..kddddddddddk..',
-      '...kddddddddk...',
-      '....kkkkkkkk....',
-      '...kddddddddk...',
-      '..kddkddddkddk..',
-      '..kddkddddkddk..',
-    ],
     lines: {
       greet: tk('Ich war schon die ganze Zeit hier.'),
       capture: [tk('Lautlos geschlagen.'), tk('Hast du das gesehen? Nein.')],
@@ -222,25 +104,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 7,
     about: tk('Eine Hexe, die aus ruhigen Stellungen gefährliche Angriffe zaubert.'),
-    // a witch with a pointed hat
-    sprite: [
-      '..........kk....',
-      '.........kdk....',
-      '........kddk....',
-      '.......kdddk....',
-      '......kddddk....',
-      '.....kddmddk....',
-      '.....kmmmmmk....',
-      '.kkkkkkkkkkkkkk.',
-      '..kdlllllllldk..',
-      '..kdlkkllkkldk..',
-      '..kdlllllllldk..',
-      '..kdlllkkllldk..',
-      '..kddllllllddk..',
-      '.kdddkkkkkkdddk.',
-      '.kdd.kmmmmk.ddk.',
-      'kdd..kmmmmk..ddk',
-    ],
     lines: {
       greet: tk('Ich habe die Karten gelegt. Sie sagen: Matt.'),
       capture: [tk('Puff, verschwunden!'), tk('Ein kleiner Zaubertrick.')],
@@ -254,25 +117,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 8,
     about: tk('Ein Ritter der alten Schule. Eröffnungen sitzen, Endspiele auch.'),
-    // a knight's helmet with a plume
-    sprite: [
-      '.......kkk......',
-      '......kmmmk.....',
-      '.....kkkkkkk....',
-      '....kmmmmmmmk...',
-      '...kmlmmmmmmmk..',
-      '...kmlmmmmmmmk..',
-      '...kmmmmmmmmmk..',
-      '...kkklkkklkkk..',
-      '...kmmmmmmmmmk..',
-      '...kmdmdmdmdmk..',
-      '...kmmmmmmmmmk..',
-      '...kmmmmmmmmmk..',
-      '....kmmmmmmmk...',
-      '...kkkkkkkkkkk..',
-      '..kmmmmmkmmmmmk.',
-      '..kmmmmmkmmmmmk.',
-    ],
     lines: {
       greet: tk('Ich fordere dich zum Duell!'),
       capture: [tk('Für die Ehre!'), tk('Gefangen genommen.')],
@@ -286,25 +130,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 9,
     about: tk('Speit in jeder Stellung Feuer. Fehler verzeiht er selten.'),
-    // a dragon's head
-    sprite: [
-      '.k............k.',
-      '.kk..........kk.',
-      '..kk.kkkkkk.kk..',
-      '...kkmmmmmmkk...',
-      '..kmmmdmmdmmmk..',
-      '.kmdkkmmmmkkdmk.',
-      '.kmmklmmmmlkmmk.',
-      '.kmmmmmmmmmmmmk.',
-      '..kmmmmmmmmmmk..',
-      '..kmmmmmmmmmmk..',
-      '...kmkmmmmkmk...',
-      '...kmmmmmmmmk...',
-      '...kkkkkkkkkk...',
-      '....klkllklk....',
-      '.....kkkkkk.....',
-      '................',
-    ],
     lines: {
       greet: tk('Ich hoffe, du hast einen Feuerlöscher dabei.'),
       capture: [tk('Knusprig!'), tk('Verbrannt.')],
@@ -318,25 +143,6 @@ export const BOTS: BotCharacter[] = [
   {
     level: 10,
     about: tk('Der Endgegner: Stockfish mit voller Kraft, ohne Gnade.'),
-    // the final boss: a crowned machine skull
-    sprite: [
-      '...k...kk...k...',
-      '...kk.kmmk.kk...',
-      '...kmkmmmmkmk...',
-      '...kmmmmmmmmk...',
-      '...kkkkkkkkkk...',
-      '..kddddddddddk..',
-      '.kddddddddddddk.',
-      '.kdkkkkddkkkkdk.',
-      '.kdkllkddkllkdk.',
-      '.kdkkkkddkkkkdk.',
-      '.kddddddddddddk.',
-      '.kdddddkkdddddk.',
-      '..kddddddddddk..',
-      '..kdlklklklkdk..',
-      '...kddddddddk...',
-      '....kkkkkkkk....',
-    ],
     lines: {
       greet: tk('Level 10 erreicht. Endgegner geladen. Viel Glück.'),
       capture: [tk('Berechnet.'), tk('Material eingezogen.')],

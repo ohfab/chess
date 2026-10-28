@@ -29,10 +29,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1;
+  line-height: 8px;
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 9px;
+  font-size: 8px;
   color: var(--heading);
   font-variant-numeric: tabular-nums;
 }
@@ -105,11 +105,12 @@
   color: var(--gb-paper);
 }
 .pg-level .pg-ring-label b {
-  font-size: 26px;
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 400;
 }
 .pg-level-small {
-  font-size: 9px;
+  font-size: 8px;
   opacity: 0.85;
   margin-bottom: 4px;
 }
@@ -122,9 +123,9 @@
 }
 .pg-level-text b {
   font-family: var(--font-pixel);
-  font-size: clamp(16px, 4.6vw, 22px);
+  font-size: 16px;
   font-weight: 400;
-  line-height: 1.3;
+  line-height: 24px;
   letter-spacing: 0;
   text-transform: uppercase;
   overflow-wrap: anywhere;
@@ -154,9 +155,9 @@
 
 .pg-eyebrow {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 16px;
   text-transform: uppercase;
   letter-spacing: 0;
   color: var(--muted);
@@ -346,7 +347,8 @@
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-pixel);
-  font-size: 10px;
+  font-size: 8px;
+  line-height: 8px;
   font-weight: 400;
 }
 
@@ -378,7 +380,8 @@
 }
 .pg-levelup .pg-ring-label b {
   font-family: var(--font-pixel);
-  font-size: 30px;
+  font-size: 32px;
+  line-height: 40px;
   font-weight: 400;
   color: var(--gb-paper);
 }
@@ -388,8 +391,8 @@
 }
 .pg-levelup-title {
   font-family: var(--font-pixel);
-  font-size: 17px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0;
@@ -444,5 +447,11 @@
   }
   .pg-ring-fill {
     transition: none;
+  }
+}
+@media (min-width: 900px) {
+  .pg-level-text b {
+    font-size: 24px;
+    line-height: 32px;
   }
 }

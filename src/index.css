@@ -1,24 +1,36 @@
 /* Enpixant – a Game Boy / 8-bit look: khaki windows with ink outlines and hard shadows on an
    olive desk, pixel fonts and pixel icons (src/ui/pixel-icons.tsx). */
 
-/* Two small helpers for the pixel fonts (imported in main.tsx): Press Start 2P squeezes its
-   accented capitals (Ö, Ü, É …) to lowercase size, so those few letters come from Silkscreen
-   Bold scaled to match; and Pixelify Sans draws "~" as a flat dash, which read "~1200" as
-   "-1200", so the tilde comes from Press Start 2P. Both only load when such a letter appears. */
+/* The fonts. Text: VT323 (OFL, files and licence in src/fonts/), a monospaced terminal font,
+   enlarged by size-adjust to the visual size of the older font so font-size values still read
+   as before; it has one weight, and nothing is synthesised (font-synthesis: none), so emphasis
+   comes from colour, inversion or the title font. Titles and numbers: Press Start 2P (imported
+   in main.tsx), always at multiples of 8px so its 1/8-em pixels land on whole CSS pixels.
+   Press Start 2P squeezes its accented capitals (Ö, Ü, É …) to lowercase size, so those few
+   letters come from Silkscreen Bold scaled to match ('Pixel Caps'). 'Pixel Pieces' (chess
+   figurines) comes first in both stacks and is defined in src/ui/pixel-pieces.css. */
+@font-face {
+  font-family: 'Enpixant Text';
+  src: url('./fonts/vt323-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  size-adjust: 125%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Enpixant Text';
+  src: url('./fonts/vt323-latin-ext-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  size-adjust: 125%;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 @font-face {
   font-family: 'Pixel Caps';
   src: url('../node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2') format('woff2');
   font-display: swap;
   unicode-range: U+C0-DE, U+152, U+178;
   size-adjust: 140%;
-}
-@font-face {
-  font-family: 'Pixel Tilde';
-  src: url('../node_modules/@fontsource/press-start-2p/files/press-start-2p-latin-400-normal.woff2') format('woff2');
-  font-display: swap;
-  font-weight: 100 900;
-  unicode-range: U+7E;
-  size-adjust: 62%;
 }
 
 /* Two palettes from the same four Game Boy tones (ink, olive, mid khaki, khaki): the light one
@@ -33,8 +45,8 @@
    and the .checker class for a dithered strip under a title. */
 :root,
 :root[data-theme='light'] {
-  --font-text: 'Pixel Tilde', 'Pixelify Sans Variable', 'Pixelify Sans', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-pixel: 'Pixel Caps', 'Press Start 2P', 'Pixelify Sans Variable', ui-monospace, monospace;
+  --font-text: 'Pixel Pieces', 'Enpixant Text', monospace;
+  --font-pixel: 'Pixel Pieces', 'Pixel Caps', 'Press Start 2P', monospace;
   --font: var(--font-text);
   /* the four tones and their in-betweens */
   --gb-ink: #2a2818;
@@ -4592,9 +4604,24 @@ textarea {
 .muted {
   color: var(--muted);
 }
+/* the text font has one weight and nothing is synthesised: emphasis is ink colour and size */
 b,
 strong {
-  font-weight: 700;
+  font-weight: 400;
+}
+:where(p, li, .coach-text, .coach-title, .coach-line, .muted, .hint-text, .setup-about, .lesson-why, .focus li, .field-label) :is(b, strong) {
+  color: var(--strong);
+}
+.coach-san {
+  padding: 0 3px;
+  background: var(--tint);
+  color: var(--strong);
+}
+/* titles inside cards: a step larger than their text */
+:is(.task-text, .opening-card-text, .link-card, .tool-card, .theme-text, .archive-text, .remote-text, .variation-text, .welcome-level, .endgame-card, .due-text, .bot-text, .resume-text, .profile-text, .account-head, .guess-card-text, .lesson-what, .pg-card-text, .rep-title, .rep-leak-text) b {
+  font-size: 18px;
+  line-height: 20px;
+  color: var(--strong);
 }
 .px-icon {
   flex: none;
@@ -4635,14 +4662,14 @@ strong {
   pointer-events: none;
 }
 .mobile-title {
-  font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   text-align: center;
 }
 .brand-name {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 16px;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -4679,7 +4706,7 @@ strong {
   flex: 1 1 0;
   gap: 3px;
   color: var(--text);
-  font-size: clamp(9.5px, 2.8vw, 11px);
+  font-size: clamp(11px, 3.1vw, 13px);
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -4749,8 +4776,8 @@ h2.display {
   --indent: clamp(48px, 16vw, 150px);
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: clamp(15px, 4.8vw, 26px);
-  line-height: 1.4;
+  font-size: 24px;
+  line-height: 32px;
   letter-spacing: 0;
   color: var(--heading);
   overflow-wrap: anywhere;
@@ -4761,19 +4788,31 @@ h2.display {
 }
 .display > span.display-2 {
   text-shadow: none;
-  margin-top: 4px;
+  /* room for the comma that hangs below the first line */
+  margin-top: 8px;
 }
 .display .display-2 > span {
   text-shadow: 3px 3px 0 var(--tint-strong);
 }
 .display small {
   font-family: var(--font-text);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 14px;
   text-shadow: none;
   overflow-wrap: break-word;
   hyphens: auto;
+}
+/* small phones: the page titles drop to 16px, the next step on the font's pixel grid */
+@media (max-width: 379px) {
+  h2.display {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .display small {
+    font-size: 12px;
+    padding-right: 6px;
+  }
 }
 /* the dithered strip under every page title */
 .display::after {
@@ -4787,9 +4826,8 @@ h2.display {
 .openings-head .display {
   margin-bottom: 10px;
 }
-.openings-head h2,
-.setup-form h2,
-.today-head h2,
+.openings-head h2:not(.display),
+.setup-form h2:not(.display),
 .page-head h2:not(.display),
 .welcome h1,
 .vision-title,
@@ -4798,13 +4836,14 @@ h2.display {
   font-family: var(--font-pixel);
   font-weight: 400;
   letter-spacing: 0;
-  line-height: 1.35;
+  line-height: 24px;
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 .setup-form h2,
-.openings-head h2:not(.display) {
-  font-size: clamp(14px, 4vw, 20px);
+.openings-head h2:not(.display),
+.page-head h2:not(.display) {
+  font-size: 16px;
 }
 .section-head h3,
 .opening-group h3,
@@ -4817,17 +4856,18 @@ h2.display {
 .pg-level-small {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: 8px;
+  line-height: 16px;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 .section-head h3,
 .opening-group h3 {
-  font-size: 11px;
+  font-size: 16px;
+  line-height: 24px;
   color: var(--heading);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
 }
 /* a small square in front of the section titles, like the list bullets of the old consoles */
@@ -4845,11 +4885,13 @@ h2.display {
 }
 .section-head h3 .muted {
   font-family: var(--font-text);
-  font-size: 13px;
+  font-size: 15px;
   text-transform: none;
 }
 .section-head {
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
 .section-head > .muted,
 .section-head .muted {
@@ -4861,10 +4903,10 @@ h2.display {
   border-radius: 0;
   border: 3px solid var(--ink);
   font-family: var(--font);
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0;
+  line-height: 20px;
   text-shadow: none;
   padding: 10px 18px;
   box-shadow: var(--bevel), var(--shadow-hard);
@@ -4916,7 +4958,7 @@ h2.display {
 }
 :is(.btn-primary, .btn-secondary, .btn-danger).small {
   border-width: 2px;
-  font-size: 14px;
+  font-size: 15px;
   padding: 6px 12px;
   box-shadow: var(--bevel), 3px 3px 0 var(--shadow-color);
 }
@@ -4925,7 +4967,7 @@ h2.display {
   box-shadow: var(--bevel), 0 0 0 var(--shadow-color);
 }
 .btn-primary.wide {
-  font-size: 17px;
+  font-size: 18px;
   padding: 13px;
 }
 button:disabled {
@@ -5301,8 +5343,8 @@ button:disabled {
 }
 .coach-card-title {
   font-family: var(--font-pixel);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
 }
 .coach-card-title b {
@@ -5359,8 +5401,8 @@ button:disabled {
 .hero-text b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
 }
 .hero-meta {
@@ -5379,8 +5421,8 @@ button:disabled {
 .daily-text b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
 }
 .daily-done.ok {
@@ -5434,10 +5476,14 @@ button:disabled {
 .streak b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 16px;
 }
 /* the day's ring: hard edges, cut into segments */
-.ring {
+.ring,
+.today-head .ring {
+  width: 64px;
+  height: 64px;
   overflow: visible;
 }
 .ring-track,
@@ -5459,14 +5505,15 @@ button:disabled {
     radial-gradient(circle, #000 0 58%, transparent 59%),
     repeating-conic-gradient(#000 0 13deg, transparent 13deg 18deg);
 }
+/* the ring is 64px for a 52-unit drawing: 13 units are 16px, 6.5 units 8px */
 .ring-text {
   font-family: var(--font-pixel);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
   fill: var(--heading);
 }
 .ring-pct {
-  font-size: 7px;
+  font-size: 6.5px;
   fill: var(--muted);
 }
 .task-icon,
@@ -5537,9 +5584,9 @@ button:disabled {
 .stat-value {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 20px;
+  font-size: 24px;
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 32px;
 }
 .stat-trend.up {
   color: var(--good);
@@ -5564,7 +5611,8 @@ button:disabled {
   box-shadow: 0 0 0 2px var(--ink);
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 11px;
+  font-size: 8px;
+  line-height: 8px;
 }
 .result.won {
   background: var(--good);
@@ -5588,7 +5636,8 @@ button:disabled {
 .price-card b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 16px;
 }
 .remote-acc {
   border-radius: 0;
@@ -5762,7 +5811,11 @@ select {
   border-bottom: 2px dotted var(--line);
 }
 .toggle > span {
-  font-weight: 600;
+  font-size: 17px;
+  color: var(--strong);
+}
+.toggle small {
+  font-size: 15px;
 }
 .toggle i {
   width: 46px;
@@ -5897,11 +5950,15 @@ input[type='range']::-moz-range-thumb {
   border-radius: 0;
   box-shadow: 0 0 0 2px var(--ink);
 }
-.field-label {
-  font-weight: 600;
+@media (max-width: 400px) {
+  .swatch {
+    padding-inline: 2px;
+    font-size: 10px;
+  }
 }
-.field-label b {
-  font-weight: 700;
+.field-label {
+  font-size: 17px;
+  color: var(--strong);
 }
 .or::before,
 .or::after {
@@ -5959,8 +6016,8 @@ input[type='range']::-moz-range-thumb {
 .modal-head h2 {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
@@ -5973,7 +6030,8 @@ input[type='range']::-moz-range-thumb {
   border-radius: 0;
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 22px;
+  font-size: 24px;
+  line-height: 32px;
   box-shadow:
     0 0 0 3px var(--ink),
     var(--shadow-hard);
@@ -6068,8 +6126,8 @@ input[type='range']::-moz-range-thumb {
   background-image: none;
 }
 .welcome h1 {
-  font-size: clamp(16px, 5.6vw, 24px);
-  line-height: 1.4;
+  font-size: 24px;
+  line-height: 32px;
 }
 .welcome-logo {
   width: 64px;
@@ -6134,10 +6192,11 @@ input[type='range']::-moz-range-thumb {
 }
 .coach-eval {
   border-radius: 0;
-  font-family: var(--font-pixel);
+  font-family: var(--font-text);
   font-weight: 400;
-  font-size: 10px;
-  padding: 4px 6px;
+  font-size: 17px;
+  line-height: 18px;
+  padding: 2px 6px;
   background: #f4f2dc;
   color: var(--gb-ink);
   box-shadow: inset 0 0 0 2px var(--gb-ink);
@@ -6244,33 +6303,39 @@ input[type='range']::-moz-range-thumb {
   animation-timing-function: steps(2);
 }
 .captured .lead {
-  font-family: var(--font-pixel);
-  font-size: 9px;
+  font-family: var(--font-text);
+  font-size: 15px;
   font-weight: 400;
 }
 /* a clock in a player strip, should a mode show one */
 .player :is(.clock, .player-clock) {
   font-family: var(--font-pixel);
-  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  line-height: 16px;
 }
 .accuracy,
 .summary .acc,
 .line-score {
   border-radius: 0;
-  font-family: var(--font-pixel);
   font-weight: 400;
 }
 .accuracy {
-  font-size: 12px;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  line-height: 16px;
   padding: 6px 8px;
 }
 .summary .acc {
-  font-size: 11px;
-  padding: 4px 6px;
+  font-family: var(--font-text);
+  font-size: 18px;
+  line-height: 18px;
+  padding: 3px 6px;
 }
 .line-score {
-  font-size: 9.5px;
-  padding: 4px 5px;
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 18px;
+  padding: 2px 5px;
   min-width: 52px;
 }
 :is(.accuracy, .summary .acc, .line-score).white {
@@ -6339,7 +6404,8 @@ input[type='range']::-moz-range-thumb {
 }
 .lines-head {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 8px;
+  line-height: 16px;
   font-weight: 400;
   text-transform: uppercase;
   align-items: center;
@@ -6351,7 +6417,7 @@ input[type='range']::-moz-range-thumb {
   border-top: 0;
 }
 .line-moves {
-  font-size: 14px;
+  font-size: 16px;
 }
 .movelist {
   border-radius: 0;
@@ -6362,13 +6428,13 @@ input[type='range']::-moz-range-thumb {
   padding: 4px;
 }
 .movenum {
-  font-family: var(--font-pixel);
-  font-size: 9px;
+  font-family: var(--font-text);
+  font-size: 15px;
 }
 .move {
   border-radius: 0;
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 400;
+  font-size: 17px;
 }
 .move:hover {
   background: var(--tint);
@@ -6385,7 +6451,8 @@ input[type='range']::-moz-range-thumb {
 }
 .summary-row.head {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 8px;
+  line-height: 16px;
   text-transform: uppercase;
 }
 .moment {
@@ -6559,7 +6626,7 @@ input[type='range']::-moz-range-thumb {
   }
   .nav-items .nav-item,
   .nav-foot .nav-item {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text);
   }
   .nav-brand .brand-mark {
@@ -6568,10 +6635,20 @@ input[type='range']::-moz-range-thumb {
     border-radius: 0;
   }
   h2.display {
-    font-size: clamp(20px, 2.4vw, 32px);
+    font-size: 32px;
+    line-height: 40px;
   }
   .display small {
-    font-size: 13px;
+    font-size: 15px;
+    line-height: 16px;
+  }
+  .setup-form h2,
+  .openings-head h2:not(.display),
+  .page-head h2:not(.display),
+  .vision-title,
+  .guess-head h2 {
+    font-size: 24px;
+    line-height: 32px;
   }
   /* the board view: a game window and a side window */
   .layout {
@@ -6617,8 +6694,8 @@ input[type='range']::-moz-range-thumb {
   .panel-head b {
     font-family: var(--font-pixel);
     font-weight: 400;
-    font-size: 11px;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 24px;
     text-transform: uppercase;
   }
   .summary,
@@ -6649,20 +6726,28 @@ input[type='range']::-moz-range-thumb {
   }
   .nav-items .nav-item,
   .nav-foot .nav-item {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (min-width: 1240px) {
+  /* room for the 16px name next to the 48px mark */
+  :root {
+    --rail: 224px;
+  }
+  .nav .nav-brand {
+    gap: 8px;
+    padding: 0 4px;
+  }
   .nav-items .nav-item,
   .nav-foot .nav-item {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
   }
   .nav-item.on .nav-label {
     text-decoration: none;
   }
   .nav-brand .brand-name {
-    font-size: 13px;
+    font-size: 16px;
   }
 }
 

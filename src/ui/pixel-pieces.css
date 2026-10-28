@@ -1,0 +1,8 @@
+/* The chess figurines (♔–♟) in move lists and texts come from this font: the board's own
+   pieces in pixels (scripts/build-pixel-pieces.mjs). Font stacks list it first. */
+@font-face {
+  font-family: 'Pixel Pieces';
+  src: url('../fonts/pixel-pieces.otf') format('opentype');
+  unicode-range: U+2654-265F;
+  font-display: block;
+}

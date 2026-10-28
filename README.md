@@ -79,9 +79,10 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - **Nochmal versuchen:** bei Fehlern zurück in die Stellung und den besseren Zug selbst finden. Stockfish prüft auch Alternativen, die fast genauso gut sind
 
 **Design**
-- Helles Design in Tannengrün und Koralle: grosse Überschriften in Grossbuchstaben, runde umrandete Knöpfe, Pill-Tabs, grüne Karten, Lade-Symbol aus gestapelten Feldern; das dunkle chess.com-artige Schema ist in den Einstellungen wählbar
+- Retro-Design im Stil des Game Boy: vier Olivtöne, Fenster mit harten Schatten, Pixelschrift (Press Start 2P für Titel, VT323 für Texte); das dunkle Schema ist in den Einstellungen wählbar
+- Alle Grafiken sind verpixelte Originale statt eigener Zeichnungen: die Symbole aus Lucide, die Figürchen in Zuglisten aus den cburnett-Figuren (eigene kleine Schrift, `scripts/build-pixel-pieces.mjs`), die Gesichter der Gegner aus Twemoji (`scripts/build-bot-faces.mjs`) und das Logo aus dem ursprünglichen Turm
 - Menü als Seitenleiste (Desktop) oder Leiste mit runden Knöpfen unten (Handy): Heute, Spielen, Taktik, Eröffnungen, Analyse; das Logo führt zurück zur Startseite
-- 11 Brettfarben (Standard: Tanne), 10 freie Figurensätze von Lichess, 5 Sound-Sets, alle in der App erzeugt: Filz (Standard), Holz, Klick, Marimba, Retro
+- Brettfarben (Standard: Retro), freie Figurensätze von Lichess (Standard: Merida, chess.com-ähnlich umgefärbt), 5 Sound-Sets, alle in der App erzeugt: Retro (Standard), Filz, Holz, Klick, Marimba
 - Pfeile im chess.com-Stil: eine saubere Form, Springerzüge als L, Engine-Pfeile wachsen beim Erscheinen aus dem Startfeld; eigene Pfeile und Kreise per Rechtsklick
 - Bewertungsbalken per Schalter auch beim Spielen und im Eröffnungstraining
 
@@ -105,6 +106,9 @@ npm run openings    # Eröffnungsnamen neu erzeugen (lädt die Lichess-Listen)
 npm run repertoire  # Theorie-Bäume des Trainers neu erzeugen (lädt ~230 MB Turnierpartien)
 node scripts/build-puzzles.mjs  # Taktikaufgaben neu auswählen (lädt ~300 MB Puzzle-Datenbank)
 node scripts/build-pieces.mjs   # Figurensätze von Lichess neu laden
+node scripts/build-pixel-icons.mjs   # Lucide-Symbole neu verpixeln (nach einem neuen Symbol)
+node scripts/build-pixel-pieces.mjs  # Figurenschrift für Zuglisten neu erzeugen
+node scripts/build-bot-faces.mjs     # Gesichter der Gegner neu verpixeln
 npm run artifact    # Build plus dist/artifact.html für einen claude.ai-Link (ohne Service Worker)
 supabase db push && supabase functions deploy …   # Backend, Schritt für Schritt in PUBLISHING.md
 ```
@@ -145,7 +149,8 @@ Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Li
 - Theorie aus der [Lichess-Broadcast-Datenbank](https://database.lichess.org/#broadcasts) (Turnierpartien Okt. 2025 bis Sep. 2026), CC0
 - Taktikaufgaben aus der [Lichess-Puzzle-Datenbank](https://database.lichess.org/#puzzles), CC0
 - Figurensätze von Lichess: Merida (GPLv2+), Celtic, Fantasy, Spatial (Maurizio Monge, MIT), Chessnut (Apache 2.0), MPChess (GPLv3+), Papercut (CC BY 4.0, Nikolay Anzarov), Kupfer/RhosGFX (CC0), Pixel (AGPLv3+)
-- Icons von [Lucide](https://lucide.dev), ISC
-- Schrift [Inter Tight](https://github.com/rsms/inter) über Fontsource, SIL Open Font License 1.1
+- Icons von [Lucide](https://lucide.dev), ISC, verpixelt
+- Gesichter der Gegner aus [Twemoji](https://github.com/jdecked/twemoji) (Twitter, Inc. und Mitwirkende), CC BY 4.0, verpixelt
+- Schriften [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P), [VT323](https://fonts.google.com/specimen/VT323) und [Silkscreen](https://fonts.google.com/specimen/Silkscreen), SIL Open Font License 1.1
 
 Weil Stockfish und chessground unter der GPL stehen, steht auch Enpixant unter der GPL-3.0 (siehe `LICENSE`). Ein kostenpflichtiges Abo ist damit vereinbar, solange der Quelltext öffentlich bleibt.

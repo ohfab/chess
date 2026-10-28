@@ -114,9 +114,9 @@
 .guess-head h2 {
   margin: 0;
   font-family: var(--font-pixel);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 24px;
   text-transform: uppercase;
   letter-spacing: 0;
   color: var(--heading);
@@ -139,7 +139,8 @@
 }
 .guess-points b {
   font-family: var(--font-pixel);
-  font-size: 20px;
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 400;
   color: var(--heading);
 }
@@ -235,7 +236,8 @@
   display: grid;
   place-items: center;
   font-family: var(--font-pixel);
-  font-size: 15px;
+  font-size: 16px;
+  line-height: 16px;
   font-weight: 400;
   color: var(--gb-paper);
   background: var(--good);
@@ -260,7 +262,7 @@
 .guess-final {
   font-family: var(--font-pixel);
   font-size: 48px;
-  line-height: 1.1;
+  line-height: 56px;
   font-weight: 400;
   text-shadow: 5px 5px 0 var(--tint-strong);
   color: var(--heading);
@@ -351,13 +353,19 @@
   }
 }
 
+@media (min-width: 900px) {
+  .guess-head h2 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
 @media (max-width: 899px) {
   .guess-grid {
     grid-template-columns: 1fr;
     gap: 14px;
   }
   .guess-head h2 {
-    font-size: 22px;
+    font-size: 16px;
   }
   /* before the start and at the end the text matters more than the board */
   .guess-grid.intro .guess-side,
@@ -372,6 +380,7 @@
   }
   .guess-final {
     font-size: 40px;
+    line-height: 48px;
   }
 }
 :root[data-theme='dark'] .guess-plus {

@@ -22,7 +22,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,mp3,webmanifest,woff2}'],
         // the slow asm.js engine is only a fallback for browsers without WebAssembly;
         // of the fonts only the Latin letters are needed offline
-        globIgnores: ['**/stockfish-19-asm-*.js', '**/{press-start-2p,pixelify-sans,silkscreen}-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
+        globIgnores: ['**/stockfish-19-asm-*.js', '**/{press-start-2p,silkscreen}-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/legal\//],

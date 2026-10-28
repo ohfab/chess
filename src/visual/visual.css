@@ -63,8 +63,8 @@
 .vision-card-text b {
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 24px;
   text-transform: uppercase;
   color: var(--heading);
 }
@@ -119,9 +119,9 @@
 .vision-title {
   margin: 0;
   font-family: var(--font-pixel);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 32px;
   text-transform: uppercase;
   letter-spacing: 0;
   color: var(--heading);
@@ -183,6 +183,7 @@
   position: absolute;
   font-family: var(--font-pixel);
   font-size: 8px;
+  line-height: 8px;
   font-weight: 400;
   color: rgb(42 40 24 / 0.6);
 }
@@ -223,7 +224,7 @@
 .vision-score {
   font-family: var(--font-pixel);
   font-size: 56px;
-  line-height: 1.1;
+  line-height: 64px;
   font-weight: 400;
   text-shadow: 5px 5px 0 rgb(0 0 0 / 0.35);
   font-variant-numeric: tabular-nums;
@@ -253,14 +254,15 @@
   position: relative;
   font-family: var(--font-pixel);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 16px;
   font-variant-numeric: tabular-nums;
   color: var(--strong);
 }
 .vision-target {
   font-family: var(--font-pixel);
-  font-size: clamp(44px, 10vw, 80px);
-  line-height: 1.1;
+  font-size: 80px;
+  line-height: 88px;
   font-weight: 400;
   text-align: center;
   color: var(--heading);
@@ -507,9 +509,11 @@
     order: -1;
   }
   .vision-title {
-    font-size: 22px;
+    font-size: 16px;
+    line-height: 24px;
   }
   .vision-target {
-    font-size: 72px;
+    font-size: 64px;
+    line-height: 72px;
   }
 }

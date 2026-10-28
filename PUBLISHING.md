@@ -148,7 +148,7 @@ Die Apps sind mit [Capacitor](https://capacitorjs.com) eingerichtet: `android/` 
 - App-ID: `appId` in `capacitor.config.ts` (jetzt `app.enpixant`), dazu `namespace` und `applicationId` in `android/app/build.gradle` und den Bundle Identifier in Xcode. Am besten passend zur Domain, zum Beispiel `com.enpixant.app`.
 - Version: `versionCode`/`versionName` in `android/app/build.gradle`, in Xcode „Version“ und „Build“. Jede Store-Version braucht eine höhere Nummer.
 - Icons und Startbild: Quellen in `assets/`, neu erzeugen mit
-  `npx @capacitor/assets generate --android --ios --iconBackgroundColor '#416b59' --iconBackgroundColorDark '#416b59' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#312e2b'`
+  `npx @capacitor/assets generate --android --ios --iconBackgroundColor '#6c6b55' --iconBackgroundColorDark '#6c6b55' --splashBackgroundColor '#d3d1b4' --splashBackgroundColorDark '#222116'`
 
 ### Google Play
 
