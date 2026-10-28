@@ -26,7 +26,7 @@ function AppReminders() {
     try {
       const reminders = await import('../native/reminders')
       if (!next) await reminders.disableReminder()
-      else if ((await reminders.enableReminder(at)) === 'denied') setError(t('Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen deines Handys.'))
+      else if ((await reminders.enableReminder(at)) === 'denied') setError(t('Benachrichtigungen sind für Enpixant blockiert. Erlaube sie in den Einstellungen deines Handys.'))
     } catch {
       setError(t('Das hat nicht geklappt. Versuch es gleich nochmal.'))
     } finally {
@@ -103,7 +103,7 @@ function PushReminders() {
       if (code === 'denied') setProblem(reminderProblem())
       setError(
         code === 'denied'
-          ? t('Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen des Browsers.')
+          ? t('Benachrichtigungen sind für Enpixant blockiert. Erlaube sie in den Einstellungen des Browsers.')
           : code === 'no-worker'
             ? t('Lade die Seite einmal neu, dann klappt es.')
             : t('Das hat nicht geklappt. Versuch es gleich nochmal.'),
@@ -120,11 +120,11 @@ function PushReminders() {
     : problem === 'no-backend'
       ? t('In dieser Version nicht verfügbar.')
       : problem === 'ios-browser'
-        ? t('Auf dem iPhone geht das nur in der installierten App: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Rookly von dort öffnen.')
+        ? t('Auf dem iPhone geht das nur in der installierten App: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Enpixant von dort öffnen.')
         : problem === 'unsupported'
           ? t('Dieser Browser kann keine Benachrichtigungen empfangen.')
           : problem === 'denied'
-            ? t('Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen des Browsers.')
+            ? t('Benachrichtigungen sind für Enpixant blockiert. Erlaube sie in den Einstellungen des Browsers.')
             : on
               ? t('Jeden Tag um {time}, wenn dein Plan noch offen ist.', { time: `${hour}:00` })
               : t('Eine Nachricht am Tag, wenn dein Plan noch offen ist.')
@@ -140,7 +140,7 @@ function PushReminders() {
               <button type="button" className="reminders-link" onClick={openAccount}>
                 {t('Melde dich an')}
               </button>{' '}
-              {t('und Rookly erinnert dich jeden Tag an deine Serie.')}
+              {t('und Enpixant erinnert dich jeden Tag an deine Serie.')}
             </small>
           )}
         </span>

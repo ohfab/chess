@@ -4,7 +4,7 @@ import { MOTIFS, PHASE_NAMES, type Insights, type Phase } from './insights'
 import { today, type DailyPlan, type PlanTask } from './plan'
 
 // The AI coach: Claude reads the player's numbers and the candidate tasks and writes
-// the day's plan. With the Rookly backend it runs on the server for Pro members
+// the day's plan. With the Enpixant backend it runs on the server for Pro members
 // (supabase/functions/coach); inside a claude.ai artifact it uses the viewer's own
 // Claude account through the runtime's `sample`; elsewhere it is absent.
 import { callFunction, CloudError, cloudEnabled } from '../account/cloud'

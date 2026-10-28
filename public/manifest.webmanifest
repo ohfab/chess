@@ -1,6 +1,6 @@
 {
-  "name": "Rookly – Schach trainieren",
-  "short_name": "Rookly",
+  "name": "Enpixant – Schach trainieren",
+  "short_name": "Enpixant",
   "description": "Schach trainieren mit Stockfish: spielen, Partien auswerten, Eröffnungen und Taktik üben.",
   "lang": "de",
   "start_url": "./",

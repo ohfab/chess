@@ -51,7 +51,7 @@ function Root() {
       <App />
       {update && (
         <div className="update-banner" role="status">
-          <span>{t('Eine neue Version von Rookly ist bereit.')}</span>
+          <span>{t('Eine neue Version von Enpixant ist bereit.')}</span>
           <button className="btn-primary small" onClick={() => location.reload()}>
             {t('Neu laden')}
           </button>

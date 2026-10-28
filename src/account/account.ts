@@ -213,7 +213,7 @@ export function exportData() {
 /** Restores an export, merged with what is already on this device. */
 export async function importData(file: File) {
   const parsed = JSON.parse(await file.text())
-  if (parsed?.app !== 'rookly' || typeof parsed.data !== 'object') throw new Error(t('Diese Datei ist keine Rookly-Sicherung.'))
+  if (parsed?.app !== 'rookly' || typeof parsed.data !== 'object') throw new Error(t('Diese Datei ist keine Enpixant-Sicherung.'))
   const merged = mergeState(snapshot(useGame.getState()), parsed.data as Partial<Synced>, true)
   useGame.getState().replaceSynced(merged)
   applyExtras(parsed.data.extras)

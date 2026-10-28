@@ -1,6 +1,6 @@
 {
-  "name": "rookly",
-  "description": "Rookly: Schach-Training mit Stockfish, Eröffnungstrainer, Taktik und Partie-Auswertung.",
+  "name": "enpixant",
+  "description": "Enpixant: Schach-Training mit Stockfish, Eröffnungstrainer, Taktik und Partie-Auswertung.",
   "private": true,
   "version": "0.1.0",
   "type": "module",

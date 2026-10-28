@@ -1,4 +1,4 @@
-package app.rookly;
+package app.enpixant;
 
 import com.getcapacitor.BridgeActivity;
 

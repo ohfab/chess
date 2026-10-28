@@ -8,7 +8,7 @@ import { getSample } from './ai'
 
 // Questions to the AI coach about one position. The coach gets the position, the moves so
 // far and Stockfish's lines, and is told to explain from those lines instead of inventing
-// its own analysis. Transport as for the daily plan (src/coach/ai.ts): the Rookly backend
+// its own analysis. Transport as for the daily plan (src/coach/ai.ts): the Enpixant backend
 // for Pro members, the viewer's own Claude inside a claude.ai artifact, otherwise nothing.
 
 export interface AskTurn {
@@ -52,7 +52,7 @@ export function positionFacts({ fen, moves, lines }: AskPosition) {
 
 const prompt = (facts: ReturnType<typeof positionFacts>, history: AskTurn[], question: string) =>
   [
-    'Du bist ein erfahrener, freundlicher Schachtrainer in der Trainings-App Rookly. Eine Person fragt dich zur Stellung auf ihrem Analysebrett.',
+    'Du bist ein erfahrener, freundlicher Schachtrainer in der Trainings-App Enpixant. Eine Person fragt dich zur Stellung auf ihrem Analysebrett.',
     'Grundlage sind die Stockfish-Linien unten (Bewertung aus Sicht von Weiß: + ist gut für Weiß). Stütze jede Aussage über Züge, Drohungen und Bewertungen auf diese Linien.',
     'Erfinde keine eigenen Varianten und keine Bewertungen. Wenn die Linien eine Frage nicht beantworten oder fehlen, sag das ehrlich und erkläre die allgemeinen Ideen der Stellung.',
     `Antworte ${WRITE_IN[getLang()]}, in 2 bis 5 kurzen Sätzen, konkret und ohne Floskeln. Schreib Züge so, wie sie in den Linien stehen.`,

@@ -1,6 +1,6 @@
 import { tk } from '../i18n/i18n'
 
-// What Rookly Pro adds. Playing, analysis, game reviews, openings and all training stay free;
+// What Enpixant Pro adds. Playing, analysis, game reviews, openings and all training stay free;
 // Pro is the AI coach (it costs money per use) and the extra designs. The prices shown here
 // are only labels: the amounts charged are the Stripe prices configured on the server
 // (see PUBLISHING.md). The texts are translation keys.
@@ -12,7 +12,7 @@ import { tk } from '../i18n/i18n'
 export const AI_ENABLED = import.meta.env.VITE_AI === 'on'
 
 /**
- * Rookly starts free: no subscription, every design open, nothing locked. VITE_PRO=on at build
+ * Enpixant starts free: no subscription, every design open, nothing locked. VITE_PRO=on at build
  * time brings Pro back (with Stripe set up as in PUBLISHING.md); the AI coach needs it on.
  */
 export const PRO_ENABLED = import.meta.env.VITE_PRO === 'on'
@@ -38,5 +38,5 @@ export const PRO_BENEFITS: { title: string; text: string }[] = [
       ]
     : []),
   { title: tk('Alle Designs'), text: tk('11 Bretter und 10 Figurensätze') },
-  { title: tk('Rookly unterstützen'), text: tk('Analyse, Eröffnungen und alles Training bleiben für alle gratis') },
+  { title: tk('Enpixant unterstützen'), text: tk('Analyse, Eröffnungen und alles Training bleiben für alle gratis') },
 ]

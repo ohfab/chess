@@ -9,7 +9,7 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' }
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Rookly', {
+    self.registration.showNotification(data.title || 'Enpixant', {
       body: data.body || '',
       icon: 'icon-192.png',
       badge: 'icon-192.png',
@@ -19,7 +19,7 @@ self.addEventListener('push', (event) => {
   )
 })
 
-// a tap on the reminder brings an open Rookly to the front, or opens it
+// a tap on the reminder brings an open Enpixant to the front, or opens it
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const target = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href

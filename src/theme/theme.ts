@@ -37,7 +37,7 @@ export interface PieceSet {
 }
 
 export const PIECE_SETS: PieceSet[] = ([
-  { id: 'standard', name: 'Standard', author: 'Armando H. Marroquin (Merida, umgefärbt)', license: 'GPLv2+' },
+  { id: 'standard', name: 'Standard', author: 'Armando H. Marroquin (Merida)', license: 'GPLv2+' },
   { id: 'cburnett', name: 'Klassisch', author: 'Colin M.L. Burnett', license: 'GPLv2+' },
   { id: 'merida', name: 'Merida', author: 'Armando H. Marroquin', license: 'GPLv2+' },
   { id: 'celtic', name: 'Celtic', author: 'Maurizio Monge', license: 'MIT' },

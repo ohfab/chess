@@ -43,7 +43,7 @@ export async function scheduleReminders() {
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, hour)
     if (at <= now || (i === 0 && planDone())) continue
     const streak = streakOn(addDays(today(), i))
-    notifications.push({ id: FIRST_ID + i, title: 'Rookly', body: streak > 0 ? text.streak(streak) : text.start, schedule: { at }, smallIcon: 'ic_stat_rookly' })
+    notifications.push({ id: FIRST_ID + i, title: 'Enpixant', body: streak > 0 ? text.streak(streak) : text.start, schedule: { at }, smallIcon: 'ic_stat_enpixant' })
   }
   if (notifications.length) await LocalNotifications.schedule({ notifications })
 }

@@ -1,12 +1,12 @@
 {
-  "Auf dem iPhone geht das nur in der installierten App: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Rookly von dort öffnen.": "Sur iPhone, cela ne marche que dans l’app installée : choisis « Sur l’écran d’accueil » dans le menu Partager et ouvre Rookly depuis là.",
-  "Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen des Browsers.": "Les notifications sont bloquées pour Rookly. Autorise-les dans les réglages du navigateur.",
+  "Auf dem iPhone geht das nur in der installierten App: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Enpixant von dort öffnen.": "Sur iPhone, cela ne marche que dans l’app installée : choisis « Sur l’écran d’accueil » dans le menu Partager et ouvre Enpixant depuis là.",
+  "Benachrichtigungen sind für Enpixant blockiert. Erlaube sie in den Einstellungen des Browsers.": "Les notifications sont bloquées pour Enpixant. Autorise-les dans les réglages du navigateur.",
   "Deine Frage zur Stellung": "Ta question sur la position",
   "Deine Frage zur Stellung …": "Ta question sur la position …",
   "Der Coach hält sich an die Stockfish-Linien.": "Le coach s’en tient aux lignes de Stockfish.",
   "Der Coach schreibt …": "Le coach écrit …",
   "Der KI-Coach ist in dieser Version nicht verfügbar.": "Le coach IA n’est pas disponible dans cette version.",
-  "Der KI-Coach ist in dieser Version nicht verfügbar. Mit einem Rookly-Konto und Pro kannst du ihm zu jeder Stellung Fragen stellen.": "Le coach IA n’est pas disponible dans cette version. Avec un compte Rookly et Pro, tu peux lui poser des questions sur chaque position.",
+  "Der KI-Coach ist in dieser Version nicht verfügbar. Mit einem Enpixant-Konto und Pro kannst du ihm zu jeder Stellung Fragen stellen.": "Le coach IA n’est pas disponible dans cette version. Avec un compte Enpixant et Pro, tu peux lui poser des questions sur chaque position.",
   "Die Frage ist zu lang. Fass sie kürzer.": "La question est trop longue. Fais plus court.",
   "Dieser Browser kann keine Benachrichtigungen empfangen.": "Ce navigateur ne peut pas recevoir de notifications.",
   "Eine Nachricht am Tag, wenn dein Plan noch offen ist.": "Un message par jour tant que ton plan n’est pas terminé.",
@@ -26,6 +26,6 @@
   "Was droht der Gegner?": "Que menace l’adversaire ?",
   "Was ist hier der Plan?": "Quel est le plan ici ?",
   "Welche Fehler sollte ich vermeiden?": "Quelles erreurs dois-je éviter ?",
-  "und Rookly erinnert dich jeden Tag an deine Serie.": "et Rookly te rappellera ta série chaque jour.",
-  "Benachrichtigungen sind für Rookly blockiert. Erlaube sie in den Einstellungen deines Handys.": "Les notifications sont bloquées pour Rookly. Autorise-les dans les réglages de ton téléphone."
+  "und Enpixant erinnert dich jeden Tag an deine Serie.": "et Enpixant te rappellera ta série chaque jour.",
+  "Benachrichtigungen sind für Enpixant blockiert. Erlaube sie in den Einstellungen deines Handys.": "Les notifications sont bloquées pour Enpixant. Autorise-les dans les réglages de ton téléphone."
 }

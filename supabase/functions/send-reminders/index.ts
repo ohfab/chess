@@ -8,7 +8,7 @@ import { admin } from '../_shared/supabase.ts'
 
 const SECRET = Deno.env.get('CRON_SECRET')
 const APP_URL = Deno.env.get('APP_URL') ?? './'
-webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:hallo@rookly.app', Deno.env.get('VAPID_PUBLIC_KEY')!, Deno.env.get('VAPID_PRIVATE_KEY')!)
+webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:hallo@enpixant.app', Deno.env.get('VAPID_PUBLIC_KEY')!, Deno.env.get('VAPID_PRIVATE_KEY')!)
 
 const TEXT: Record<string, { streak: (n: number) => string; start: string }> = {
   de: { streak: (n) => `Deine Serie: ${n} ${n === 1 ? 'Tag' : 'Tage'}. Heute noch eine kurze Lektion?`, start: 'Fünf Minuten Schach für heute: eine kurze Lektion wartet.' },
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     }
     const streak = state?.streak && (state.streak.last === local.date || state.streak.last === dayBefore(local.date)) ? (state.streak.count ?? 0) : 0
     const text = TEXT[s.lang] ?? TEXT.de
-    const payload = JSON.stringify({ title: 'Rookly', body: streak > 0 ? text.streak(streak) : text.start, url: APP_URL, tag: 'daily-reminder' })
+    const payload = JSON.stringify({ title: 'Enpixant', body: streak > 0 ? text.streak(streak) : text.start, url: APP_URL, tag: 'daily-reminder' })
     try {
       await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3 * 3600 })
       await admin.from('push_subscriptions').update({ last_sent: local.date }).eq('endpoint', s.endpoint)

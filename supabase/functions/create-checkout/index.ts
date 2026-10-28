@@ -1,4 +1,4 @@
-// Starts a Stripe Checkout for Rookly Pro and returns its URL. Body: { plan: "monthly" | "yearly", returnUrl }.
+// Starts a Stripe Checkout for Enpixant Pro and returns its URL. Body: { plan: "monthly" | "yearly", returnUrl }.
 import { json, preflight, safeReturnUrl } from '../_shared/http.ts'
 import { customerFor, stripe } from '../_shared/stripe.ts'
 import { isPro, profileOf, userFrom } from '../_shared/supabase.ts'

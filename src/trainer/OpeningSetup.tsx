@@ -132,7 +132,7 @@ export function OpeningSetup({ opening, progress, level: initialLevel, onStart, 
             {learn
               ? t('Pfeile zeigen jeden Zug, und der Coach erklärt, warum er gespielt wird.')
               : fresh
-                ? t('Neue Varianten zeigt Rookly beim ersten Mal trotzdem mit Pfeilen.')
+                ? t('Neue Varianten zeigt Enpixant beim ersten Mal trotzdem mit Pfeilen.')
                 : t('Ohne Pfeile: du spielst die Züge aus dem Kopf.')}
           </p>
 

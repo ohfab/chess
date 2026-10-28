@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.rookly"
+    namespace = "app.enpixant"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.rookly"
+        applicationId "app.enpixant"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,8 +1,8 @@
-# Rookly veröffentlichen
+# Enpixant veröffentlichen
 
-Rookly startet **gratis, ohne Konto und ohne Abo**, als Website und als App für Android und iPhone. Dafür braucht es nur Schritt 1, 6 und 7; die Website läuft schon auf GitHub Pages.
+Enpixant startet **gratis, ohne Konto und ohne Abo**, als Website und als App für Android und iPhone. Dafür braucht es nur Schritt 1, 6 und 7; die Website läuft schon auf GitHub Pages.
 
-Schritt 2 bis 5 sind für später: Konten mit Sync (Supabase), das Abo Rookly Pro (Stripe, `VITE_PRO=on`), der KI-Coach (Anthropic, `VITE_AI=on`) und die Erinnerung per Web-Push auf der Website. Ohne sie läuft Rookly im lokalen Modus: alles auf dem Gerät, alles frei.
+Schritt 2 bis 5 sind für später: Konten mit Sync (Supabase), das Abo Enpixant Pro (Stripe, `VITE_PRO=on`), der KI-Coach (Anthropic, `VITE_AI=on`) und die Erinnerung per Web-Push auf der Website. Ohne sie läuft Enpixant im lokalen Modus: alles auf dem Gerät, alles frei.
 
 Was du für den Start brauchst:
 - optional eine eigene Domain (siehe Schritt 1 zum Namen)
@@ -15,11 +15,11 @@ Für später:
 
 ## 1. Name und Marke prüfen
 
-**Achtung (Stand 22.10.2026):** `rookly.com` gehört Rookly, Inc., einer Schach-Liga für Schulen in den USA („Rookly | Chess Esports League“). Laut einer Markendatenbank hat die Firma im März 2026 die Marke ROOKLY in den USA angemeldet (Anmeldung 99694234, Schachturniere, Schachunterricht, Software). Eine Schach-App mit demselben Namen riskiert Verwechslung und Markenstreit, auch unter einer anderen Domain-Endung; die Stores reagieren auf Markenbeschwerden. Vor Domain und Store-Eintrag darum: [Swissreg](https://www.swissreg.ch), [EUIPO eSearch](https://euipo.europa.eu/eSearch/) und [WIPO Brand Database](https://branddb.wipo.int) prüfen (Klassen 9, 41, 42) und im Zweifel einen anderen Namen wählen.
+Die App heisst **Enpixant** (aus „en passant“ und „Pixel“). Den früheren Namen „Rookly“ trägt bereits eine US-Schachliga für Schulen; die Marke ROOKLY ist dort seit September 2026 eingetragen (Reg. Nr. 8,468,996, auch für Schachunterricht). Darum der neue Name.
 
-Der Name steht an wenigen Stellen: `APP_NAME` in `src/brand.ts`, `public/manifest.webmanifest`, `index.html`, `capacitor.config.ts` (mit der App-ID), `android/app/src/main/res/values/strings.xml`, `ios/App/App/Info.plist` und die Seiten in `public/legal/`.
+Stand 28.10.2026: `enpixant.com`, `enpixant.app`, `enpixant.ch` und `enpixant.de` waren frei; im Web, im App Store, bei Google Play, auf Steam und itch.io sowie im US-Markenregister gab es nichts Gleiches. Nicht geprüft sind die Register in der Schweiz und der EU: vor dem Kauf der Domain und dem Store-Eintrag [Swissreg](https://www.swissreg.ch), [EUIPO eSearch](https://euipo.europa.eu/eSearch/) und die [WIPO Brand Database](https://branddb.wipo.int) ansehen (Klassen 9, 41, 42). Ausweichnamen, die ebenfalls frei waren: Matecade, Pixpassant, Bitpassant.
 
-Frei waren am 22.10.2026 unter anderem `rookly.app`, `rookly.ch`, `rookly.net`, `rookly.ai`, `rookly.to` und `rooklyapp.com`. `.eu` können nur Personen aus der EU/dem EWR oder mit EU-Bürgerschaft registrieren.
+Der Name steht an wenigen Stellen: `APP_NAME` in `src/brand.ts`, `public/manifest.webmanifest`, `index.html`, `capacitor.config.ts` (mit der App-ID `app.enpixant`), `android/app/src/main/res/values/strings.xml`, `ios/App/App/Info.plist`, die Seiten in `public/legal/` und einige Texte in `src/i18n/parts/`. Gespeicherte Daten behalten ihre alten Schlüssel (`rookly`, `rookly-…`), damit nichts verloren geht.
 
 ## 2. Supabase einrichten (später: Konten und Sync)
 
@@ -31,12 +31,12 @@ Frei waren am 22.10.2026 unter anderem `rookly.app`, `rookly.ch`, `rookly.net`, 
    supabase db push            # legt Tabellen und Zugriffsregeln aus supabase/migrations an
    ```
 3. **Authentication → Providers**: E-Mail ist aktiv (Magic Link). Für Google einen OAuth-Client in der Google Cloud Console anlegen und hier eintragen.
-4. **Authentication → URL Configuration**: Site URL = deine App-Adresse (z. B. `https://rookly.app/` oder `https://ohfab.github.io/chess/`), dieselbe Adresse auch unter Redirect URLs.
-5. **Authentication → Emails**: die Vorlage für den Magic Link anpassen. Supabase verschickt pro Projekt eine Vorlage für alle; weil Rookly vier Sprachen hat, am besten kurz zweisprachig (Deutsch und Englisch). Für mehr als ein paar Mails pro Stunde einen eigenen SMTP-Versand einrichten (z. B. Resend, Postmark).
+4. **Authentication → URL Configuration**: Site URL = deine App-Adresse (z. B. `https://enpixant.app/` oder `https://ohfab.github.io/chess/`), dieselbe Adresse auch unter Redirect URLs.
+5. **Authentication → Emails**: die Vorlage für den Magic Link anpassen. Supabase verschickt pro Projekt eine Vorlage für alle; weil Enpixant vier Sprachen hat, am besten kurz zweisprachig (Deutsch und Englisch). Für mehr als ein paar Mails pro Stunde einen eigenen SMTP-Versand einrichten (z. B. Resend, Postmark).
 
-## 3. Stripe einrichten (später: Rookly Pro)
+## 3. Stripe einrichten (später: Enpixant Pro)
 
-1. **Produktkatalog → Produkt anlegen**: „Rookly Pro“ mit zwei wiederkehrenden Preisen in CHF, monatlich und jährlich. Die Preis-IDs (`price_...`) notieren.
+1. **Produktkatalog → Produkt anlegen**: „Enpixant Pro“ mit zwei wiederkehrenden Preisen in CHF, monatlich und jährlich. Die Preis-IDs (`price_...`) notieren.
 2. **Einstellungen → Zahlungsmethoden**: Karten, TWINT, Apple Pay und Google Pay einschalten. TWINT kann seit Mai 2026 auch Abos ([Stripe-Doku](https://docs.stripe.com/billing/subscriptions/twint)).
 3. **Einstellungen → Kundenportal**: Kündigen und Wechsel zwischen Monat und Jahr erlauben.
 4. **Entwickler → Webhooks → Endpunkt hinzufügen**:
@@ -56,8 +56,8 @@ supabase secrets set \
   STRIPE_PRICE_MONTHLY=price_... \
   STRIPE_PRICE_YEARLY=price_... \
   ANTHROPIC_API_KEY=sk-ant-... \
-  APP_URL=https://rookly.app/ \
-  APP_ORIGINS=https://rookly.app,https://ohfab.github.io
+  APP_URL=https://enpixant.app/ \
+  APP_ORIGINS=https://enpixant.app,https://ohfab.github.io
 
 supabase functions deploy create-checkout
 supabase functions deploy customer-portal
@@ -80,7 +80,7 @@ Dieselbe Funktion `coach` beantwortet auch Fragen zu einer Stellung (Knopf „Co
 
 ### Tägliche Erinnerung (Push)
 
-Wer angemeldet ist, kann in den Einstellungen eine tägliche Erinnerung einschalten. Rookly schickt dann zur gewählten Stunde eine Push-Nachricht, wenn der Tagesplan noch offen ist („Deine Serie: 5 Tage. Heute noch eine kurze Lektion?“). Auf dem iPhone geht das nur in der installierten App (Teilen-Menü → „Zum Home-Bildschirm“).
+Wer angemeldet ist, kann in den Einstellungen eine tägliche Erinnerung einschalten. Enpixant schickt dann zur gewählten Stunde eine Push-Nachricht, wenn der Tagesplan noch offen ist („Deine Serie: 5 Tage. Heute noch eine kurze Lektion?“). Auf dem iPhone geht das nur in der installierten App (Teilen-Menü → „Zum Home-Bildschirm“).
 
 1. Schlüsselpaar für Web Push erzeugen (einmalig):
    ```bash
@@ -91,7 +91,7 @@ Wer angemeldet ist, kann in den Einstellungen eine tägliche Erinnerung einschal
    supabase secrets set \
      VAPID_PUBLIC_KEY=BE... \
      VAPID_PRIVATE_KEY=... \
-     VAPID_SUBJECT=mailto:hallo@rookly.app \
+     VAPID_SUBJECT=mailto:hallo@enpixant.app \
      CRON_SECRET=$(openssl rand -hex 24)
    supabase db push                          # Tabelle push_subscriptions
    supabase functions deploy send-reminders  # läuft ohne Login (supabase/config.toml), prüft CRON_SECRET
@@ -121,7 +121,7 @@ Im GitHub-Repo unter **Settings → Secrets and variables → Actions → Variab
 | `VITE_SUPPORT_EMAIL` | deine Kontaktadresse |
 | `VITE_VAPID_PUBLIC_KEY` | öffentlicher Web-Push-Schlüssel für die tägliche Erinnerung (optional) |
 | `VITE_AI` | `on` schaltet den KI-Coach ein (Tagesplan und Coach-Fragen); leer = aus, die App kündigt ihn nur an. Braucht `VITE_PRO=on` |
-| `VITE_PRO` | `on` bietet Rookly Pro an (Stripe eingerichtet, Schritt 3); leer = alles gratis, kein Abo, keine Schlösser |
+| `VITE_PRO` | `on` bietet Enpixant Pro an (Stripe eingerichtet, Schritt 3); leer = alles gratis, kein Abo, keine Schlösser |
 
 Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung dieselben Werte in `.env.local` (Vorlage: `.env.example`).
 
@@ -132,7 +132,7 @@ Der nächste Push baut die Seite mit Konten und Pro. Für die lokale Entwicklung
 - `public/legal/impressum.html`, `datenschutz.html` und `agb.html` (Nutzungsbedingungen, ohne Abo) sind Vorlagen. Alles in Gelb ersetzen (Name, Adresse, E-Mail, Gerichtsstand, MWST) und am besten kurz von einer Fachperson prüfen lassen.
 - Ab CHF 100'000 Umsatz pro Jahr wirst du in der Schweiz mehrwertsteuerpflichtig. Stripe Tax kann die Steuern für Kundschaft im Ausland berechnen.
 - **Sounds:** Alle Sounds werden in der App selbst erzeugt (Web Audio), es gibt keine fremden Aufnahmen. Standard ist „Filz“.
-- **Open Source:** Rookly steht wegen Stockfish und chessground unter der GPL-3.0. Verkaufen ist erlaubt. Der Quelltext muss für alle, die die App bekommen, verfügbar bleiben; das öffentliche Repo erfüllt das.
+- **Open Source:** Enpixant steht wegen Stockfish und chessground unter der GPL-3.0. Verkaufen ist erlaubt. Der Quelltext muss für alle, die die App bekommen, verfügbar bleiben; das öffentliche Repo erfüllt das.
 
 ## 7. Apps für Android und iPhone
 
@@ -145,7 +145,7 @@ Die Apps sind mit [Capacitor](https://capacitorjs.com) eingerichtet: `android/` 
 **Testen:** Der GitHub-Workflow „Apps“ baut bei jedem Push eine Android-Testversion. Unter *Actions → Apps → letzter Lauf → Artifacts* `rookly-android-debug` laden, die APK aufs Android-Handy kopieren und öffnen (Installation aus unbekannten Quellen erlauben). Für iOS prüft der Workflow nur, dass das Projekt baut; auf dem iPhone testest du über Xcode oder TestFlight.
 
 **Vor dem ersten Upload festlegen** (danach nicht mehr änderbar):
-- App-ID: `appId` in `capacitor.config.ts` (jetzt `app.rookly`), dazu `namespace` und `applicationId` in `android/app/build.gradle` und den Bundle Identifier in Xcode. Am besten passend zur Domain, zum Beispiel `ch.deinname.rookly`.
+- App-ID: `appId` in `capacitor.config.ts` (jetzt `app.enpixant`), dazu `namespace` und `applicationId` in `android/app/build.gradle` und den Bundle Identifier in Xcode. Am besten passend zur Domain, zum Beispiel `com.enpixant.app`.
 - Version: `versionCode`/`versionName` in `android/app/build.gradle`, in Xcode „Version“ und „Build“. Jede Store-Version braucht eine höhere Nummer.
 - Icons und Startbild: Quellen in `assets/`, neu erzeugen mit
   `npx @capacitor/assets generate --android --ios --iconBackgroundColor '#416b59' --iconBackgroundColorDark '#416b59' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#312e2b'`
@@ -163,11 +163,11 @@ Die Apps sind mit [Capacitor](https://capacitorjs.com) eingerichtet: `android/` 
 1. [Apple Developer Program](https://developer.apple.com/programs/) (USD 99 pro Jahr). Als Privatperson stehst du mit deinem Namen im Store; für die EU verlangt Apple öffentlich Adresse, Telefon und E-Mail.
 2. Bauen braucht einen Mac mit Xcode 26 oder neuer (oder einen Builddienst wie Codemagic): `npm run app:ios`, in Xcode unter *Signing & Capabilities* dein Team wählen, dann *Product → Archive → Distribute App*. Mit TestFlight zuerst auf dem eigenen iPhone testen.
 3. In App Store Connect: Beschreibung, Screenshots für 6,9-Zoll-iPhones, Datenschutz-Angaben („Data Not Collected“), Altersfreigabe.
-4. Apple lehnt Apps ab, die nur eine Website verpacken (Richtlinie 4.2). Im Review-Hinweis erwähnen, was Rookly als App mitbringt: läuft komplett offline mit Stockfish auf dem Gerät, eigene Erinnerungen als Benachrichtigung, Navigation und Zurück-Geste wie eine App.
+4. Apple lehnt Apps ab, die nur eine Website verpacken (Richtlinie 4.2). Im Review-Hinweis erwähnen, was Enpixant als App mitbringt: läuft komplett offline mit Stockfish auf dem Gerät, eigene Erinnerungen als Benachrichtigung, Navigation und Zurück-Geste wie eine App.
 
 ### GPL
 
-Rookly steht wegen Stockfish und chessground unter der GPL-3.0. Der Apple App Store und die GPL vertragen sich schlecht (Zusatzbedingungen des Stores). Viele Schach-Apps mit Stockfish lösen das, indem der komplette Quelltext öffentlich bleibt, wie hier; vorher klären.
+Enpixant steht wegen Stockfish und chessground unter der GPL-3.0. Der Apple App Store und die GPL vertragen sich schlecht (Zusatzbedingungen des Stores). Viele Schach-Apps mit Stockfish lösen das, indem der komplette Quelltext öffentlich bleibt, wie hier; vorher klären.
 
 ### Später: Konten und Abos in den Apps
 

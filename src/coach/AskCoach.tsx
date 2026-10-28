@@ -105,7 +105,7 @@ export function AskCoachDialog({ fen, lines, moves, onClose }: AskCoachProps) {
       </div>
 
       {available === false ? (
-        <p className="ask-unavailable">{t('Der KI-Coach ist in dieser Version nicht verfügbar. Mit einem Rookly-Konto und Pro kannst du ihm zu jeder Stellung Fragen stellen.')}</p>
+        <p className="ask-unavailable">{t('Der KI-Coach ist in dieser Version nicht verfügbar. Mit einem Enpixant-Konto und Pro kannst du ihm zu jeder Stellung Fragen stellen.')}</p>
       ) : (
         <>
           <div className="ask-suggestions">

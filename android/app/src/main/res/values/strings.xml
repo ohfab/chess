@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Rookly</string>
-    <string name="title_activity_main">Rookly</string>
-    <string name="package_name">app.rookly</string>
-    <string name="custom_url_scheme">app.rookly</string>
+    <string name="app_name">Enpixant</string>
+    <string name="title_activity_main">Enpixant</string>
+    <string name="package_name">app.enpixant</string>
+    <string name="custom_url_scheme">app.enpixant</string>
 </resources>

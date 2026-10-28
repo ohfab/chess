@@ -1,4 +1,4 @@
-# Rookly
+# Enpixant
 
 Persönliche Schach-Trainings-App im Stil von chess.com: tägliches Training mit KI-Coach, Eröffnungstrainer mit 60 Eröffnungen, Taktikaufgaben nach Motiv, Spielen gegen Stockfish, freies Analysebrett und Partie-Auswertung mit Zugbewertungen wie auf chess.com. Läuft komplett im Browser: Stockfish 19 rechnet als WebAssembly auf dem eigenen Gerät, ein Server oder Konto ist nicht nötig.
 
@@ -6,8 +6,8 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 ## Features
 
-**Konto und Rookly Pro** (optional, siehe [PUBLISHING.md](PUBLISHING.md))
-- Ohne Backend läuft alles lokal und frei; mit Supabase gibt es Konten (Magic Link per E-Mail oder Google), Sync zwischen Geräten und das Abo Rookly Pro über Stripe (Karte, TWINT, Apple Pay, Google Pay)
+**Konto und Enpixant Pro** (optional, siehe [PUBLISHING.md](PUBLISHING.md))
+- Ohne Backend läuft alles lokal und frei; mit Supabase gibt es Konten (Magic Link per E-Mail oder Google), Sync zwischen Geräten und das Abo Enpixant Pro über Stripe (Karte, TWINT, Apple Pay, Google Pay)
 - Gratis: Spielen, Analyse und unbegrenzte Partie-Auswertungen, Brett-Editor, Import, alle 60 Eröffnungen mit allen Varianten, Lernplan, Repertoire, Taktik, Puzzle Rush, Woodpecker, Endspiele, Brett-Sehen, Rate den Zug, Erfolge, 3 Bretter und 3 Figurensätze
 - Pro (CHF 1.– im Monat oder CHF 10.– im Jahr): die KI-Funktionen (KI-Coach mit Tagesplan, Fragen an den Coach zu jeder Stellung) und alle Designs
 - Konto-Seite mit Abo-Verwaltung (Stripe-Kundenportal), Daten-Export und -Import, Konto löschen
@@ -46,7 +46,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Ziehen per Drag & Drop oder Klick, Premoves während Stockfish rechnet, Rochade auch per König auf Turm
 - Umwandlungs-Auswahl wie auf Lichess (oder immer Dame)
 - Tipp-Knopf zeigt den besten Zug als Pfeil, Zug zurücknehmen, Aufgeben, Revanche
-- Patzer-Schutz (wie chessigmas „Blunder Shield“): bevor Stockfish antwortet, prüft Rookly deinen Zug. Verschenkt er mindestens 15 % Gewinnerwartung, warnt der Coach („Danach setzt Schwarz in einem Zug matt“) und du kannst zurücknehmen oder trotzdem spielen
+- Patzer-Schutz (wie chessigmas „Blunder Shield“): bevor Stockfish antwortet, prüft Enpixant deinen Zug. Verschenkt er mindestens 15 % Gewinnerwartung, warnt der Coach („Danach setzt Schwarz in einem Zug matt“) und du kannst zurücknehmen oder trotzdem spielen
 - Eröffnungsname live während der Partie (ECO-Code + Name)
 
 **Analyse: Partien von chess.com und Lichess**
@@ -134,7 +134,7 @@ Deployment läuft über GitHub Pages (`.github/workflows/deploy.yml`) bei jedem 
 | `src/ui/` | Menü, Spielerleisten, Coach, Zugliste, Graph, Dialoge |
 | `src/i18n/` | Übersetzungen: der deutsche Text ist der Schlüssel, Wörterbücher pro Bereich in `parts/` |
 
-Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Rookly liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite rechnet wie Lichess: Genauigkeit je Zug aus der verlorenen Gewinnerwartung, gewichtet nach Schärfe der Stellung, und davon der Mittelwert aus gewichtetem und harmonischem Mittel (ein einzelner Patzer zieht so deutlich nach unten). Die Spielstärke ist eine grobe Schätzung aus dieser Genauigkeit; die Noten pro Phase nutzen dieselbe Rechnung nur für die Züge dieser Phase (Taktik: Schlagen, Schach oder eine Stellung mit taktischem bestem Zug; Strategie: alle ruhigen Züge).
+Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Lichess-Formel). Je nachdem, wie viel davon ein Zug verschenkt, ist er Exzellent (unter 2 %), Gut (unter 5 %), eine Ungenauigkeit (unter 10 %), ein Fehler (unter 20 %) oder ein Patzer. Wie bei chess.com kommen dazu: *Verpasst*, wenn der Gegner gerade mindestens 10 % verschenkt hat und der Zug das wieder hergibt (oder ein Matt in bis zu 3 Zügen übersehen wird), *Stark*, wenn der Zug der beste ist und der zweitbeste mindestens 15 % schlechter wäre (keine Rückschläge, keine Antworten auf Schach, keine gewonnenen Stellungen), und *Brillant*, wenn Stockfishs beste Antwort die gezogene Figur schlägt und der Spieler entlang der ganzen Variante mindestens zwei Bauern weniger hat, aber trotzdem nicht schlechter steht. Abgestimmt an rund 1.800 Lichess-Partien mit Server-Analyse: die Bewertungen von Enpixant liegen im Mittel 2 bis 3 % Gewinnerwartung neben denen von Lichess. Die Genauigkeit pro Seite rechnet wie Lichess: Genauigkeit je Zug aus der verlorenen Gewinnerwartung, gewichtet nach Schärfe der Stellung, und davon der Mittelwert aus gewichtetem und harmonischem Mittel (ein einzelner Patzer zieht so deutlich nach unten). Die Spielstärke ist eine grobe Schätzung aus dieser Genauigkeit; die Noten pro Phase nutzen dieselbe Rechnung nur für die Züge dieser Phase (Taktik: Schlagen, Schach oder eine Stellung mit taktischem bestem Zug; Strategie: alle ruhigen Züge).
 
 ## Lizenzen und Danke
 
@@ -148,4 +148,4 @@ Zugbewertung: aus der Stockfish-Bewertung wird die Gewinnerwartung berechnet (Li
 - Icons von [Lucide](https://lucide.dev), ISC
 - Schrift [Inter Tight](https://github.com/rsms/inter) über Fontsource, SIL Open Font License 1.1
 
-Weil Stockfish und chessground unter der GPL stehen, steht auch Rookly unter der GPL-3.0 (siehe `LICENSE`). Ein kostenpflichtiges Abo ist damit vereinbar, solange der Quelltext öffentlich bleibt.
+Weil Stockfish und chessground unter der GPL stehen, steht auch Enpixant unter der GPL-3.0 (siehe `LICENSE`). Ein kostenpflichtiges Abo ist damit vereinbar, solange der Quelltext öffentlich bleibt.
