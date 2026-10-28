@@ -18,14 +18,20 @@ const minify = (svg) =>
     .replace(/>\s+</g, '><')
     .trim()
 
+// "Standard", the default: Merida in the colours of the usual online boards, with soft
+// dark-grey black pieces and a gentler outline on the white ones (a recolouring, so GPLv2+ too)
+const DERIVED = { standard: { from: 'merida', recolor: (svg, p) => svg.replaceAll('#1f1a17', p[0] === 'w' ? '#2f2c29' : '#4b4743') } }
+
 await mkdir(OUT, { recursive: true })
 const previews = {}
-for (const set of SETS) {
+for (const set of [...SETS, ...Object.keys(DERIVED)]) {
+  const derived = DERIVED[set]
   const pieces = {}
   for (const p of PIECES) {
-    const res = await fetch(`${SOURCE}/${set}/${p}.svg`)
+    const res = await fetch(`${SOURCE}/${derived?.from ?? set}/${p}.svg`)
     if (!res.ok) throw new Error(`${set}/${p}: HTTP ${res.status}`)
-    pieces[p] = `data:image/svg+xml;base64,${Buffer.from(minify(await res.text())).toString('base64')}`
+    const svg = minify(await res.text())
+    pieces[p] = `data:image/svg+xml;base64,${Buffer.from(derived ? derived.recolor(svg, p) : svg).toString('base64')}`
   }
   previews[set] = pieces.wN
   if (set !== 'cburnett') await writeFile(new URL(`${set}.json`, OUT), JSON.stringify(pieces))

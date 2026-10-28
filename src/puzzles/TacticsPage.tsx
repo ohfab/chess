@@ -10,6 +10,7 @@ import {
   Footprints,
   Gem,
   Hand,
+  GraduationCap,
   History,
   Lock,
   Magnet,
@@ -73,6 +74,8 @@ interface Props {
   onVisual: () => void
   /** guess the move in famous games */
   onGuess: () => void
+  /** courses: one motif at a time, explained, then practised */
+  onCourses: () => void
 }
 
 const time = (ms: number) => {
@@ -81,7 +84,7 @@ const time = (ms: number) => {
 }
 
 /** Tactics hub: a mix at the player's rating, their own mistakes, or one motif at a time. */
-export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, onRush, onVisual, onGuess }: Props) {
+export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, onRush, onVisual, onGuess, onCourses }: Props) {
   const stats = useStats()
   const insights = useInsights()
   const { puzzleRating, themeStats, seenPuzzles, solvedMistakes, woodpecker, endgames } = useGame()
@@ -180,6 +183,13 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, on
           <span>
             <b>{t('Brett-Sehen')}</b>
             <span className="muted">{t('Koordinaten und Blindschach')}</span>
+          </span>
+        </button>
+        <button className="link-card mode-card" onClick={onCourses}>
+          <GraduationCap size={22} />
+          <span>
+            <b>{t('Kurse')}</b>
+            <span className="muted">{t('Ein Motiv nach dem anderen: verstehen, dann üben')}</span>
           </span>
         </button>
         <button className="link-card mode-card" onClick={onGuess}>

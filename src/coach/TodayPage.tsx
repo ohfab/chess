@@ -12,6 +12,7 @@ import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
 import { Display } from '../ui/Display'
 import { DueCard } from '../lesson/LessonPrompt'
+import { QuestCard } from '../quests/QuestCard'
 import type { LessonTask } from '../lesson/lesson'
 import { LevelBadge } from '../progress/LevelBadge'
 import { getLang, locale, t, tn } from '../i18n/i18n'
@@ -170,6 +171,8 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
       </section>
 
       <DueCard onStart={onLesson} />
+
+      <QuestCard />
 
       <section>
         <div className="section-head">

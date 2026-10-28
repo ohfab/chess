@@ -47,7 +47,9 @@ function arrowSvg(dx: number, dy: number, style: Style, animate: boolean) {
   const len = Math.hypot(end[0] - from[0], end[1] - from[1])
   const u: Point = [(end[0] - from[0]) / len, (end[1] - from[1]) / len]
   const n: Point = [-u[1], u[0]]
-  const tip: Point = [end[0] - u[0] * 8, end[1] - u[1] * 8]
+  // the tip reaches just past the centre of the target square, so the whole head sits well
+  // inside it (with the tip short of the centre, the head's base lay on the square's edge)
+  const tip: Point = [end[0] + u[0] * 6, end[1] + u[1] * 6]
   const base: Point = [tip[0] - u[0] * headLength, tip[1] - u[1] * headLength]
   // the shaft reaches a little into the head so no seam shows between them
   const shaftEnd: Point = [base[0] + u[0] * 2, base[1] + u[1] * 2]

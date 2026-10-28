@@ -260,9 +260,9 @@ export const useGame = create<GameState>()(
         evalInPlay: false,
         analysisEngine: true,
         multiPv: 3,
-        board: 'fir',
-        pieces: 'cburnett',
-        soundSet: 'felt',
+        board: 'retro',
+        pieces: 'standard',
+        soundSet: 'retro',
         blunderGuard: false,
         lang: detectLang(),
         theme: 'light',
@@ -559,7 +559,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'rookly',
-      version: 4,
+      version: 5,
       storage: safeStorage,
       // 3: "Filz" is the default sound (the recorded set is gone)
       migrate: (persisted, version) => {
@@ -569,6 +569,11 @@ export const useGame = create<GameState>()(
         if (version < 3 && p.settings && !p.settings.lang) p.settings = { ...p.settings, lang: 'de' }
         // 4: the light fir-green design; whoever kept the default board gets the matching one
         if (version < 4 && p.settings) p.settings = { ...p.settings, theme: 'light', board: p.settings.board === 'green' || !p.settings.board ? 'fir' : p.settings.board }
+        // 5: the retro design; the defaults of before move along to its board, pieces and 8-bit sounds
+        if (version < 5 && p.settings) {
+          const s = p.settings
+          p.settings = { ...s, board: s.board === 'fir' ? 'retro' : s.board, pieces: s.pieces === 'cburnett' ? 'standard' : s.pieces, soundSet: s.soundSet === 'felt' ? 'retro' : s.soundSet }
+        }
         return p as GameState
       },
       partialize: ({

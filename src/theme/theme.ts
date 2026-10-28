@@ -15,6 +15,7 @@ export interface BoardTheme {
 }
 
 export const BOARDS: BoardTheme[] = ([
+  { id: 'retro', name: 'Retro', light: '#d9d7bb', dark: '#9a9878', highlight: 'rgb(236 214 92 / 0.55)' },
   { id: 'fir', name: 'Tanne', light: '#e9efe9', dark: '#7c9d8b', highlight: 'rgb(248 164 152 / 0.7)' },
   { id: 'green', name: 'Grün', light: '#ebecd0', dark: '#739552', highlight: 'rgb(255 255 51 / 0.5)' },
   { id: 'brown', name: 'Braun', light: '#f0d9b5', dark: '#b58863', highlight: 'rgb(155 199 0 / 0.42)' },
@@ -36,6 +37,7 @@ export interface PieceSet {
 }
 
 export const PIECE_SETS: PieceSet[] = ([
+  { id: 'standard', name: 'Standard', author: 'Armando H. Marroquin (Merida, umgefärbt)', license: 'GPLv2+' },
   { id: 'cburnett', name: 'Klassisch', author: 'Colin M.L. Burnett', license: 'GPLv2+' },
   { id: 'merida', name: 'Merida', author: 'Armando H. Marroquin', license: 'GPLv2+' },
   { id: 'celtic', name: 'Celtic', author: 'Maurizio Monge', license: 'MIT' },

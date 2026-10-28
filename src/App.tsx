@@ -88,6 +88,7 @@ import { Nav, type Tab } from './ui/Nav'
 import { Logo } from './ui/Logo'
 import { awaitPro, openAccount, requirePro, useAccount } from './account/account'
 import { AI_ENABLED } from './account/plans'
+import { CoursesPage } from './courses/CoursesPage'
 import { copyText, onBackButton } from './native/native'
 import { AccountDialog, UpgradeDialog } from './account/AccountDialogs'
 import { Welcome } from './account/Welcome'
@@ -132,6 +133,7 @@ type View =
   | 'guess'
   | 'repertoire'
   | 'achievements'
+  | 'courses'
 
 /** Feedback on the player's last move in an opening drill. */
 interface TrainerNote {
@@ -1423,7 +1425,7 @@ export default function App() {
           ? 'openings'
           : view === 'analyse' || view === 'editor' || view === 'repertoire'
             ? 'analysis'
-            : view === 'rush' || view === 'visual' || view === 'guess'
+            : view === 'rush' || view === 'visual' || view === 'guess' || view === 'courses'
               ? 'tactics'
               : view === 'achievements'
                 ? 'today'
@@ -1566,6 +1568,11 @@ export default function App() {
           <AchievementsPage onBack={() => setView('today')} />
         </main>
       )}
+      {view === 'courses' && (
+        <main className="page">
+          <CoursesPage onBack={() => setView('tactics')} onTrain={(theme) => void startPuzzles(theme, 5, 'courses')} />
+        </main>
+      )}
       {view === 'editor' && (
         <BoardEditor
           key={editorFen}
@@ -1579,6 +1586,7 @@ export default function App() {
         <main className="page">
           <TacticsPage
             onPuzzles={(theme) => void startPuzzles(theme, 5, 'tactics')}
+            onCourses={() => setView('courses')}
             onMistakes={(ins) => startMistakes(ins, 5, 'tactics')}
             onWoodpecker={(fresh) => void startWoodpecker(fresh)}
             onEndgame={startEndgame}
@@ -1734,7 +1742,7 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
 }
 
 /** Where Android's back button leads from the pages that have their own way back. */
-const SUB_PAGE_PARENT: Partial<Record<View, View>> = { rush: 'tactics', visual: 'tactics', guess: 'tactics', repertoire: 'analyse', achievements: 'today' }
+const SUB_PAGE_PARENT: Partial<Record<View, View>> = { rush: 'tactics', visual: 'tactics', guess: 'tactics', courses: 'tactics', repertoire: 'analyse', achievements: 'today' }
 
 const ASPECT_NAME: Record<Aspect, string> = {
   opening: tk('Eröffnung'),
