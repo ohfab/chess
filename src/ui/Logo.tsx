@@ -1,15 +1,20 @@
-/** The Rookly mark: a white rook on the green tile, the same drawing as the favicon. */
+// The mark: a pixel rook on an olive tile, drawn on a 16×16 grid. The same drawing is the
+// favicon (public/favicon.svg) and the source of the app icons; it carries no name, so it
+// stays when the app is renamed.
+
+/** the rook's pixels, row by row (columns 3..12 of the 16 grid) */
+const ROOK_PATH =
+  'M3 2h2v2H3zM7 2h2v2H7zM11 2h2v2h-2zM3 4h10v1H3zM4 5h8v1H4zM5 6h6v4H5zM4 10h8v1H4zM3 11h10v2H3z'
+
 export function Logo({ className = '' }: { className?: string }) {
   return (
-    <svg className={`logo ${className}`} viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" rx="14" fill="#416b59" />
-      <path d="M0 50h64v0a14 14 0 0 1-14 14H14A14 14 0 0 1 0 50z" fill="#355a4a" />
-      <g fill="#fff">
-        <path d="M17 12h7v5h4.5v-5h7v5H40v-5h7v11.5L42.5 28h-21L17 23.5z" />
-        <path d="M23.5 30.5h17l1.8 13h-20.6z" />
-        <path d="M19 45.5h26l1.5 4h-29z" />
-        <rect x="14" y="51" width="36" height="5.5" rx="2" />
-      </g>
+    <svg className={`logo ${className}`} viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden>
+      <rect width="16" height="16" fill="#2a2818" />
+      <rect x="1" y="1" width="14" height="14" fill="#6c6b55" />
+      <rect x="1" y="1" width="14" height="1" fill="#8d8c72" />
+      <path d={ROOK_PATH} fill="#2a2818" transform="translate(1 1)" />
+      <path d={ROOK_PATH} fill="#e9e7d0" />
+      <path d="M7 7h2v2H7z" fill="#6c6b55" />
     </svg>
   )
 }

@@ -7,11 +7,11 @@ const config: CapacitorConfig = {
   appId: 'app.rookly',
   appName: 'Rookly',
   webDir: 'dist',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#c4c2a4',
   plugins: {
     // edge to edge, with the safe areas in env(safe-area-inset-*) (see the end of index.css)
     SystemBars: { insetsHandling: 'css', initialViewportFitValueHint: 'cover' },
-    LocalNotifications: { smallIcon: 'ic_stat_rookly', iconColor: '#416b59' },
+    LocalNotifications: { smallIcon: 'ic_stat_rookly', iconColor: '#4b4a3b' },
   },
 }
 

@@ -7,30 +7,29 @@
 }
 .mastery i {
   position: relative;
-  width: 16px;
-  height: 6px;
-  border-radius: 999px;
+  width: 14px;
+  height: 8px;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 2px var(--ink);
   overflow: hidden;
 }
 .mastery i::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: var(--green);
+  background: var(--ink);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.3s steps(3);
   transition-delay: calc(var(--i) * 70ms);
 }
 .mastery i.on::after {
   transform: scaleX(1);
-  animation: mastery-grow 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: mastery-grow 0.3s steps(3) both;
   animation-delay: calc(var(--i) * 70ms);
 }
 .mastery.done i::after {
-  background: var(--accent);
+  background: var(--good);
 }
 .mastery-row {
   display: flex;
@@ -42,27 +41,24 @@
   color: var(--muted);
 }
 .mastery-row.due {
-  color: var(--green);
-}
-:root[data-theme='dark'] .mastery-row.due {
-  color: var(--green-hi);
+  color: var(--text);
+  font-weight: 700;
 }
 /* a thin bar on the opening cards: how far the opening's variations have come */
 .mastery-thin {
   display: block;
-  height: 4px;
-  margin-top: 8px;
-  border-radius: 999px;
+  height: 8px;
+  margin-top: 10px;
   background: var(--panel-2);
+  box-shadow: 0 0 0 2px var(--ink);
   overflow: hidden;
 }
 .mastery-thin i {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: var(--green);
+  background: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 8px);
   transform-origin: left;
-  animation: mastery-grow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: mastery-grow 0.5s steps(6) both;
 }
 @keyframes mastery-grow {
   from {
@@ -85,17 +81,18 @@
   width: min(480px, 100%);
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  padding: 10px 20px calc(18px + env(safe-area-inset-bottom));
-  border-radius: 28px 28px 0 0;
-  background: var(--bg);
-  box-shadow: var(--shadow-lg);
-  animation: lesson-up 0.38s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+  padding: 0 18px calc(18px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border: 3px solid var(--ink);
+  border-bottom: 0;
+  box-shadow: 0 -6px 0 var(--shadow-color);
+  animation: lesson-up 0.3s steps(5) both;
 }
 .lesson-backdrop.leaving {
   animation: lesson-fade 0.22s ease reverse both;
 }
 .lesson-backdrop.leaving .lesson-sheet {
-  animation: lesson-up 0.22s ease-in reverse both;
+  animation: lesson-up 0.2s steps(4) reverse both;
 }
 @keyframes lesson-fade {
   from {
@@ -107,13 +104,15 @@
     transform: translateY(100%);
   }
 }
+/* the sheet's title bar: a grip on a dithered strip */
 .lesson-grip {
   display: block;
-  width: 40px;
-  height: 5px;
-  margin: 0 auto 14px;
-  border-radius: 999px;
-  background: var(--panel-2);
+  height: 22px;
+  margin: 0 -18px 16px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 50% 7px / 40px 4px no-repeat,
+    var(--checker-img) 0 100% / 8px 8px repeat-x,
+    linear-gradient(var(--bar), var(--bar)) 0 0 / 100% 14px no-repeat;
 }
 .lesson-top {
   display: flex;
@@ -124,7 +123,12 @@
   width: 56px;
   height: 56px;
   padding: 6px;
-  animation: lesson-hop 1.6s ease-in-out 0.4s 2;
+  background: var(--raised);
+  box-shadow:
+    0 0 0 3px var(--ink),
+    4px 4px 0 3px var(--shadow-color);
+  margin: 3px;
+  animation: lesson-hop 1.6s steps(8) 0.4s 2;
 }
 @keyframes lesson-hop {
   0%,
@@ -137,20 +141,21 @@
   }
 }
 .lesson-top h2 {
-  margin: 4px 0 0;
-  font-size: 26px;
+  margin: 6px 0 0;
+  font-family: var(--font-pixel);
+  font-size: clamp(13px, 4vw, 17px);
   font-weight: 400;
-  line-height: 1.02;
+  line-height: 1.4;
   text-transform: uppercase;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
   color: var(--heading);
+  overflow-wrap: anywhere;
 }
 .lesson-kind {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 700;
   background: var(--pill-bg);
@@ -166,15 +171,16 @@
   align-items: center;
   margin-top: 18px;
   padding: 14px;
-  border-radius: 22px;
-  background: var(--panel);
+  background: var(--raised);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
 }
 .lesson-board {
   width: 104px;
   flex: none;
 }
 .lesson-board .miniboard {
-  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--ink);
 }
 .lesson-what {
   display: flex;
@@ -183,7 +189,7 @@
   min-width: 0;
 }
 .lesson-what b {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.25;
 }
 .lesson-what .muted {
@@ -209,8 +215,8 @@
   color: var(--muted);
 }
 .lesson-why {
-  margin: 14px 2px 0;
-  font-size: 14px;
+  margin: 16px 2px 0;
+  font-size: 15px;
   line-height: 1.45;
   color: var(--text-2);
 }
@@ -224,11 +230,12 @@
 .lesson-later {
   display: block;
   width: 100%;
-  margin-top: 6px;
-  padding: 13px;
-  border-radius: 999px;
+  margin-top: 10px;
+  padding: 11px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-2);
+  text-decoration: underline dotted 2px;
+  text-underline-offset: 4px;
 }
 .lesson-later:hover {
   color: var(--strong);
@@ -240,15 +247,19 @@
     padding: 16px;
   }
   .lesson-sheet {
-    border-radius: 28px;
-    padding: 18px 24px 20px;
+    padding: 0 24px 22px;
+    border-bottom: 3px solid var(--ink);
+    box-shadow: var(--shadow-lg);
     animation-name: lesson-pop;
   }
   .lesson-backdrop.leaving .lesson-sheet {
     animation-name: lesson-pop;
   }
   .lesson-grip {
-    display: none;
+    margin: 0 -24px 18px;
+    background:
+      var(--checker-img) 0 100% / 8px 8px repeat-x,
+      linear-gradient(var(--bar), var(--bar)) 0 0 / 100% 14px no-repeat;
   }
 }
 @keyframes lesson-pop {
@@ -263,8 +274,7 @@
   align-items: center;
 }
 .due-count {
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: 2px 8px;
   background: var(--accent);
   color: var(--accent-ink);
   font-size: 12px;
@@ -279,12 +289,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 22px;
   background: var(--panel);
-}
-:root:not([data-theme='dark']) .due-row {
-  background: #fff;
-  box-shadow: inset 0 0 0 1px var(--line);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
 }
 .due-icon {
   width: 42px;
@@ -292,7 +299,6 @@
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 50%;
   background: var(--accent);
   color: var(--accent-ink);
 }
@@ -340,8 +346,5 @@
   }
 }
 .due-row .btn-secondary.small {
-  box-shadow: inset 0 0 0 1.5px var(--outline);
-}
-:root[data-theme='dark'] :is(.mastery i, .mastery-thin, .lesson-grip) {
-  background: rgb(255 255 255 / 0.12);
+  flex: none;
 }

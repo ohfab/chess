@@ -8,7 +8,7 @@
     <meta property="og:title" content="Rookly – Schach trainieren" />
     <meta property="og:description" content="Spielen, auswerten, Eröffnungen und Taktik üben, mit Stockfish direkt im Browser." />
     <meta property="og:image" content="./icon-512.png" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#b2b296" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -23,17 +23,25 @@
       } catch {}
     </script>
     <style>
-      .splash { position: fixed; inset: 0; display: grid; place-items: center; background: #fff; }
-      [data-theme='dark'] .splash { background: #312e2b; }
+      /* the first frame, before the app's styles arrive: a Game Boy screen with a checker frame */
+      .splash { position: fixed; inset: 0; display: grid; place-items: center; background: #c4c2a4; }
+      .splash::before { content: ''; position: absolute; inset: 12px; background: repeating-conic-gradient(#a5a488 0 25%, #c9c7a9 0 50%) 0 0 / 8px 8px; }
+      .splash::after { content: ''; position: absolute; inset: 20px; background: #d3d1b4; }
+      .splash svg { position: relative; z-index: 1; shape-rendering: crispEdges; }
+      .splash .loader-block { fill: #2a2818; animation: splash-blink 0.8s step-end infinite; }
+      @keyframes splash-blink { 0% { opacity: 1; } 37.5%, 100% { opacity: 0.18; } }
+      @media (prefers-reduced-motion: reduce) { .splash .loader-block { animation: none; } }
+      [data-theme='dark'] .splash { background: #222116; }
+      [data-theme='dark'] .splash::before { background: repeating-conic-gradient(#24231a 0 25%, #45442f 0 50%) 0 0 / 8px 8px; }
+      [data-theme='dark'] .splash::after { background: #2e2d1f; }
+      [data-theme='dark'] .splash .loader-block { fill: #dddbc1; }
     </style>
   </head>
   <body>
     <div id="root">
       <div class="splash" aria-hidden="true">
-        <svg class="loader" width="64" height="64" viewBox="0 0 60 60">
-          <g transform="translate(0 8)"><g class="loader-tile" style="animation-delay: 0.28s"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
-          <g transform="translate(0 20)"><g class="loader-tile light" style="animation-delay: 0.14s"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
-          <g transform="translate(0 32)"><g class="loader-tile"><path class="loader-top" d="M30 0 50 10 30 20 10 10Z" /><path class="loader-left" d="M10 10 30 20v5L10 15Z" /><path class="loader-right" d="M50 10 30 20v5l20-10Z" /></g></g>
+        <svg class="loader" width="48" height="48" viewBox="0 0 24 24">
+          <rect class="loader-block" x="2" y="2" width="6" height="6" style="animation-delay: -0.8s" /><rect class="loader-block" x="9" y="2" width="6" height="6" style="animation-delay: -0.7s" /><rect class="loader-block" x="16" y="2" width="6" height="6" style="animation-delay: -0.6s" /><rect class="loader-block" x="16" y="9" width="6" height="6" style="animation-delay: -0.5s" /><rect class="loader-block" x="16" y="16" width="6" height="6" style="animation-delay: -0.4s" /><rect class="loader-block" x="9" y="16" width="6" height="6" style="animation-delay: -0.3s" /><rect class="loader-block" x="2" y="16" width="6" height="6" style="animation-delay: -0.2s" /><rect class="loader-block" x="2" y="9" width="6" height="6" style="animation-delay: -0.1s" />
         </svg>
       </div>
     </div>

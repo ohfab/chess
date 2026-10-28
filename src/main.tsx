@@ -10,7 +10,9 @@ import { startAutoSync } from './import/autosync'
 import { setLang, t } from './i18n/i18n'
 import { startUpdates, useUpdate } from './pwa'
 import { isNativeApp, startNative, styleSystemBars } from './native/native'
-import '@fontsource-variable/inter-tight'
+// pixel fonts: Press Start 2P for the big titles, Pixelify Sans for everything else
+import '@fontsource/press-start-2p'
+import '@fontsource-variable/pixelify-sans'
 import './index.css'
 
 // paint the saved board and pieces before the first frame
@@ -33,7 +35,7 @@ else startUpdates()
 /** Light or dark palette (see the top of index.css), and the browser bar to match. */
 function applyTheme(theme: 'light' | 'dark') {
   document.documentElement.dataset.theme = theme
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#21201d' : '#ffffff')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#333222' : '#b2b296')
   styleSystemBars(theme)
 }
 

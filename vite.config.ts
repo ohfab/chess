@@ -1,9 +1,14 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: './',
+  resolve: {
+    // the app's icons are pixel drawings with lucide's names and props (src/ui/pixel-icons.tsx)
+    alias: [{ find: /^lucide-react$/, replacement: fileURLToPath(new URL('./src/ui/pixel-icons.tsx', import.meta.url)) }],
+  },
   plugins: [
     react(),
     // offline support and "add to home screen"; off for the claude.ai artifact build,
@@ -16,8 +21,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,mp3,webmanifest,woff2}'],
         // the slow asm.js engine is only a fallback for browsers without WebAssembly;
-        // of the font only the Latin letters are needed offline
-        globIgnores: ['**/stockfish-19-asm-*.js', '**/inter-tight-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
+        // of the fonts only the Latin letters are needed offline
+        globIgnores: ['**/stockfish-19-asm-*.js', '**/{press-start-2p,pixelify-sans,silkscreen}-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/legal\//],

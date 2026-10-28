@@ -9,16 +9,20 @@
 .pg-ring svg {
   position: absolute;
   inset: 0;
+  shape-rendering: crispEdges;
+  /* cut into segments, like an old energy gauge */
+  -webkit-mask: repeating-conic-gradient(#000 0 13deg, transparent 13deg 18deg);
+  mask: repeating-conic-gradient(#000 0 13deg, transparent 13deg 18deg);
 }
 .pg-ring-track {
   fill: none;
-  stroke: var(--panel-2);
+  stroke: var(--tint-strong);
 }
 .pg-ring-fill {
   fill: none;
-  stroke: var(--accent);
-  stroke-linecap: round;
-  transition: stroke-dasharray 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  stroke: var(--ink);
+  stroke-linecap: butt;
+  transition: stroke-dasharray 0.9s steps(9);
 }
 .pg-ring-label {
   position: relative;
@@ -26,8 +30,9 @@
   flex-direction: column;
   align-items: center;
   line-height: 1;
-  font-weight: 700;
-  font-size: 12px;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 9px;
   color: var(--heading);
   font-variant-numeric: tabular-nums;
 }
@@ -37,21 +42,26 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  margin: 2px;
   padding: 3px 12px 3px 3px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1.5px var(--outline);
-  color: var(--text-2);
-  font-size: 13px;
+  background: var(--raised);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    var(--bevel),
+    3px 3px 0 2px var(--shadow-color);
+  color: var(--text);
+  font-size: 14px;
   font-weight: 700;
-  transition:
-    box-shadow 0.15s,
-    transform 0.15s;
+  transition: transform 0.06s steps(2);
 }
 .pg-badge:hover {
-  box-shadow: inset 0 0 0 1.5px var(--green);
+  background: var(--hover);
 }
 .pg-badge:active {
-  transform: scale(0.97);
+  transform: translate(3px, 3px);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    var(--bevel);
 }
 @media (max-width: 380px) {
   .pg-badge-name {
@@ -81,28 +91,27 @@
   align-items: center;
   gap: 18px 22px;
   padding: 22px;
-  border-radius: 26px;
-  background: var(--card);
-  color: #fff;
-  animation: pg-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: pg-pop 0.24s steps(3);
 }
-.pg-level .pg-ring-track {
-  stroke: rgb(255 255 255 / 0.16);
+.pg-level .pg-ring-track,
+.pg-levelup .pg-ring-track {
+  stroke: rgb(255 255 240 / 0.18);
+}
+.pg-level .pg-ring-fill,
+.pg-levelup .pg-ring-fill {
+  stroke: var(--gb-paper);
 }
 .pg-level .pg-ring-label {
-  color: #fff;
+  color: var(--gb-paper);
 }
 .pg-level .pg-ring-label b {
-  font-size: 38px;
-  font-weight: 500;
+  font-size: 26px;
+  font-weight: 400;
 }
 .pg-level-small {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.8;
-  margin-bottom: 2px;
+  font-size: 9px;
+  opacity: 0.85;
+  margin-bottom: 4px;
 }
 .pg-level-text {
   flex: 1 1 220px;
@@ -112,13 +121,17 @@
   min-width: 0;
 }
 .pg-level-text b {
-  font-size: 30px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-family: var(--font-pixel);
+  font-size: clamp(16px, 4.6vw, 22px);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 .pg-level-next {
-  font-size: 13px;
-  color: rgb(255 255 255 / 0.8);
+  font-size: 14px;
+  color: #d9d7bc;
 }
 .pg-level-stats {
   display: flex;
@@ -129,43 +142,49 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.12);
-  font-size: 13px;
+  padding: 6px 10px;
+  background: rgb(255 255 240 / 0.1);
+  box-shadow: inset 0 0 0 2px rgb(255 255 240 / 0.35);
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 .pg-level .pg-eyebrow {
-  color: var(--accent);
+  color: var(--gb-paper);
 }
 
 .pg-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.5;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
 .pg-bar {
   display: block;
-  height: 6px;
-  border-radius: 3px;
+  height: 10px;
+  margin: 2px;
   background: var(--panel-2);
+  box-shadow: 0 0 0 2px var(--ink);
   overflow: hidden;
 }
 .pg-bar.light {
-  height: 8px;
-  border-radius: 4px;
-  background: rgb(255 255 255 / 0.16);
+  height: 12px;
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: 0 0 0 2px var(--gb-paper);
 }
 .pg-bar i {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  animation: pg-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  padding: 2px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 8px) content-box;
+  animation: pg-grow 0.6s steps(8) both;
   transform-origin: left;
+}
+.pg-bar.light i {
+  background-image: repeating-linear-gradient(90deg, var(--gb-paper) 0 6px, transparent 6px 8px);
 }
 
 .pg-grid {
@@ -178,13 +197,15 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  border-radius: 22px;
   background: var(--panel);
-  animation: pg-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
+  animation: pg-pop 0.24s steps(3) both;
 }
-:root:not([data-theme='dark']) .pg-card {
-  background: #fff;
-  box-shadow: inset 0 0 0 1px var(--line);
+.pg-card:not(.on) {
+  background: var(--panel-2);
+  border-style: dashed;
+  box-shadow: none;
 }
 .pg-card:not(.on) .pg-card-text b {
   color: var(--text-2);
@@ -197,8 +218,8 @@
   gap: 5px;
 }
 .pg-card-text b {
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--heading);
 }
 .pg-card-text .muted {
@@ -216,57 +237,66 @@
   font-variant-numeric: tabular-nums;
 }
 .pg-card.done .pg-card-meta {
-  color: var(--green);
+  color: var(--good);
 }
 .pg-tiers {
   display: inline-flex;
-  gap: 4px;
+  gap: 5px;
 }
 .pg-tiers i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: 10px;
+  height: 10px;
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 2px var(--ink);
 }
 .pg-tiers i.tier-1.on {
-  background: #c98a52;
+  background: #a8703e;
 }
 .pg-tiers i.tier-2.on {
-  background: #9fb0a9;
+  background: #a3aaa0;
 }
 .pg-tiers i.tier-3.on {
   background: var(--star);
 }
 
-/* round medal with the achievement's icon, coloured by tier */
+/* a square medal tile with the achievement's icon, coloured by tier */
 .pg-medal {
   width: 46px;
   height: 46px;
   flex: none;
-  border-radius: 50%;
   display: grid;
   place-items: center;
   color: var(--muted);
   background: var(--panel-2);
+  box-shadow: 0 0 0 2px var(--line);
+}
+.pg-medal.tier-one,
+.pg-medal.tier-1,
+.pg-medal.tier-2,
+.pg-medal.tier-3 {
+  box-shadow:
+    0 0 0 2px var(--gb-ink),
+    inset 3px 3px 0 rgb(255 255 240 / 0.35),
+    inset -3px -3px 0 rgb(0 0 0 / 0.22);
 }
 .pg-medal.tier-one {
-  color: #fff;
-  background: var(--green);
+  color: var(--gb-paper);
+  background: var(--gb-shade);
 }
 .pg-medal.tier-1 {
-  color: #fff;
-  background: linear-gradient(150deg, #e0a676, #b8733e);
+  color: var(--gb-paper);
+  background: #9a6638;
 }
 .pg-medal.tier-2 {
-  color: #fff;
-  background: linear-gradient(150deg, #c7d2ce, #8b9a94);
+  color: var(--gb-ink);
+  background: #b9bfb2;
 }
 .pg-medal.tier-3 {
-  color: #3d2c06;
-  background: linear-gradient(150deg, #ffd978, #e0a030);
+  color: var(--gb-ink);
+  background: #d6b04a;
 }
 .pg-card.on .pg-medal {
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+  margin: 2px;
 }
 
 /* ------------------------------------------------------------------ toasts */
@@ -280,18 +310,18 @@
   align-items: center;
   gap: 12px;
   width: min(420px, calc(100% - 24px));
-  padding: 10px 14px 10px 10px;
-  border-radius: 999px;
+  padding: 10px 14px 10px 12px;
   background: var(--bubble);
   color: var(--bubble-text);
-  box-shadow: var(--shadow-md), inset 0 0 0 1px var(--line);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
   cursor: pointer;
-  animation: pg-toast-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  animation: pg-toast-in 0.3s steps(4) both;
 }
 .pg-toast .pg-medal {
   width: 42px;
   height: 42px;
-  animation: pg-medal-spin 0.7s 0.15s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  animation: pg-medal-spin 0.4s 0.15s steps(4) both;
 }
 .pg-toast-text {
   flex: 1;
@@ -312,12 +342,12 @@
 }
 .pg-xp {
   flex: none;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 5px 8px;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 13px;
-  font-weight: 800;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  font-weight: 400;
 }
 
 .pg-levelup-backdrop {
@@ -327,8 +357,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: var(--backdrop);
-  animation: fade 0.2s ease;
+  animation: fade 0.16s steps(2);
   cursor: pointer;
 }
 .pg-levelup {
@@ -338,33 +367,36 @@
   gap: 6px;
   width: min(320px, 100%);
   padding: 28px 22px 24px;
-  border-radius: 30px;
   background: var(--card);
-  color: #fff;
+  color: var(--gb-paper);
   text-align: center;
-  box-shadow: var(--shadow-lg);
-  animation: pg-levelup-in 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) both;
-}
-.pg-levelup .pg-ring-track {
-  stroke: rgb(255 255 255 / 0.16);
+  border: 3px solid var(--ink);
+  box-shadow:
+    inset 3px 3px 0 rgb(255 255 240 / 0.08),
+    var(--shadow-lg);
+  animation: pg-levelup-in 0.4s steps(5) both;
 }
 .pg-levelup .pg-ring-label b {
-  font-size: 46px;
-  font-weight: 500;
-  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--gb-paper);
 }
 .pg-levelup .pg-eyebrow {
   margin-top: 10px;
-  color: var(--accent);
+  color: var(--gb-paper);
 }
 .pg-levelup-title {
-  font-size: 26px;
-  font-weight: 500;
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 .pg-levelup .muted {
-  color: rgb(255 255 255 / 0.8);
+  color: #d9d7bc;
 }
 
 @keyframes pg-pop {

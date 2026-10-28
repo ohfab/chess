@@ -1,7 +1,8 @@
 // A short burst of confetti over the page, for records, mastered variations and new levels.
 // Imperative on purpose: any feature calls celebrate() at the moment something good happens.
 
-const COLORS = ['#416b59', '#f8a498', '#e8a23a', '#7fbf3f', '#ffffff', '#2f4f42']
+// the Game Boy tones plus a little gold; the bits are square pixels
+const COLORS = ['#2a2818', '#4b4a3b', '#6c6b55', '#b2b296', '#e9e7d0', '#a8801c']
 
 interface Bit {
   x: number
@@ -38,9 +39,9 @@ export function celebrate({ origin, count = 90 }: { origin?: { x: number; y: num
       vy: Math.sin(angle) * speed,
       spin: (Math.random() - 0.5) * 0.4,
       angle: Math.random() * Math.PI,
-      size: 5 + Math.random() * 6,
+      size: 4 + Math.floor(Math.random() * 3) * 2,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      round: Math.random() < 0.3,
+      round: false,
     }
   })
   const start = performance.now()

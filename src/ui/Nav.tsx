@@ -36,7 +36,7 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
             title={t(label)}
           >
             <span className="nav-icon">
-              <Icon size={21} strokeWidth={2} />
+              <Icon size={24} />
             </span>
             <span className="nav-label">{t(label)}</span>
           </button>
@@ -46,14 +46,14 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
         {account.status !== 'local' && (
           <button className="nav-item nav-account" onClick={onAccount}>
             <span className="nav-icon">
-              {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={21} />}
+              {account.email ? <span className="account-dot">{account.email.slice(0, 1).toUpperCase()}</span> : <UserRound size={24} />}
             </span>
             <span className="nav-label">{account.status === 'signed-in' ? (PRO_ENABLED && pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
           </button>
         )}
         <button className="nav-item nav-settings" onClick={onSettings}>
           <span className="nav-icon">
-            <SettingsIcon size={21} />
+            <SettingsIcon size={24} />
           </span>
           <span className="nav-label">{t('Einstellungen')}</span>
         </button>

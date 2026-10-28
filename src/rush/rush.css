@@ -25,40 +25,59 @@
   align-items: center;
   gap: 4px 12px;
   padding: 16px;
-  border-radius: 22px;
   background: var(--panel);
-  box-shadow: inset 0 0 0 1px var(--line);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
   text-align: left;
   transition:
-    box-shadow 0.15s,
-    transform 0.15s,
-    background 0.15s;
-}
-:root:not([data-theme='dark']) .rush-mode {
-  background: #fff;
+    box-shadow 0.08s steps(2),
+    transform 0.08s steps(2),
+    background 0.1s;
 }
 .rush-mode:hover {
-  transform: translateY(-2px);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--shadow-color);
+  background: var(--raised);
 }
-.rush-mode.on {
-  box-shadow: inset 0 0 0 2px var(--green);
+.rush-mode:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+/* the chosen mode: inverted, like the cursor line of an old menu */
+.rush-mode.on,
+.rush-mode.on:hover {
+  background: var(--ink);
+  color: var(--gb-paper);
+  --text: var(--gb-paper);
+  --text-2: var(--gb-light);
+  --muted: #cfcdb2;
+  --line: rgb(233 231 208 / 0.4);
+}
+:root[data-theme='dark'] .rush-mode.on {
+  background: var(--gb-light);
+  color: var(--gb-ink);
+  --text: var(--gb-ink);
+  --text-2: #36341f;
+  --muted: #4b4a3b;
+  --line: rgb(42 40 24 / 0.4);
 }
 .rush-mode-icon {
   width: 46px;
   height: 46px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 1.5px var(--outline);
-  color: var(--green);
-  transition:
-    background 0.15s,
-    color 0.15s;
+  background: var(--gb-light);
+  color: var(--gb-ink);
+  box-shadow:
+    0 0 0 2px var(--gb-ink),
+    var(--bevel);
 }
-.rush-mode.on .rush-mode-icon {
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: none;
+:root[data-theme='dark'] .rush-mode:not(.on) .rush-mode-icon {
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    var(--bevel);
 }
 .rush-mode-text {
   display: flex;
@@ -67,7 +86,11 @@
   min-width: 0;
 }
 .rush-mode-text b {
-  font-size: 17px;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
+  text-transform: uppercase;
 }
 .rush-mode-text .muted {
   font-size: 13px;
@@ -79,7 +102,7 @@
   gap: 6px;
   margin-top: 8px;
   padding-top: 10px;
-  border-top: 1px solid var(--line);
+  border-top: 2px dotted var(--line);
   font-weight: 700;
   font-size: 14px;
   color: var(--text-2);
@@ -102,15 +125,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 4px;
   min-width: 92px;
   padding: 10px 12px;
-  border-radius: 18px;
   background: var(--panel);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
   font-size: 12px;
 }
 .rush-past b {
-  font-size: 24px;
-  font-weight: 500;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--heading);
 }
@@ -129,37 +155,40 @@
 }
 .rush-clock {
   justify-self: start;
-  font-size: clamp(30px, 8vw, 44px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-family: var(--font-pixel);
+  font-size: clamp(20px, 6vw, 32px);
+  font-weight: 400;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   color: var(--heading);
   transition: color 0.2s;
 }
 .rush-clock.low {
   color: var(--danger-text);
-  animation: rush-tick 1s ease-in-out infinite;
+  animation: rush-tick 1s steps(1) infinite;
 }
 .rush-score {
   display: flex;
   flex-direction: column;
   align-items: center;
   min-width: 84px;
-  padding: 6px 18px;
-  border-radius: 22px;
+  padding: 8px 16px 6px;
   background: var(--card);
-  color: #fff;
+  color: var(--gb-paper);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
 }
 .rush-score-n {
-  font-size: 32px;
-  line-height: 1.05;
-  font-weight: 600;
+  font-family: var(--font-pixel);
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  animation: rush-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: rush-pop 0.24s steps(3);
 }
 .rush-score-label {
-  font-size: 11px;
-  opacity: 0.8;
+  font-size: 12px;
+  opacity: 0.85;
 }
 .rush-strikes {
   justify-self: end;
@@ -169,17 +198,18 @@
 .rush-strike {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
   color: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--outline);
+  background: var(--raised);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    var(--bevel);
 }
 .rush-strike.on {
-  background: #d9503f;
-  color: #fff;
-  box-shadow: none;
-  animation: rush-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  background: var(--bad);
+  color: var(--gb-paper);
+  animation: rush-pop 0.24s steps(3);
 }
 
 .rush-main {
@@ -197,14 +227,17 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: 4px;
-  animation: rush-flash 0.6s ease-out forwards;
+  animation: rush-flash 0.6s steps(4) forwards;
 }
 .rush-pulse.ok {
-  box-shadow: inset 0 0 0 6px #6dbb3c, inset 0 0 60px rgb(109 187 60 / 0.55);
+  box-shadow:
+    inset 0 0 0 6px #7f9c3c,
+    inset 0 0 0 12px rgb(127 156 60 / 0.5);
 }
 .rush-pulse.bad {
-  box-shadow: inset 0 0 0 6px #d9503f, inset 0 0 60px rgb(217 80 63 / 0.5);
+  box-shadow:
+    inset 0 0 0 6px #b4472c,
+    inset 0 0 0 12px rgb(180 71 44 / 0.5);
 }
 .rush-countdown {
   position: absolute;
@@ -212,15 +245,17 @@
   z-index: 5;
   display: grid;
   place-items: center;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--bg) 62%, transparent);
-  backdrop-filter: blur(2px);
+  background-color: color-mix(in srgb, var(--bg) 70%, transparent);
+  background-image: repeating-conic-gradient(var(--tint-strong) 0 25%, transparent 0 50%);
+  background-size: 4px 4px;
 }
 .rush-countdown span {
-  font-size: clamp(80px, 22vw, 140px);
+  font-family: var(--font-pixel);
+  font-size: clamp(56px, 16vw, 96px);
   font-weight: 400;
   color: var(--heading);
-  animation: rush-count 0.65s ease-out;
+  text-shadow: 6px 6px 0 var(--tint-strong);
+  animation: rush-count 0.5s steps(4);
 }
 
 .rush-side {
@@ -228,8 +263,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border-radius: 22px;
   background: var(--panel);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow-hard);
 }
 .rush-turn {
   display: flex;
@@ -244,14 +280,13 @@
 .rush-turn-dot {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--outline);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 .rush-turn-dot.white {
-  background: #fff;
+  background: #f4f2dc;
 }
 .rush-turn-dot.black {
-  background: #1b1a18;
+  background: var(--gb-ink);
 }
 .rush-note {
   margin: 0;
@@ -260,7 +295,7 @@
   font-weight: 600;
 }
 .rush-note.ok {
-  color: var(--green);
+  color: var(--good);
 }
 .rush-note.bad {
   color: var(--danger-text);
@@ -274,14 +309,14 @@
 .rush-dot {
   width: 12px;
   height: 12px;
-  border-radius: 50%;
-  animation: rush-pop 0.3s ease-out;
+  box-shadow: inset 0 0 0 2px var(--ink);
+  animation: rush-pop 0.2s steps(2);
 }
 .rush-dot.ok {
-  background: #6dbb3c;
+  background: var(--good);
 }
 .rush-dot.bad {
-  background: #d9503f;
+  background: var(--bad);
 }
 .rush-quit {
   align-self: flex-start;
@@ -294,30 +329,32 @@
   align-items: center;
   gap: 4px;
   padding: 28px 20px 24px;
-  border-radius: 26px;
   background: var(--card);
-  color: #fff;
+  color: var(--gb-paper);
   text-align: center;
-  animation: rush-rise 0.4s ease-out;
+  animation: rush-rise 0.3s steps(3);
 }
 .rush-end-card .muted {
-  color: rgb(255 255 255 / 0.78);
+  color: #d9d7bc;
 }
 .rush-record {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  padding: 4px 10px;
+  background: var(--star);
+  color: var(--gb-ink);
+  box-shadow: 0 0 0 2px var(--gb-ink);
   font-size: 13px;
   font-weight: 700;
-  animation: rush-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: rush-pop 0.3s steps(3);
 }
 .rush-end-score {
-  font-size: clamp(72px, 20vw, 110px);
-  line-height: 1;
+  margin: 10px 0 4px;
+  font-family: var(--font-pixel);
+  font-size: clamp(48px, 14vw, 80px);
+  line-height: 1.1;
+  text-shadow: 6px 6px 0 rgb(0 0 0 / 0.3);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
@@ -333,15 +370,9 @@
   margin-top: 16px;
 }
 .rush-end-actions .btn-primary {
-  background: var(--accent);
-  color: var(--accent-ink);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-.rush-end-actions .btn-secondary {
-  color: #fff;
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.55);
 }
 .rush-list {
   list-style: none;
@@ -356,25 +387,26 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  border-radius: 16px;
   background: var(--panel);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--shadow-color);
   font-size: 13px;
-  animation: rush-rise 0.3s ease-out backwards;
+  animation: rush-rise 0.24s steps(3) backwards;
 }
 .rush-list-icon {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--gb-paper);
+  box-shadow: inset 0 0 0 2px var(--gb-ink);
   flex: none;
 }
 .rush-list li.ok .rush-list-icon {
-  background: #6dbb3c;
+  background: var(--good);
 }
 .rush-list li.bad .rush-list-icon {
-  background: #d9503f;
+  background: var(--bad);
 }
 .rush-list-n {
   font-weight: 700;
@@ -445,10 +477,9 @@
   .rush-board {
     margin: 0 -16px;
   }
-  .rush-board .board,
-  .rush-pulse,
-  .rush-countdown {
-    border-radius: 0;
+  .rush-board {
+    border-top: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
   }
 }
 @media (min-width: 900px) {
@@ -463,5 +494,10 @@
     max-width: calc(min(calc(100dvh - 190px), 640px) + 324px);
     width: 100%;
     margin: 0 auto;
+  }
+  .rush-board {
+    box-shadow:
+      0 0 0 3px var(--ink),
+      7px 7px 0 3px var(--shadow-color);
   }
 }
