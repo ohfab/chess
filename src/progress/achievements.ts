@@ -10,6 +10,7 @@ import {
   Download,
   Eye,
   Flame,
+  Gem,
   GraduationCap,
   Map as MapIcon,
   Medal,
@@ -74,6 +75,10 @@ const imports = (f: Facts) => f.history.filter((g) => g.mode === 'import').lengt
 
 // ---------------------------------------------------------------- XP and levels
 
+/** XP for each daily quest done, and the bonus for a day with all of them (the treasure chest). */
+export const QUEST_XP = 15
+export const CHEST_XP = 25
+
 /** XP from everything done so far, before achievement bonuses. */
 export function activityXp(f: Facts) {
   return (
@@ -91,6 +96,8 @@ export function activityXp(f: Facts) {
     count(f, 'guessGames') * 12 +
     count(f, 'brilliantsFound') * 25 +
     count(f, 'coachQuestions') * 3 +
+    count(f, 'questsDone') * QUEST_XP +
+    count(f, 'questDays') * CHEST_XP +
     endgamesWon(f) * 20 +
     f.woodpeckerCycles * 30 +
     f.bestStreak * 10
@@ -197,6 +204,7 @@ const ALL: AchievementDef[] = [
   { id: 'first-plan', category: 'streak', icon: Sunrise, title: tk('Guter Start'), text: tk('Erledige zum ersten Mal deinen ganzen Tagesplan.'), tiers: [1], value: (f) => f.bestStreak },
   { id: 'streak', category: 'streak', icon: Flame, title: tk('Serie'), text: tk('Erledige deinen Tagesplan {n} Tage in Folge.'), tiers: [7, 30, 100], value: (f) => f.bestStreak },
   { id: 'week', category: 'streak', icon: CalendarCheck, title: tk('Wochenplan'), text: tk('Erledige deinen Tagesplan 3 Tage in Folge.'), tiers: [3], value: (f) => f.bestStreak },
+  { id: 'quests', category: 'streak', icon: Gem, title: tk('Schatzjäger'), text: tk('Schließe an {n} Tagen alle Tagesquests ab.'), tiers: [3, 10, 30], value: (f) => count(f, 'questDays') },
   // special
   { id: 'vision', category: 'special', icon: Eye, title: tk('Adlerauge'), text: tk('Erreiche {n} Punkte im Brett-Sehen.'), tiers: [10, 20, 30], value: (f) => best(f, 'visualBest') },
   { id: 'guess', category: 'special', icon: Brain, title: tk('Wie ein Großmeister'), text: tk('Erreiche {n} % bei „Rate den Zug“.'), tiers: [50, 70, 80], value: (f) => best(f, 'guessBest'), percent: true },

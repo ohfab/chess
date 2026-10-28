@@ -2,6 +2,7 @@ import { useGuess } from '../guess/store'
 import { useLessons, type Card } from '../lesson/srs'
 import { useProgressStore } from '../progress/progressStore'
 import { useStats } from '../progress/stats'
+import { mergeQuests, pickQuests, useQuests } from '../quests/quests'
 import { useRush, type RushRun } from '../rush/rush'
 import { useVisual } from '../visual/store'
 import { laterDay, maxPerKey, syncStore } from './sync'
@@ -73,3 +74,6 @@ syncStore(
   (s) => ({ best: s.best, plays: s.plays }),
   (local, remote) => ({ best: maxPerKey(local.best, remote.best), plays: maxPerKey(local.plays, remote.plays) }),
 )
+
+// after the stats: the day's quests from the device that drew them first, with what either finished
+syncStore('quests', useQuests, pickQuests, mergeQuests)

@@ -1,0 +1,502 @@
+/* Courses: the world map with its levels, and one course with its lesson board.
+   Colours are theme tokens only; the shapes follow the retro look (square, ink outlines,
+   hard shadows, motion in steps). */
+
+.courses,
+.course {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+@media (max-width: 899px) {
+  .course,
+  .c-course-grid {
+    gap: 12px;
+  }
+}
+.courses .back,
+.course .back {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+.c-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------- stars and bars */
+.c-stars {
+  display: inline-flex;
+  gap: 1px;
+  color: var(--outline);
+  vertical-align: -1px;
+}
+.c-stars .on {
+  color: var(--accent);
+}
+.c-bar {
+  display: block;
+  height: 12px;
+  border: 2px solid var(--ink, #2a2818);
+  background: var(--panel-2);
+}
+.c-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s steps(6);
+}
+
+/* ---------------------------------------------------------- top: next course and totals */
+.c-top {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .c-top {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+.c-next {
+  gap: 14px;
+}
+.c-next-text {
+  flex: 1;
+  min-width: 0;
+}
+.c-next-text b {
+  font-size: 16px;
+}
+.c-next-go {
+  flex: none;
+  color: var(--heading);
+}
+.c-total {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  padding: 12px 14px;
+  border: 3px solid var(--ink, #2a2818);
+  background: var(--panel);
+}
+.c-total b {
+  font-size: 18px;
+  color: var(--strong);
+}
+
+/* ---------------------------------------------------------- worlds */
+.c-worlds {
+  display: grid;
+  gap: 18px;
+}
+@media (min-width: 900px) {
+  .c-worlds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.c-world {
+  border: 3px solid var(--ink, #2a2818);
+  background: var(--panel);
+  box-shadow: var(--shadow-hard, 4px 4px 0 var(--ink, #2a2818));
+  animation: c-rise 0.24s steps(3) both;
+}
+@keyframes c-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.c-world-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px 12px;
+  border-bottom: 3px solid var(--ink, #2a2818);
+  background: var(--panel-2);
+}
+.c-world-no {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.c-world-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-2);
+}
+.c-world-head h3 {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-family: var(--font-pixel, inherit);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--heading);
+}
+.c-world-head .muted {
+  grid-column: 1 / -1;
+  font-size: 12px;
+}
+
+/* the map: rows of three levels, the path snaking from row to row */
+.c-map {
+  padding: 8px 6px 2px;
+}
+.c-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: 14px;
+}
+/* centre of a tile: the node's top padding plus half the tile */
+.c-row {
+  --tile: 56px;
+  --tile-mid: calc(18px + var(--tile) / 2);
+}
+.c-track {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+.c-track.h {
+  top: calc(var(--tile-mid) - 2px);
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--ink, #2a2818) 0 6px, transparent 6px 12px);
+}
+.c-track.v {
+  top: var(--tile-mid);
+  width: 4px;
+  height: 100%;
+  margin-left: -2px;
+  background: repeating-linear-gradient(180deg, var(--ink, #2a2818) 0 6px, transparent 6px 12px);
+}
+
+.c-node {
+  position: relative;
+  z-index: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 18px 2px 0;
+  text-align: center;
+}
+.c-node:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+.c-tile {
+  position: relative;
+  flex: none;
+  width: var(--tile, 56px);
+  height: var(--tile, 56px);
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink, #2a2818);
+  background: var(--raised);
+  color: var(--heading);
+  box-shadow: 3px 3px 0 var(--ink, #2a2818);
+  transition:
+    transform 0.08s steps(2),
+    box-shadow 0.08s steps(2);
+}
+.c-tile.small {
+  width: 44px;
+  height: 44px;
+  box-shadow: none;
+}
+.c-tile-no {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+.c-tile-read {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink, #2a2818);
+  background: var(--panel);
+  color: var(--heading);
+}
+@media (hover: hover) {
+  .c-node:not(:disabled):hover .c-tile {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink, #2a2818);
+  }
+}
+.c-node:not(:disabled):active .c-tile {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink, #2a2818);
+}
+.c-node:focus-visible {
+  outline: none;
+}
+.c-node:focus-visible .c-tile {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.c-node.next .c-tile {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.c-node.locked .c-tile {
+  border-style: dashed;
+  background: var(--panel-2);
+  color: var(--muted);
+  box-shadow: none;
+}
+.c-node.locked .c-name,
+.c-node.locked .c-stars {
+  color: var(--muted);
+}
+/* the labels hide the path that runs behind them */
+.c-node .c-stars,
+.c-name {
+  position: relative;
+  padding: 0 3px;
+  background: var(--panel);
+}
+.c-name {
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+/* the blinking marker over the next level */
+.c-here {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  padding: 1px 5px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: c-bob 0.9s steps(1, end) infinite;
+}
+@keyframes c-bob {
+  50% {
+    transform: translate(-50%, -3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c-here,
+  .c-world {
+    animation: none;
+  }
+}
+
+.c-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.c-foot p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ---------------------------------------------------------- one course */
+.c-course-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'head' 'board' 'lesson' 'practice';
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .c-course-grid {
+    grid-template-columns: minmax(0, min(500px, calc(100dvh - 250px))) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: 'board head' 'board lesson' 'board practice';
+    align-items: start;
+    column-gap: 22px;
+  }
+}
+.c-course-head {
+  grid-area: head;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.c-course-head h2 {
+  margin: 4px 0;
+  font-family: var(--font-pixel, inherit);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--heading);
+  overflow-wrap: anywhere;
+}
+.c-course-head p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.c-board-col {
+  grid-area: board;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.c-board {
+  width: 100%;
+  border: 3px solid var(--ink, #2a2818);
+  box-shadow: var(--shadow-hard, 4px 4px 0 var(--ink, #2a2818));
+}
+
+.c-lesson,
+.c-practice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid var(--ink, #2a2818);
+  background: var(--panel);
+  box-shadow: var(--shadow-hard, 4px 4px 0 var(--ink, #2a2818));
+}
+.c-lesson {
+  grid-area: lesson;
+}
+.c-practice {
+  grid-area: practice;
+}
+.c-lesson-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.c-dots {
+  display: flex;
+  gap: 4px;
+}
+.c-dots i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink, #2a2818);
+}
+.c-dots i.seen {
+  background: var(--line);
+}
+.c-dots i.now {
+  background: var(--accent);
+}
+.c-text {
+  min-height: 3em;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+@media (min-width: 900px) {
+  .c-text {
+    min-height: 4.5em;
+    font-size: 16px;
+  }
+}
+.c-move {
+  padding: 0 3px;
+  background: var(--tint);
+  color: var(--strong);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.c-rule {
+  padding: 8px 10px;
+  border: 2px dashed var(--ink, #2a2818);
+  background: var(--raised);
+}
+.c-rule b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--heading);
+}
+.c-rule p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.c-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.c-steps button,
+.c-practice .wide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.c-practice .wide {
+  width: 100%;
+  margin-top: 4px;
+}
+.c-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.c-progress-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+.c-progress-text b {
+  color: var(--strong);
+}
+.c-round {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink, #2a2818);
+  background: var(--raised);
+  font-weight: 700;
+}
+.c-round.star {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.c-hint {
+  margin: 0;
+  font-size: 12px;
+}
