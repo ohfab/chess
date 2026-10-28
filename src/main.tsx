@@ -6,6 +6,7 @@ import { applyBoard, applyPieces } from './theme/theme'
 import { initAccount } from './account/account'
 import './account/synced'
 import { warmUp } from './engine/useEngine'
+import { startAutoSync } from './import/autosync'
 import { setLang, t } from './i18n/i18n'
 import { startUpdates, useUpdate } from './pwa'
 import { isNativeApp, startNative, styleSystemBars } from './native/native'
@@ -20,6 +21,8 @@ void initAccount()
 // boot Stockfish while the page settles, not when the first move needs it
 const idle = (window as { requestIdleCallback?: (fn: () => void) => void }).requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 800))
 idle(warmUp)
+// new games of the player's own chess.com or Lichess account, reviewed in the background
+idle(startAutoSync)
 
 setLang(settings.lang)
 applyTheme(settings.theme)
