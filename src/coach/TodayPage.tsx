@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BookOpen, CalendarCheck, Check, Flame, MessageCircleQuestion, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords, TrendingUp } from 'lucide-react'
+import { BookOpen, Check, Flame, Puzzle as PuzzleIcon, RefreshCw, RotateCcw, Sparkles, Swords } from 'lucide-react'
 import { levelOf } from '../engine/levels'
 import { useGame } from '../game/store'
 import type { SavedGame } from '../history/archive'
@@ -10,7 +10,6 @@ import { themeName } from '../puzzles/themes'
 import { MiniBoard } from '../trainer/MiniBoard'
 import { SITE_NAME } from '../import/remote'
 import { Piece } from '../board/Piece'
-import { Display } from '../ui/Display'
 import { DueCard } from '../lesson/LessonPrompt'
 import { QuestCard } from '../quests/QuestCard'
 import type { LessonTask } from '../lesson/lesson'
@@ -31,11 +30,13 @@ interface Props {
   /** a repetition or a new variation from the lesson card */
   onLesson: (task: LessonTask) => void
   onAchievements: () => void
+  /** go where a quest is done: its menu entry and the page in it (German keys) */
+  onGo: (where: string[]) => void
 }
 
 const KIND_ICON = { mistakes: RotateCcw, puzzles: PuzzleIcon, opening: BookOpen, game: Swords }
 
-export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchievements }: Props) {
+export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchievements, onGo }: Props) {
   const g = useGame()
   const { history, daily, streak, puzzleRating, progress, solvedMistakes, level, playerColor, setDaily } = g
 
@@ -102,6 +103,10 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
   // the player's name: their chess.com or Lichess account, else the start of the e-mail address
   const name = g.settings.myAccount?.name ?? email?.split('@')[0] ?? null
 
+  // the last five games, all of them on request
+  const [allGames, setAllGames] = useState(false)
+  const games = allGames ? history : history.slice(0, 5)
+
   return (
     <div className="today">
       <div className="today-top">
@@ -112,7 +117,7 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
             <span className="muted">{t('Taktik-Wertung {n}', { n: puzzleRating })}</span>
           </div>
         </div>
-        <div className="today-badges">
+        <div className="today-badges" data-tour="progress">
           <LevelBadge onOpen={onAchievements} />
           <div className={`streak ${streak.count && streak.last >= yesterdayKey() ? 'on' : ''}`} title={t('Tage in Folge mit erledigtem Plan')}>
             <Flame size={18} />
@@ -121,63 +126,22 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
           </div>
         </div>
       </div>
-      <div className="today-head">
-        <Display first={`${greeting},`} second={name ?? t('Zeit für Schach')} note={weekday} />
+
+      {/* a short greeting, so today's training is on the first screen */}
+      <div className="today-hello">
+        <div>
+          <h2 className="hello">{name ? `${greeting}, ${name}` : greeting}</h2>
+          <span className="muted">
+            {weekday}
+            {plan ? ` · ${t('{done} von {total} erledigt', { done: doneCount, total: plan.tasks.length })}` : ''}
+          </span>
+        </div>
         <Ring share={share} />
       </div>
 
-      <section className="coach-card">
-        <Piece role="knight" color="white" className="coach-avatar" />
-        <div className="coach-card-body">
-          <div className="coach-card-title">
-            <b>{plan?.byAI ? t('Dein Coach') : t('Deine Auswertung')}</b>
-            {plan?.byAI && (
-              <span className="pill">
-                <Sparkles size={11} /> {t('KI')}
-              </span>
-            )}
-          </div>
-          <p>{plan?.summary}</p>
-          {plan && plan.focus.length > 0 && (
-            <ul className="focus">
-              {plan.focus.map((f) => (
-                <li key={f.title}>
-                  <b>{f.title}</b>
-                  {f.why && <span className="muted"> · {f.why}</span>}
-                  {f.tip && <span className="focus-tip">{f.tip}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-          {hasAI && (
-            <div className="coach-card-actions">
-              <button className="btn-primary small" onClick={() => askCoach(!!plan?.byAI)} disabled={asking}>
-                {asking ? (
-                  t('Coach denkt nach …')
-                ) : plan?.byAI ? (
-                  <>
-                    <RefreshCw size={15} /> {t('Neu planen')}
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={15} /> {t('KI-Coach: Plan erstellen')}
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-          {aiNote && <p className="error">{aiNote}</p>}
-        </div>
-      </section>
-
-      <DueCard onStart={onLesson} />
-
-      <QuestCard />
-
-      <section>
+      <section className="today-plan" data-tour="plan">
         <div className="section-head">
           <h3>{t('Training für heute')}</h3>
-          {plan && <span className="muted">{t('{done} von {total} erledigt', { done: doneCount, total: plan.tasks.length })}</span>}
         </div>
         <div className="tasks">
           {plan?.tasks.map((task) => {
@@ -204,40 +168,99 @@ export function TodayPage({ onStart, onOpenGame, onDailyPuzzle, onLesson, onAchi
         </div>
       </section>
 
-      {!AI_ENABLED && <CoachSoon />}
+      <DueCard onStart={onLesson} />
+
+      <DailyPuzzle onStart={onDailyPuzzle} />
+
+      <QuestCard onGo={onGo} />
 
       {reviewShare !== null && pending > 0 && (
         <p className="reviewing">{t('Stockfish wertet deine Partien aus: noch {n} … {pct} %', { n: pending, pct: Math.round(reviewShare * 100) })}</p>
       )}
 
-      <DailyPuzzle onStart={onDailyPuzzle} />
+      {/* everything about the player's own games in one place: what the coach sees, the numbers, the games */}
+      <section className="today-games">
+        <div className="section-head">
+          <h3>{t('So spielst du')}</h3>
+          <span className="muted">{t('{reviewed} von {games} Partien ausgewertet', { reviewed: insights.reviewed, games: insights.games })}</span>
+        </div>
 
-      <Stats insights={insights} puzzleRating={puzzleRating} />
-
-      {history.length > 0 && (
-        <section>
-          <div className="section-head">
-            <h3>{t('Letzte Partien')}</h3>
-          </div>
-          <div className="archive">
-            {history.slice(0, 12).map((game) => (
-              <button key={game.key} className="archive-row" onClick={() => onOpenGame(game)}>
-                <span className={`result ${game.score === 1 ? 'won' : game.score === 0 ? 'lost' : game.score === 0.5 ? 'draw' : ''}`}>
-                  {game.score === 1 ? t('S') : game.score === 0 ? t('N') : game.score === 0.5 ? t('R') : '–'}
+        <div className="coach-card">
+          <Piece role="knight" color="white" className="coach-avatar" />
+          <div className="coach-card-body">
+            <div className="coach-card-title">
+              <b>{plan?.byAI ? t('Dein Coach') : t('Deine Auswertung')}</b>
+              {plan?.byAI && (
+                <span className="pill">
+                  <Sparkles size={11} /> {t('KI')}
                 </span>
-                <span className="archive-text">
-                  <b>{archiveTitle(game)}</b>
-                  <span className="muted">
-                    {new Date(game.date).toLocaleDateString(locale())} · {tn(Math.ceil(game.sans.length / 2), '1 Zug', '{n} Züge')} ·{' '}
-                    {game.playerColor === 'white' ? t('mit Weiß') : t('mit Schwarz')}
+              )}
+            </div>
+            <p>{plan?.summary}</p>
+            {plan && plan.focus.length > 0 && (
+              <ul className="focus">
+                {plan.focus.map((f) => (
+                  <li key={f.title}>
+                    <b>{f.title}</b>
+                    {f.why && <span className="muted"> · {f.why}</span>}
+                    {f.tip && <span className="focus-tip">{f.tip}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hasAI && (
+              <div className="coach-card-actions">
+                <button className="btn-primary small" onClick={() => askCoach(!!plan?.byAI)} disabled={asking}>
+                  {asking ? (
+                    t('Coach denkt nach …')
+                  ) : plan?.byAI ? (
+                    <>
+                      <RefreshCw size={15} /> {t('Neu planen')}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={15} /> {t('KI-Coach: Plan erstellen')}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            {aiNote && <p className="error">{aiNote}</p>}
+          </div>
+        </div>
+
+        <Stats insights={insights} puzzleRating={puzzleRating} />
+
+        {games.length > 0 && (
+          <>
+            <h4 className="today-sub">{t('Letzte Partien')}</h4>
+            <div className="archive">
+              {games.map((game) => (
+                <button key={game.key} className="archive-row" onClick={() => onOpenGame(game)}>
+                  <span className={`result ${game.score === 1 ? 'won' : game.score === 0 ? 'lost' : game.score === 0.5 ? 'draw' : ''}`}>
+                    {game.score === 1 ? t('S') : game.score === 0 ? t('N') : game.score === 0.5 ? t('R') : '–'}
                   </span>
-                </span>
-                <span className="archive-acc">{game.review ? `${game.review.accuracy[game.playerColor].toFixed(1)}` : '…'}</span>
+                  <span className="archive-text">
+                    <b>{archiveTitle(game)}</b>
+                    <span className="muted">
+                      {new Date(game.date).toLocaleDateString(locale())} · {tn(Math.ceil(game.sans.length / 2), '1 Zug', '{n} Züge')} ·{' '}
+                      {game.playerColor === 'white' ? t('mit Weiß') : t('mit Schwarz')}
+                    </span>
+                  </span>
+                  <span className="archive-acc">{game.review ? `${game.review.accuracy[game.playerColor].toFixed(1)}` : '…'}</span>
+                </button>
+              ))}
+            </div>
+            {history.length > games.length && (
+              <button className="btn-secondary small today-more" onClick={() => setAllGames(true)}>
+                {t('Alle {n} Partien', { n: history.length })}
               </button>
-            ))}
-          </div>
-        </section>
-      )}
+            )}
+          </>
+        )}
+      </section>
+
+      {!AI_ENABLED && <CoachSoon />}
     </div>
   )
 }
@@ -253,17 +276,6 @@ function CoachSoon() {
         <span className="coach-soon-pill">{t('Bald verfügbar')}</span>
         <b>{t('Dein persönlicher Coach')}</b>
         <p>{t('Er liest deine Partien, stellt dir jeden Tag einen Trainingsplan zusammen und beantwortet deine Fragen zu jeder Stellung.')}</p>
-        <ul>
-          <li>
-            <CalendarCheck size={16} /> {t('Trainingspläne aus deinen Partien')}
-          </li>
-          <li>
-            <MessageCircleQuestion size={16} /> {t('Antworten zu jeder Stellung')}
-          </li>
-          <li>
-            <TrendingUp size={16} /> {t('Tipps, die zu deinem Spiel passen')}
-          </li>
-        </ul>
       </div>
     </section>
   )
@@ -338,11 +350,7 @@ function Stats({ insights, puzzleRating }: { insights: Insights; puzzleRating: n
   const { accuracy, phases, motifs, results } = insights
   const trend = accuracy.recent !== null && accuracy.previous !== null ? accuracy.recent - accuracy.previous : null
   return (
-    <section>
-      <div className="section-head">
-        <h3>{t('So spielst du')}</h3>
-        <span className="muted">{t('{reviewed} von {games} Partien ausgewertet', { reviewed: insights.reviewed, games: insights.games })}</span>
-      </div>
+    <>
       <div className="stat-grid">
         <div className="stat">
           <span className="stat-label">{t('Genauigkeit')}</span>
@@ -392,7 +400,7 @@ function Stats({ insights, puzzleRating }: { insights: Insights; puzzleRating: n
           </div>
         </div>
       )}
-    </section>
+    </>
   )
 }
 

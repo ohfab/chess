@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Lock, Moon, Sun, UserRound, Volume2 } from 'lucide-react'
+import { Check, Compass, Lock, Moon, Sun, UserRound, Volume2 } from 'lucide-react'
 import { openAccount, requirePro, useAccount, useIsPro } from '../account/account'
 import { LegalLinks } from '../account/AccountDialogs'
 import { FREE_THEMES } from '../account/plans'
@@ -17,9 +17,11 @@ interface Props {
   settings: Settings
   onChange: (patch: Partial<Settings>) => void
   onClose: () => void
+  /** shows the short tour of the menu again */
+  onTour: () => void
 }
 
-export function SettingsDialog({ settings, onChange, onClose }: Props) {
+export function SettingsDialog({ settings, onChange, onClose, onTour }: Props) {
   const [tab, setTab] = useState<Tab>('design')
   const pro = useIsPro()
   const account = useAccount((a) => a.status)
@@ -131,6 +133,9 @@ export function SettingsDialog({ settings, onChange, onClose }: Props) {
           <ReminderSettings />
         </>
       )}
+      <button className="btn-secondary wide-btn" onClick={onTour}>
+        <Compass size={16} /> {t('Tour nochmal ansehen')}
+      </button>
       <button className="btn-secondary wide-btn" onClick={() => (onClose(), openAccount())}>
         <UserRound size={16} /> {account === 'local' ? t('Daten sichern und laden') : t('Konto und Abo')}
       </button>

@@ -138,6 +138,8 @@ interface GameState {
   reviewsToday: { date: string; count: number } | null
   /** the welcome screen was shown */
   onboarded: boolean
+  /** the short tour of the menu was shown (or skipped) */
+  toured: boolean
   /** the chess clock of the game against Stockfish, null for a game without one */
   clock: Clock | null
   /** the game against Stockfish is played blindfold */
@@ -190,6 +192,7 @@ interface GameState {
   /** replaces the synced parts of the state, after a merge with the cloud copy or a restore */
   replaceSynced: (patch: Partial<GameState>) => void
   finishOnboarding: (patch: Partial<Pick<GameState, 'level' | 'puzzleRating'>>) => void
+  setToured: (toured: boolean) => void
 }
 
 const yesterday = () => {
@@ -319,6 +322,7 @@ export const useGame = create<GameState>()(
       endgames: {},
       reviewsToday: null,
       onboarded: false,
+      toured: false,
       clock: null,
       blind: false,
 
@@ -636,6 +640,7 @@ export const useGame = create<GameState>()(
       replaceSynced: (patch) => set(patch),
 
       finishOnboarding: (patch) => set({ ...patch, onboarded: true }),
+      setToured: (toured) => set({ toured }),
 
       recordProgress: (key, clean) => {
         set((s) => {
@@ -701,11 +706,13 @@ export const useGame = create<GameState>()(
         endgames,
         reviewsToday,
         onboarded,
+        toured,
         clock,
         blind,
       }) => ({
         reviewsToday,
         onboarded,
+        toured,
         clock,
         blind,
         accounts,

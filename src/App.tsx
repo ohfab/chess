@@ -84,6 +84,7 @@ import { AnalysePage } from './import/AnalysePage'
 import { remoteKey, type RemoteGame } from './import/remote'
 import { BoardEditor } from './editor/BoardEditor'
 import { useBackgroundReviews } from './history/reviews'
+import { Tour } from './ui/Tour'
 import { Nav, type Tab } from './ui/Nav'
 import { Logo } from './ui/Logo'
 import { awaitPro, openAccount, requirePro, useAccount } from './account/account'
@@ -1584,7 +1585,7 @@ export default function App() {
               <ArrowUpDown size={20} />
             </button>
           )}
-          <button className="icon-btn" onClick={() => setDialog('settings')} aria-label={t('Einstellungen')}>
+          <button className="icon-btn" data-tour="settings" onClick={() => setDialog('settings')} aria-label={t('Einstellungen')}>
             <SettingsIcon size={20} />
           </button>
           {account.status !== 'local' && (
@@ -1695,6 +1696,12 @@ export default function App() {
             onDailyPuzzle={startDailyPuzzle}
             onLesson={startLesson}
             onAchievements={() => setView('achievements')}
+            onGo={(where) => {
+              const to = QUEST_PAGE[where[1]] ?? QUEST_TAB[where[0]]
+              // the lessons are on this page already
+              if (to === 'today') document.querySelector('.due-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              else if (to) setView(to)
+            }}
           />
         </main>
       )}
@@ -1795,11 +1802,24 @@ export default function App() {
         </aside>
       </main>
 
-      {dialog === 'settings' && <SettingsDialog settings={settings} onChange={g.updateSettings} onClose={() => setDialog(null)} />}
+      {dialog === 'settings' && (
+        <SettingsDialog
+          settings={settings}
+          onChange={g.updateSettings}
+          onClose={() => setDialog(null)}
+          onTour={() => {
+            setDialog(null)
+            g.setToured(false)
+            setView('today')
+          }}
+        />
+      )}
       {dialog === 'import' && <ImportDialog onLoad={loadGame} onClose={() => setDialog(null)} />}
       {dialog === 'share' && share && <ShareDialog pgn={share.pgn} fen={share.fen} onCopy={copy} onClose={() => setDialog(null)} />}
       {dialog === 'ask' && <AskCoachDialog fen={fen} lines={analysis?.lines ?? []} moves={plies.slice(0, cursor).map((p) => p.san)} onClose={() => setDialog(null)} />}
-      <LessonPrompt active={view === 'today' && g.onboarded && !dialog && !account.upgrade && !account.accountOpen} onStart={startLesson} />
+      <LessonPrompt active={view === 'today' && g.onboarded && g.toured && !dialog && !account.upgrade && !account.accountOpen} onStart={startLesson} />
+      {/* after the welcome screen, a short tour of the menu, once */}
+      {view === 'today' && g.onboarded && !g.toured && !dialog && !account.upgrade && !account.accountOpen && <Tour onDone={() => g.setToured(true)} />}
       <AchievementToasts />
       {dialog === 'result' && outcome && (
         <ResultDialog
@@ -1831,6 +1851,10 @@ function Tool({ label, icon, onClick, disabled, on }: { label: string; icon: Rea
     </button>
   )
 }
+
+/** Where a quest is done, by the German keys of its menu entry and the page in it. */
+const QUEST_PAGE: Record<string, View> = { 'Puzzle Rush': 'rush', 'Brett-Sehen': 'visual', 'Rate den Zug': 'guess', Kurse: 'courses' }
+const QUEST_TAB: Record<string, View> = { Taktik: 'tactics', Spielen: 'play', Analyse: 'analyse', Eröffnungen: 'openings', Heute: 'today' }
 
 /** Where Android's back button leads from the pages that have their own way back. */
 const SUB_PAGE_PARENT: Partial<Record<View, View>> = { rush: 'tactics', visual: 'tactics', guess: 'tactics', courses: 'tactics', repertoire: 'analyse', achievements: 'today' }

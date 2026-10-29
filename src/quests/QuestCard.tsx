@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
-import { Check, Gem, Zap } from 'lucide-react'
+import { Check, ChevronRight, Gem, Zap } from 'lucide-react'
 import { playJingle } from '../game/sound'
 import { t, tn } from '../i18n/i18n'
 import { today } from '../lesson/srs'
@@ -43,7 +43,7 @@ function untilMidnight(now: number) {
  * are counted in quests.ts the moment a quest is finished; this card celebrates them when
  * it comes into view.
  */
-export function QuestCard() {
+export function QuestCard({ onGo }: { onGo?: (where: string[]) => void } = {}) {
   const q = useQuests()
   const counts = useStats((s) => s.counts)
   const [now, setNow] = useState(() => Date.now())
@@ -179,6 +179,11 @@ export function QuestCard() {
                   </b>
                   <span className="quest-xp">+{QUEST_XP} XP</span>
                 </span>
+                {onGo && !done && (
+                  <button className="icon-btn quest-go" onClick={() => onGo(quest.where)} aria-label={t('Hin: {where}', { where: quest.where.map((w) => t(w)).join(' › ') })}>
+                    <ChevronRight size={20} />
+                  </button>
+                )}
               </li>
             )
           })}

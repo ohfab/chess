@@ -117,6 +117,16 @@ export function PlayPage({ level: initialLevel, timeControl = 'none', blind: ini
           ))}
         </div>
 
+        <div className="field-label">{t('Ich spiele')}</div>
+        <div className="sides">
+          {(['white', 'random', 'black'] as const).map((s) => (
+            <button key={s} className={`side-pick ${side === s ? 'on' : ''}`} onClick={() => setSide(s)}>
+              {s === 'random' ? <Shuffle size={26} /> : <Piece role="king" color={s} className="side-piece" />}
+              <span>{s === 'white' ? t('Weiß') : s === 'black' ? t('Schwarz') : t('Zufall')}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="field-label">
           <ClockIcon size={15} className="inline" /> {t('Bedenkzeit')}
         </div>
@@ -139,19 +149,12 @@ export function PlayPage({ level: initialLevel, timeControl = 'none', blind: ini
           <i />
         </label>
 
-        <div className="field-label">{t('Ich spiele')}</div>
-        <div className="sides">
-          {(['white', 'random', 'black'] as const).map((s) => (
-            <button key={s} className={`side-pick ${side === s ? 'on' : ''}`} onClick={() => setSide(s)}>
-              {s === 'random' ? <Shuffle size={26} /> : <Piece role="king" color={s} className="side-piece" />}
-              <span>{s === 'white' ? t('Weiß') : s === 'black' ? t('Schwarz') : t('Zufall')}</span>
-            </button>
-          ))}
+        {/* stays at the bottom of the screen while the options above are chosen */}
+        <div className="play-start-bar">
+          <button className="btn-primary wide play-start" onClick={start}>
+            {t('Gegen {name} spielen', { name: levelOf(level).name })}
+          </button>
         </div>
-
-        <button className="btn-primary wide play-start" onClick={start}>
-          {t('Gegen {name} spielen', { name: levelOf(level).name })}
-        </button>
 
         <div className="play-links">
           <button className="link-card" onClick={onAnalysis}>

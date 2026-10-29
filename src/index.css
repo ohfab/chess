@@ -6756,3 +6756,184 @@ input[type='range']::-moz-range-thumb {
 :root[data-theme='dark'] .coach-bubble::before {
   background: var(--ink);
 }
+
+/* ---------------------------------------------------------- shorter pages, easier to find */
+/* today: a one-line greeting, so the day's training is on the first screen */
+.today-hello {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -8px;
+}
+.today-hello .hello {
+  margin: 0 0 2px;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-transform: uppercase;
+  color: var(--heading);
+  overflow-wrap: break-word;
+}
+.today-hello .muted {
+  font-size: 16px;
+}
+.today-hello .ring {
+  width: 56px;
+  height: 56px;
+}
+.today-games .coach-card {
+  margin-bottom: 12px;
+  padding: 12px;
+  gap: 12px;
+}
+.today-games .coach-card .coach-avatar.cg-wrap {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+}
+.today-games .coach-card-title {
+  font-size: 8px;
+  line-height: 16px;
+}
+.today-games .coach-card p {
+  margin: 2px 0 0;
+}
+.today-games .stat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.today-games .stat {
+  padding: 10px;
+  min-width: 0;
+}
+.today-games .stat-value {
+  font-size: 16px;
+  line-height: 24px;
+}
+.today-games .stat .muted {
+  font-size: 13px;
+  line-height: 15px;
+}
+.today-games .two-col {
+  margin-top: 12px;
+}
+.today-sub {
+  margin: 18px 0 8px;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 8px;
+  line-height: 16px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.today-more {
+  margin-top: 8px;
+}
+/* the coming coach: one small card at the end */
+.today .coach-soon {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.today .coach-soon-icon {
+  width: 36px;
+  height: 36px;
+}
+.today .coach-soon p {
+  margin-bottom: 0;
+}
+/* a quest knows where it is done */
+.quest-go {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-left: -4px;
+}
+
+/* tactics: the mix, then every way to train in one grid */
+.tactics > .hero-card.mix {
+  width: 100%;
+  margin-bottom: 22px;
+}
+.tactics .cycles {
+  align-items: center;
+  margin-top: 10px;
+}
+/* small tiles: the name on top over its whole width (no word broken in two), icon and count below */
+.themes .theme-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'title title'
+    'icon meta';
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
+  padding: 10px 10px 12px;
+}
+.themes .theme-text {
+  display: contents;
+}
+.themes .theme-text b {
+  grid-area: title;
+  overflow-wrap: break-word;
+  hyphens: manual;
+}
+.themes .theme-text .muted {
+  grid-area: meta;
+  font-size: 14px;
+  line-height: 16px;
+}
+.themes .theme-icon {
+  grid-area: icon;
+  width: 24px;
+  height: 24px;
+  background: none;
+  box-shadow: none;
+  border: 0;
+}
+.themes.modes {
+  margin-bottom: 4px;
+}
+.themes .mode-tile:disabled {
+  opacity: 0.6;
+}
+
+/* openings: one group at a time, picked with chips */
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.group-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-count {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+/* play: the start button stays in reach above the tab bar while the options are chosen */
+.play-start-bar {
+  position: sticky;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  z-index: 4;
+  margin-top: 18px;
+  padding: 8px 0;
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+.play-start-bar .play-start {
+  margin-top: 0;
+}
+@media (min-width: 900px) {
+  .play-start-bar {
+    bottom: 0;
+    padding-bottom: 16px;
+  }
+}

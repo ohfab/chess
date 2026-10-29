@@ -12,9 +12,11 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 - Pro (CHF 1.– im Monat oder CHF 10.– im Jahr): die KI-Funktionen (KI-Coach mit Tagesplan, Fragen an den Coach zu jeder Stellung) und alle Designs
 - Konto-Seite mit Abo-Verwaltung (Stripe-Kundenportal), Daten-Export und -Import, Konto löschen
 - Willkommensbildschirm beim ersten Start: Spielstärke wählen, danach passen Bots und Taktik
+- Danach eine kurze Tour mit Pip: zeigt nacheinander die Menüpunkte, das Training für heute, Level und Serie und die Einstellungen; überspringbar, in den Einstellungen nochmal startbar
 - Installierbar und offline nutzbar (Service Worker), Impressum, Datenschutz und AGB als Vorlagen unter `public/legal/`
 
 **Heute: tägliches Training mit Coach**
+- Aufgeräumte Heute-Seite: oben das Training für heute, dann Lektionen, Tagesaufgabe und Quests (jede Quest führt per Pfeil direkt zur passenden Seite), darunter alles zu den eigenen Partien: Auswertung, Zahlen und die letzten fünf Partien
 - Jede Partie gegen Stockfish und jedes Eröffnungstraining landet im Archiv und wird im Hintergrund von Stockfish ausgewertet
 - Die Auswertung erkennt, wo und wie du Punkte verlierst: Fehler pro Spielphase (Eröffnung, Mittelspiel, Endspiel) und wiederkehrende Muster (Figuren eingestellt, Gabeln zugelassen, Mattdrohungen übersehen, Matt oder Taktik verpasst, Vorteil verspielt)
 - Daraus entsteht jeden Tag ein Plan mit 3 bis 5 Einheiten: deine eigenen Fehlerstellungen nochmal lösen, Taktikaufgaben genau zu deinen Schwächen, eine Eröffnungsvariante, eine Partie auf passendem Niveau
@@ -23,6 +25,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Taktik**
 - Eigene Seite mit Taktik-Wertung, Taktik-Mix, deinen Fehlerstellungen und 20 Motiven zum gezielten Üben (Gabeln, Fesselungen, Matt in 2 …), mit Trefferquote pro Motiv
+- Alle Trainingsarten auf einen Blick: Deine Fehler, Woodpecker, Puzzle Rush, Kurse, Brett-Sehen und Rate den Zug als kleine Kacheln unter dem Taktik-Mix, danach Motive und Endspiele
 - Tagesaufgabe auf der Heute-Seite, jeden Tag eine andere
 - Woodpecker-Methode: ein festes Set von 20 Aufgaben, Runde um Runde, mit Trefferquote und Zeit pro Runde
 - Endspieltrainer gegen Stockfish in voller Stärke: Dame gegen König, Treppenmatt, Turm gegen König, Bauer und König, Lucena-Stellung (jede Stellung mit Stockfish als gewonnen geprüft), mit Ziel und Tipp
@@ -32,7 +35,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Eröffnungstrainer**
 - 60 wichtige Eröffnungen mit 2 bis 8 Varianten, zum Beispiel Caro-Kann mit Vorstoß, Klassisch, Karpow, Abtausch, Panow-Botwinnik, Fantasie und Zweispringer
-- Menü mit Suche, Filter Weiß/Schwarz und Mini-Brettern; jede Eröffnung lässt sich auch mit der anderen Farbe üben
+- Menü mit Suche und Mini-Brettern, nach Gruppen zum Antippen (Weiß 1.e4, 1.d4, Flanke, Schwarz gegen 1.e4 und 1.d4, dazu „Deine“ mit den begonnenen), damit nicht alle 60 auf einmal untereinander stehen; die Suche findet über alle Gruppen; jede Eröffnung lässt sich auch mit der anderen Farbe üben
 - Gegnerstärke wählbar von ~800 bis ~2500 oder „Ideal“ (immer der beste Zug)
 - **Lernmodus:** Der erste Durchgang jeder Variante ist geführt. Ein Pfeil zeigt deinen Zug, danach erklärt der Coach, warum er gespielt wird (welche Felder er kontrolliert, was er vorbereitet, welchen Läufer er befreit, was er angreift oder fesselt, Rochade, Gambit …), mit markierten Feldern und Ideen-Pfeilen auf dem Brett. Den Zug des Gegners erklärt er ebenso, und der Gegner zieht erst auf „Weiter“. Danach „Jetzt aus dem Kopf üben“; gelernte Varianten tragen ein Buch-Symbol
 - Variante wählbar oder „Alle Varianten“: jede Runde eine andere
@@ -43,6 +46,7 @@ Der Name: *Rook* (Turm) und *Rookie*: vom Anfänger zum Turm. Früher hiess die 
 
 **Spielen gegen Stockfish**
 - Gegnerauswahl wie bei den chess.com-Bots: 10 Stärkestufen von ~800 bis „Ideal“, jede mit eigenem Avatar, Farbe wählbar (Weiß, Schwarz, Zufall); eine laufende Partie lässt sich dort fortsetzen
+- Reihenfolge Gegner, Farbe, Bedenkzeit; der Start-Knopf bleibt beim Scrollen unten sichtbar
 - Ziehen per Drag & Drop oder Klick, Premoves während Stockfish rechnet, Rochade auch per König auf Turm
 - Umwandlungs-Auswahl wie auf Lichess (oder immer Dame)
 - Tipp-Knopf zeigt den besten Zug als Pfeil, Zug zurücknehmen, Aufgeben, Revanche

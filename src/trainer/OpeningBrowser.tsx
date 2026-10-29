@@ -10,15 +10,17 @@ import { Display } from '../ui/Display'
 import { cardFor, STEPS, useLessons, type Card } from '../lesson/srs'
 import '../lesson/lesson.css'
 
-const GROUPS: { title: string; match: (o: OpeningDef) => boolean }[] = [
-  { title: tk('Mit Weiß · 1.e4'), match: (o) => o.side === 'white' && o.group === 'e4' },
-  { title: tk('Mit Weiß · 1.d4'), match: (o) => o.side === 'white' && o.group === 'd4' },
-  { title: tk('Mit Weiß · Flankeneröffnungen'), match: (o) => o.side === 'white' && o.group === 'flank' },
-  { title: tk('Mit Schwarz · gegen 1.e4'), match: (o) => o.side === 'black' && o.group === 'e4' },
-  { title: tk('Mit Schwarz · gegen 1.d4'), match: (o) => o.side === 'black' && o.group === 'd4' },
+const GROUPS: { id: string; title: string; short: string; match: (o: OpeningDef) => boolean }[] = [
+  { id: 'w-e4', title: tk('Mit Weiß · 1.e4'), short: tk('Weiß · 1.e4'), match: (o) => o.side === 'white' && o.group === 'e4' },
+  { id: 'w-d4', title: tk('Mit Weiß · 1.d4'), short: tk('Weiß · 1.d4'), match: (o) => o.side === 'white' && o.group === 'd4' },
+  { id: 'w-flank', title: tk('Mit Weiß · Flankeneröffnungen'), short: tk('Weiß · Flanke'), match: (o) => o.side === 'white' && o.group === 'flank' },
+  { id: 'b-e4', title: tk('Mit Schwarz · gegen 1.e4'), short: tk('Schwarz · gegen 1.e4'), match: (o) => o.side === 'black' && o.group === 'e4' },
+  { id: 'b-d4', title: tk('Mit Schwarz · gegen 1.d4'), short: tk('Schwarz · gegen 1.d4'), match: (o) => o.side === 'black' && o.group === 'd4' },
 ]
 
-type Filter = 'all' | 'white' | 'black'
+/** whether the player has begun any variation of the opening, with either colour */
+const begun = (o: OpeningDef, stored: Record<string, Card>, progress: Record<string, Progress>) =>
+  (['white', 'black'] as const).some((side) => o.variations.some((_, i) => cardFor(progressKey(o.id, i, side), stored, progress)))
 
 const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
@@ -31,16 +33,19 @@ interface Props {
 
 export function OpeningBrowser({ progress, current, onPick }: Props) {
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
+  const stored = useLessons((s) => s.cards)
+  const mine = useMemo(() => CATALOG.filter((o) => begun(o, stored, progress)), [stored, progress])
+  // one group at a time, so the page stays short; the player's own openings first once there are any
+  const [group, setGroup] = useState(() => (mine.length ? 'mine' : GROUPS[0].id))
 
-  const visible = useMemo(() => {
-    const q = fold(query.trim())
-    return CATALOG.filter(
-      (o) =>
-        (filter === 'all' || o.side === filter) &&
-        (!q || [o.name, o.en, ...o.variations.map((v) => v.name)].some((t) => fold(t).includes(q))),
-    )
-  }, [query, filter])
+  const q = fold(query.trim())
+  const found = useMemo(() => (q ? CATALOG.filter((o) => [o.name, o.en, ...o.variations.map((v) => v.name)].some((t) => fold(t).includes(q))) : []), [q])
+  // a search looks through all of them, grouped as usual
+  const shown: { title: string; items: OpeningDef[] }[] = q
+    ? GROUPS.map((g) => ({ title: t(g.title), items: found.filter(g.match) })).filter((g) => g.items.length)
+    : group === 'mine'
+      ? [{ title: t('Deine Eröffnungen'), items: mine }]
+      : GROUPS.filter((g) => g.id === group).map((g) => ({ title: t(g.title), items: CATALOG.filter(g.match) }))
 
   return (
     <div className="openings">
@@ -73,30 +78,33 @@ export function OpeningBrowser({ progress, current, onPick }: Props) {
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <div className="segmented small">
-          {(['all', 'white', 'black'] as const).map((f) => (
-            <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>
-              {f === 'all' ? t('Alle') : f === 'white' ? t('Weiß') : t('Schwarz')}
+      </div>
+      {!q && (
+        <div className="group-chips" role="tablist" aria-label={t('Eröffnungen')}>
+          {mine.length > 0 && (
+            <button role="tab" aria-selected={group === 'mine'} className={`chip ${group === 'mine' ? 'on' : ''}`} onClick={() => setGroup('mine')}>
+              {t('Deine')} <span className="chip-count">{mine.length}</span>
+            </button>
+          )}
+          {GROUPS.map((g) => (
+            <button key={g.id} role="tab" aria-selected={group === g.id} className={`chip ${group === g.id ? 'on' : ''}`} onClick={() => setGroup(g.id)}>
+              {t(g.short)} <span className="chip-count">{CATALOG.filter(g.match).length}</span>
             </button>
           ))}
         </div>
-      </div>
+      )}
 
-      {GROUPS.map((group) => {
-        const items = visible.filter(group.match)
-        if (!items.length) return null
-        return (
-          <section key={group.title} className="opening-group">
-            <h3>{t(group.title)}</h3>
-            <div className="opening-grid">
-              {items.map((o) => (
-                <OpeningCard key={o.id} opening={o} progress={progress} onPick={() => onPick(o.id)} />
-              ))}
-            </div>
-          </section>
-        )
-      })}
-      {visible.length === 0 && <p className="muted empty">{t('Keine Eröffnung gefunden.')}</p>}
+      {shown.map((section) => (
+        <section key={section.title} className="opening-group">
+          <h3>{section.title}</h3>
+          <div className="opening-grid">
+            {section.items.map((o) => (
+              <OpeningCard key={o.id} opening={o} progress={progress} onPick={() => onPick(o.id)} />
+            ))}
+          </div>
+        </section>
+      ))}
+      {q && found.length === 0 && <p className="muted empty">{t('Keine Eröffnung gefunden.')}</p>}
     </div>
   )
 }

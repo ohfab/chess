@@ -30,6 +30,7 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
           <button
             key={id}
             className={`nav-item ${tab === id ? 'on' : ''}`}
+            data-tour={id}
             onClick={() => onNavigate(id)}
             aria-current={tab === id ? 'page' : undefined}
             aria-label={t(label)}
@@ -51,7 +52,7 @@ export function Nav({ tab, onNavigate, onSettings, onAccount }: { tab: Tab; onNa
             <span className="nav-label">{account.status === 'signed-in' ? (PRO_ENABLED && pro ? 'Pro' : t('Konto')) : t('Anmelden')}</span>
           </button>
         )}
-        <button className="nav-item nav-settings" onClick={onSettings}>
+        <button className="nav-item nav-settings" data-tour="settings" onClick={onSettings}>
           <span className="nav-icon">
             <SettingsIcon size={24} />
           </span>

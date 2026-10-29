@@ -1,0 +1,114 @@
+/* The tour: the page dimmed except for a hole around what Pip points at, and a speech window. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+.tour-dim,
+.tour-hole {
+  position: fixed;
+  pointer-events: auto;
+}
+.tour-dim {
+  inset: 0;
+  background: var(--backdrop);
+}
+/* the hole: a frame whose huge shadow darkens everything around it */
+.tour-hole {
+  box-shadow:
+    0 0 0 3px var(--gb-paper),
+    0 0 0 6px var(--gb-ink),
+    0 0 0 100vmax var(--backdrop);
+  animation: tour-blink 1s steps(2) infinite;
+  transition:
+    left 0.2s steps(4),
+    top 0.2s steps(4),
+    width 0.2s steps(4),
+    height 0.2s steps(4);
+}
+@keyframes tour-blink {
+  50% {
+    box-shadow:
+      0 0 0 3px var(--gb-ink),
+      0 0 0 6px var(--gb-paper),
+      0 0 0 100vmax var(--backdrop);
+  }
+}
+.tour-box {
+  position: fixed;
+  padding: 14px 14px 12px;
+  border: 3px solid var(--ink);
+  background: var(--bubble);
+  color: var(--bubble-text);
+  box-shadow: var(--shadow-lg);
+  animation: tour-in 0.18s steps(3) both;
+}
+.tour.centred .tour-box {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: none;
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.tour-head .tour-guide {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--ink);
+}
+.tour-step {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 16px;
+  color: var(--bubble-muted);
+}
+.tour-head h2 {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+}
+.tour-box p {
+  margin: 0 0 12px;
+  font-size: 17px;
+  line-height: 22px;
+  color: var(--bubble-muted);
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.tour-skip {
+  margin-right: auto;
+  padding: 6px 2px;
+  color: var(--bubble-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tour-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-hole,
+  .tour-box {
+    animation: none;
+    transition: none;
+  }
+}

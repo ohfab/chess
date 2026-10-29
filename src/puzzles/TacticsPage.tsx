@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   ArrowRightLeft,
   Check,
@@ -116,89 +116,42 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, on
         </div>
       </div>
 
-      <div className="hero-cards">
-        <button className="hero-card mix" onClick={() => onPuzzles()}>
-          <span className="hero-icon">
-            <Flame size={26} />
-          </span>
-          <span className="hero-text">
-            <b>{t('Taktik-Mix')}</b>
-            <span>{t('Fünf Aufgaben quer durch alle Motive')}</span>
-          </span>
-          <span className="hero-meta">{tries ? t('{p} % gelöst · {n} gesehen', { p: Math.round((hits / tries) * 100), n: seenPuzzles.length }) : t('Los geht’s')}</span>
-        </button>
-        <button className="hero-card mistakes" onClick={() => onMistakes(insights)} disabled={open === 0}>
-          <span className="hero-icon">
-            <RotateCcw size={26} />
-          </span>
-          <span className="hero-text">
-            <b>{t('Deine Fehler')}</b>
-            <span>{t('Stellungen aus deinen Partien, in denen es Besseres gab')}</span>
-          </span>
-          <span className="hero-meta">
-            {open ? t('{n} offen', { n: open }) : insights.reviewed ? t('Alles gelöst') : t('Spiel eine Partie, dann erscheinen sie hier')}
-          </span>
-        </button>
-        <div className="hero-card woodpecker">
-          <button className="hero-main" onClick={() => onWoodpecker(!woodpecker)}>
-            <span className="hero-icon">
-              <Repeat size={26} />
-            </span>
-            <span className="hero-text">
-              <b>Woodpecker</b>
-              <span>{t('Dieselben 20 Aufgaben immer wieder, bis die Muster sitzen')}</span>
-            </span>
-          </button>
-          <span className="hero-meta">
-            {woodpecker
-              ? t('Runde {cycle} · {index} von {total}', { cycle: woodpecker.cycle, index: woodpecker.index, total: woodpecker.ids.length }) +
-                (lastCycle ? ' · ' + t('zuletzt {solved}/{total} in {time}', { solved: lastCycle.solved, total: lastCycle.total, time: time(lastCycle.ms) }) : '')
-              : t('Neues Set starten')}
-            {woodpecker && (
-              <button className="hero-link" onClick={() => onWoodpecker(true)}>
-                {t('Neues Set')}
-              </button>
-            )}
-          </span>
-        </div>
-      </div>
+      <button className="hero-card mix" onClick={() => onPuzzles()}>
+        <span className="hero-icon">
+          <Flame size={26} />
+        </span>
+        <span className="hero-text">
+          <b>{t('Taktik-Mix')}</b>
+          <span>{t('Fünf Aufgaben quer durch alle Motive')}</span>
+        </span>
+        <span className="hero-meta">{tries ? t('{p} % gelöst · {n} gesehen', { p: Math.round((hits / tries) * 100), n: seenPuzzles.length }) : t('Los geht’s')}</span>
+      </button>
 
-      <div className="hero-cards modes">
-        <button className="hero-card rush" onClick={onRush}>
-          <span className="hero-icon">
-            <Timer size={26} />
-          </span>
-          <span className="hero-text">
-            <b>{t('Puzzle Rush')}</b>
-            <span>{t('So viele Aufgaben wie möglich, gegen die Uhr')}</span>
-          </span>
-          <span className="hero-meta">
-            {stats.bests.rushBest3 || stats.bests.rushBest5
-              ? t('Rekord: {three} in 3 Min · {five} in 5 Min', { three: stats.bests.rushBest3 ?? 0, five: stats.bests.rushBest5 ?? 0 })
-              : t('Drei Fehler, dann ist Schluss')}
-          </span>
-        </button>
-        <button className="link-card mode-card" onClick={onVisual}>
-          <Eye size={22} />
-          <span>
-            <b>{t('Brett-Sehen')}</b>
-            <span className="muted">{t('Koordinaten und Blindschach')}</span>
-          </span>
-        </button>
-        <button className="link-card mode-card" onClick={onCourses}>
-          <GraduationCap size={22} />
-          <span>
-            <b>{t('Kurse')}</b>
-            <span className="muted">{t('Ein Motiv nach dem anderen: verstehen, dann üben')}</span>
-          </span>
-        </button>
-        <button className="link-card mode-card" onClick={onGuess}>
-          <History size={22} />
-          <span>
-            <b>{t('Rate den Zug')}</b>
-            <span className="muted">{t('Berühmte Partien Zug für Zug')}</span>
-          </span>
-        </button>
+      {/* every way to train, in one view: no scrolling to find Rush or the courses */}
+      <div className="section-head">
+        <h3>{t('Trainingsarten')}</h3>
+      </div>
+      <div className="themes modes">
+        <ModeTile icon={RotateCcw} title={t('Deine Fehler')} onClick={() => onMistakes(insights)} disabled={open === 0}>
+          {open ? t('{n} offen', { n: open }) : insights.reviewed ? t('Alles gelöst') : t('Aus deinen Partien')}
+        </ModeTile>
+        <ModeTile icon={Repeat} title="Woodpecker" onClick={() => onWoodpecker(!woodpecker)}>
+          {woodpecker ? t('Runde {cycle} · {index} von {total}', { cycle: woodpecker.cycle, index: woodpecker.index, total: woodpecker.ids.length }) : t('20 Aufgaben, immer wieder')}
+        </ModeTile>
+        <ModeTile icon={Timer} title={t('Puzzle Rush')} onClick={onRush}>
+          {stats.bests.rushBest3 || stats.bests.rushBest5
+            ? t('Rekord: {three} in 3 Min · {five} in 5 Min', { three: stats.bests.rushBest3 ?? 0, five: stats.bests.rushBest5 ?? 0 })
+            : t('Gegen die Uhr')}
+        </ModeTile>
+        <ModeTile icon={GraduationCap} title={t('Kurse')} onClick={onCourses}>
+          {t('Motiv für Motiv lernen')}
+        </ModeTile>
+        <ModeTile icon={Eye} title={t('Brett-Sehen')} onClick={onVisual}>
+          {t('Koordinaten und Blindschach')}
+        </ModeTile>
+        <ModeTile icon={History} title={t('Rate den Zug')} onClick={onGuess}>
+          {t('Berühmte Partien Zug für Zug')}
+        </ModeTile>
       </div>
 
       {woodpecker && woodpecker.cycles.length > 0 && (
@@ -212,31 +165,12 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, on
               <span className="muted">{time(c.ms)}</span>
             </span>
           ))}
+          {lastCycle && <span className="muted">{t('zuletzt {solved}/{total} in {time}', { solved: lastCycle.solved, total: lastCycle.total, time: time(lastCycle.ms) })}</span>}
+          <button className="btn-secondary small" onClick={() => onWoodpecker(true)}>
+            {t('Neues Set')}
+          </button>
         </div>
       )}
-
-      <div className="section-head">
-        <h3>{t('Endspiele')}</h3>
-        <span className="muted">{t('gegen Stockfish in voller Stärke')}</span>
-      </div>
-      <div className="endgames">
-        {ENDGAMES.map((e) => {
-          const st = endgames[e.id]
-          return (
-            <button key={e.id} className={`endgame-card ${st?.wins ? 'won' : ''}`} onClick={() => onEndgame(e)}>
-              <span className="endgame-board">
-                <MiniBoard fen={e.fen} orientation={e.color} />
-              </span>
-              <span className="theme-text">
-                <b>
-                  {e.name} {st?.wins ? <Check size={15} className="inline" /> : null}
-                </b>
-                <span className="muted">{st?.tries ? t('{wins} von {tries} gewonnen', { wins: st.wins, tries: st.tries }) : e.goal}</span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
 
       <div className="section-head">
         <h3>{t('Nach Motiv')}</h3>
@@ -267,6 +201,44 @@ export function TacticsPage({ onPuzzles, onMistakes, onWoodpecker, onEndgame, on
           )
         })}
       </div>
+      <div className="section-head">
+        <h3>{t('Endspiele')}</h3>
+        <span className="muted">{t('gegen Stockfish in voller Stärke')}</span>
+      </div>
+      <div className="endgames">
+        {ENDGAMES.map((e) => {
+          const st = endgames[e.id]
+          return (
+            <button key={e.id} className={`endgame-card ${st?.wins ? 'won' : ''}`} onClick={() => onEndgame(e)}>
+              <span className="endgame-board">
+                <MiniBoard fen={e.fen} orientation={e.color} />
+              </span>
+              <span className="theme-text">
+                <b>
+                  {e.name} {st?.wins ? <Check size={15} className="inline" /> : null}
+                </b>
+                <span className="muted">{st?.tries ? t('{wins} von {tries} gewonnen', { wins: st.wins, tries: st.tries }) : e.goal}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
     </div>
+  )
+}
+
+/** One way to train, as a small tile in the grid of all of them. */
+function ModeTile({ icon: Icon, title, onClick, disabled, children }: { icon: LucideIcon; title: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+  return (
+    <button className="theme-card mode-tile" onClick={onClick} disabled={disabled}>
+      <span className="theme-icon">
+        <Icon size={20} />
+      </span>
+      <span className="theme-text">
+        <b>{title}</b>
+        <span className="muted">{children}</span>
+      </span>
+    </button>
   )
 }
